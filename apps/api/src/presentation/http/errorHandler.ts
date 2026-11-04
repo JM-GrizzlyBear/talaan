@@ -1,7 +1,6 @@
-import type { ApiErrorBody } from "@pern/shared";
+import type { ApiErrorBody } from "@talaan/shared";
 import type { ErrorRequestHandler, RequestHandler } from "express";
 import { ZodError, z } from "zod";
-import { NoteNotFoundError } from "../../domain/note/errors.js";
 import {
   EmailTakenError,
   InvalidCredentialsError,
@@ -55,10 +54,6 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     error instanceof NotLoggedInError
   ) {
     send(res, 401, { message: error.message });
-    return;
-  }
-  if (error instanceof NoteNotFoundError) {
-    send(res, 404, { message: error.message });
     return;
   }
   // express.json(): body isn't valid JSON (400) or is too big (413)

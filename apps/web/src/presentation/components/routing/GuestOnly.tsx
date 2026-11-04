@@ -5,6 +5,6 @@ import { useCurrentUser } from "../../../application/auth/useAuth";
 export function GuestOnly() {
   const { data: user, isPending } = useCurrentUser();
   if (isPending) return null;
-  if (user) return <Navigate to="/notes" replace />;
+  if (user) return <Navigate to="/" replace />;
   return <Outlet />;
 }

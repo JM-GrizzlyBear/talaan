@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - run: docker build -t pern-template .
+      - run: docker build -t talaan .
 
   test:
     name: Tests

@@ -1,4 +1,4 @@
-import { loginSchema, registerSchema } from "@pern/shared";
+import { loginSchema, registerSchema } from "@talaan/shared";
 import { Router, type RequestHandler } from "express";
 import type { GetCurrentUser } from "../../../application/user/GetCurrentUser.js";
 import type { LogInUser } from "../../../application/user/LogInUser.js";

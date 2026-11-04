@@ -1,4 +1,4 @@
-import { AUTH_LIMITS } from "@pern/shared";
+import { AUTH_LIMITS } from "@talaan/shared";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { useRegister } from "../../application/auth/useAuth";
@@ -19,7 +19,7 @@ export function RegisterPage() {
     event.preventDefault();
     try {
       await register.mutateAsync({ username, email, password });
-      navigate("/notes", { replace: true });
+      navigate("/", { replace: true });
     } catch {
       // Shown below from register.error
     }

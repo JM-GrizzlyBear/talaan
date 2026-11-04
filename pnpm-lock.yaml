@@ -175,7 +175,7 @@ importers:
 
   apps/api:
     dependencies:
-      '@pern/shared':
+      '@talaan/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       bcryptjs:
@@ -236,7 +236,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@pern/shared':
+      '@talaan/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@tailwindcss/vite':

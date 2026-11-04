@@ -1,4 +1,4 @@
-import { loginSchema, noteInputSchema, registerSchema } from "@pern/shared";
+import { loginSchema, registerSchema } from "@talaan/shared";
 import { describe, expect, it } from "vitest";
 
 describe("shared form rules (used by the API and the website)", () => {
@@ -34,13 +34,5 @@ describe("shared form rules (used by the API and the website)", () => {
     expect(loginSchema.safeParse({ login: "", password: "x" }).success).toBe(
       false,
     );
-  });
-
-  it("note: title required and trimmed, body optional", () => {
-    expect(noteInputSchema.parse({ title: "  Hi  " })).toEqual({
-      title: "Hi",
-      body: "",
-    });
-    expect(noteInputSchema.safeParse({ title: "   " }).success).toBe(false);
   });
 });

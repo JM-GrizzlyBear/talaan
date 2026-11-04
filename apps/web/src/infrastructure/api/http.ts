@@ -1,4 +1,4 @@
-import type { ApiErrorBody } from "@pern/shared";
+import type { ApiErrorBody } from "@talaan/shared";
 
 export class ApiError extends Error {
   // 0 when the server couldn't be reached at all

@@ -2,23 +2,16 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import express from "express";
 import type { Pool } from "pg";
-import { CreateNote } from "./application/note/CreateNote.js";
-import { DeleteNote } from "./application/note/DeleteNote.js";
-import { GetNote } from "./application/note/GetNote.js";
-import { ListNotes } from "./application/note/ListNotes.js";
-import { UpdateNote } from "./application/note/UpdateNote.js";
 import type { Clock } from "./application/ports/Clock.js";
 import type { PasswordHasher } from "./application/ports/PasswordHasher.js";
 import { GetCurrentUser } from "./application/user/GetCurrentUser.js";
 import { LogInUser } from "./application/user/LogInUser.js";
 import { RegisterUser } from "./application/user/RegisterUser.js";
-import { PostgresNoteRepository } from "./infrastructure/database/PostgresNoteRepository.js";
 import { PostgresUserRepository } from "./infrastructure/database/PostgresUserRepository.js";
 import { apiNotFound, errorHandler } from "./presentation/http/errorHandler.js";
 import { rateLimit } from "./presentation/http/middleware/rateLimit.js";
 import { authRoutes } from "./presentation/http/routes/authRoutes.js";
 import { healthRoutes } from "./presentation/http/routes/healthRoutes.js";
-import { noteRoutes } from "./presentation/http/routes/noteRoutes.js";
 import { createSessionMiddleware } from "./presentation/http/session.js";
 
 export interface BuildAppOptions {
@@ -40,7 +33,6 @@ export interface BuildAppOptions {
 // main.ts runs it for real; the tests build their own copy.
 export function buildApp(options: BuildAppOptions) {
   const users = new PostgresUserRepository(options.pool);
-  const notes = new PostgresNoteRepository(options.pool);
 
   const app = express();
   app.disable("x-powered-by");
@@ -68,16 +60,6 @@ export function buildApp(options: BuildAppOptions) {
         clock: options.clock,
         message: "Too many tries. Please wait a few minutes.",
       }),
-    }),
-  );
-  app.use(
-    "/api",
-    noteRoutes({
-      listNotes: new ListNotes(notes),
-      getNote: new GetNote(notes),
-      createNote: new CreateNote(notes),
-      updateNote: new UpdateNote(notes),
-      deleteNote: new DeleteNote(notes),
     }),
   );
   app.use("/api", apiNotFound);
