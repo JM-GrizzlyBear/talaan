@@ -1,6 +1,6 @@
 # Two ways to use this file (values come from the root .env):
 #
-#   docker compose up -d db       only Postgres, for "turbo run dev" (the usual way while coding)
+#   docker compose up -d db mail  Postgres and Mailpit, for "turbo run dev" (the usual way while coding)
 #   docker compose up --build     everything: Postgres + the production app on http://localhost:8080
 services:
   db:
@@ -33,6 +33,15 @@ services:
       COOKIE_SECURE: "false"
     ports:
       - "8080:4000"
+
+  # Catches every email the app sends, so nothing reaches a real inbox while coding.
+  # Read them at http://localhost:8025; the API sends to it on port 1025.
+  mail:
+    image: axllent/mailpit:v1.31.6
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
 volumes:
   pgdata:

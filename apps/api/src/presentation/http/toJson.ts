@@ -6,8 +6,9 @@ import type { SafeUser } from "../../domain/user/User.js";
 export function userJson(user: SafeUser): PublicUser {
   return {
     id: user.id,
-    username: user.username,
+    name: user.name,
     email: user.email,
+    lockAfterMinutes: user.lockAfterMinutes,
     createdAt: user.createdAt.toISOString(),
   };
 }

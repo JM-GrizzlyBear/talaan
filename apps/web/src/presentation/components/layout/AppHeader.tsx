@@ -1,12 +1,15 @@
-import { LogOut } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
 import { Link } from "react-router";
-import { useCurrentUser, useLogOut } from "../../../application/auth/useAuth";
+import { useLogOut, useSession } from "../../../application/auth/useAuth";
 import { TalaanLogo } from "../brand/TalaanLogo";
 import { buttonSecondary } from "../ui/styles";
 
 export function AppHeader() {
-  const { data: user } = useCurrentUser();
+  const { data: session } = useSession();
   const logOut = useLogOut();
+  // The lock screen has its own layout
+  if (session?.locked) return null;
+  const user = session?.user;
 
   return (
     <header className="border-b border-edge bg-white">
@@ -16,8 +19,12 @@ export function AppHeader() {
           Talaan
         </Link>
         {user && (
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted">@{user.username}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-sm text-muted">{user.name}</span>
+            <Link to="/settings/security" className={buttonSecondary}>
+              <ShieldCheck aria-hidden="true" className="size-4" />
+              Security
+            </Link>
             <button
               type="button"
               onClick={() => logOut.mutate()}
@@ -25,7 +32,7 @@ export function AppHeader() {
               className={buttonSecondary}
             >
               <LogOut aria-hidden="true" className="size-4" />
-              Log out
+              Sign out
             </button>
           </div>
         )}

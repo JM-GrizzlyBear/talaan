@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from "react-router";
 import { useCurrentUser } from "../../../application/auth/useAuth";
 
-// Login and register: someone already logged in goes straight to the app
+// Sign in and sign up: someone already signed in goes straight to the app
 export function GuestOnly() {
   const { data: user, isPending } = useCurrentUser();
   if (isPending) return null;

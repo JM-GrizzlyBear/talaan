@@ -32,10 +32,14 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
 
 ## What's inside now
 
-- **Sign in, sign out** (and a register page for now; admin-created accounts come with the accounts feature)
-  - Sign in with a username or an email
-  - Passwords hashed with bcrypt
+- **Accounts**
+  - Sign up with your name, email, a password of at least 10 characters, and the privacy consent (the time it was given is saved)
+  - Sign in with your email; passwords hashed with bcrypt
   - Sessions stored in Postgres, sent as an HTTP-only cookie
+- **Forgot password**: a 6-digit code by email (15 minutes, 5 tries, only a keyed hash is stored), then a new password; every device is signed out and a "password changed" email is sent
+- **Lock after idle time**: the website locks after 5, 15, 30 or 60 minutes with nobody using it (15 by default). The password unlocks it; the API enforces the lock too.
+- **Security page**: choose the lock time, lock now, change the password (other devices are signed out)
+- **Protection**: separate rate limits for sign-in, unlock, password reset and codes per email; security headers (helmet); the same answers whether or not an email has an account
 - **Protected pages**: signed-out visitors are sent to `/login` and come back after signing in
 - **One source of truth for forms**: the same zod rules check the form in the browser and the request in the API
 - **Tests**:
@@ -59,6 +63,8 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
 | Monorepo | Turborepo, pnpm workspaces                                                |
 | API      | Node 22, Express 5, TypeScript, PostgreSQL (`pg`), dbmate migrations, zod |
 | Login    | bcryptjs, express-session, connect-pg-simple (sessions in Postgres)       |
+| Email    | nodemailer: Mailpit locally, Brevo on the live site                       |
+| Security | helmet (security headers), rate limits, HMAC-hashed reset codes           |
 | Website  | React 19, Vite, Tailwind CSS v4, TanStack Query, React Router             |
 | Shared   | `packages/shared`: zod schemas and types used by the API and the website  |
 | Tests    | Vitest, supertest                                                         |
@@ -194,13 +200,13 @@ Fill them in (the full list is under [Environment files](#environment-files)):
 
 ```bash
 pnpm install
-docker compose up -d db      # only Postgres
+docker compose up -d db mail # Postgres, and Mailpit to catch emails
 turbo run build              # builds the shared package
 turbo run db:migrate         # creates the tables
 turbo run dev                # API on :4000, website on :5173
 ```
 
-Open http://localhost:5173, create an account, and you'll see the Talaan welcome page.
+Open http://localhost:5173, create an account, and you'll see the Talaan welcome page. Emails (like the Forgot password code) don't leave your computer: read them in Mailpit at http://localhost:8025.
 
 `turbo run dev` shows each app in its own panel: use ↑ / ↓ to switch between `@talaan/web#dev` and `@talaan/api#dev`. API errors only show in the API panel.
 
@@ -247,13 +253,22 @@ This builds the production image, waits for Postgres, runs the migrations and st
 
 ### `apps/api/.env` (used by the API and dbmate)
 
-| Variable         | Required | Example / meaning                                                                          |
-| ---------------- | -------- | ------------------------------------------------------------------------------------------ |
-| `PORT`           | no       | `4000`                                                                                     |
-| `DATABASE_URL`   | yes      | `postgres://talaan:pick_a_password@127.0.0.1:5432/talaan?sslmode=disable` (same as `.env`) |
-| `SESSION_SECRET` | yes      | at least 32 random characters: `openssl rand -hex 32`                                      |
-| `COOKIE_SECURE`  | no       | `true` in production by default (HTTPS-only cookie); `false` for plain http                |
-| `WEB_DIST_DIR`   | no       | Set by the Docker image: the built website the API should serve                            |
+| Variable         | Required  | Example / meaning                                                                          |
+| ---------------- | --------- | ------------------------------------------------------------------------------------------ |
+| `PORT`           | no        | `4000`                                                                                     |
+| `DATABASE_URL`   | yes       | `postgres://talaan:pick_a_password@127.0.0.1:5432/talaan?sslmode=disable` (same as `.env`) |
+| `SESSION_SECRET` | yes       | at least 32 random characters: `openssl rand -hex 32`                                      |
+| `COOKIE_SECURE`  | no        | `true` in production by default (HTTPS-only cookie); `false` for plain http                |
+| `WEB_DIST_DIR`   | no        | Set by the Docker image: the built website the API should serve                            |
+| `TRUST_PROXY`    | no        | How many proxies sit in front: `0` locally, `1` behind Render, `2` behind Netlify → Render |
+| `SMTP_HOST`      | no        | Turns email on. `127.0.0.1` (Mailpit) locally, `smtp-relay.brevo.com` live                 |
+| `SMTP_PORT`      | no        | `1025` (Mailpit), `2525` on Render (its free plan blocks 25, 465 and 587)                  |
+| `SMTP_USER`      | no        | Brevo's SMTP login (looks like `xxxxxx@smtp-brevo.com`). Empty for Mailpit                 |
+| `SMTP_PASS`      | no        | Brevo's SMTP key. Empty for Mailpit. Only in your `.env` or Render's settings              |
+| `MAIL_FROM`      | with SMTP | `Talaan <your-new-sender@gmail.com>`, a sender verified on Brevo                           |
+| `APP_URL`        | with SMTP | The website's address for links in emails, e.g. `http://localhost:5173`                    |
+
+Without `SMTP_HOST`, everything works except Forgot password, which answers that email isn't set up yet.
 
 Use `127.0.0.1` instead of `localhost` in `DATABASE_URL` on Windows if dbmate says the connection was refused on `[::1]:5432`.
 
@@ -261,17 +276,44 @@ Use `127.0.0.1` instead of `localhost` in `DATABASE_URL` on Windows if dbmate sa
 
 ## How sign-in works
 
-1. **Register** (`POST /api/auth/register`): the API checks the form with `registerSchema` and stores the username and email in lowercase. It hashes the password with bcrypt (12 rounds) and signs the new user in.
-2. **Sign in** (`POST /api/auth/login`): the username or email and the password are checked. A wrong password and an unknown user get the **same** answer, so nobody can find out which accounts exist.
+1. **Sign up** (`POST /api/auth/register`): the API checks the form with `registerSchema` (name, email, password of at least 10 characters, and `consent: true`). It stores the email in lowercase, saves when the privacy consent was given, hashes the password with bcrypt (12 rounds) and signs the new person in.
+2. **Sign in** (`POST /api/auth/login`): the email and password are checked. A wrong password and an unknown email get the **same** answer, so nobody can find out which accounts exist.
 3. **Signing in starts a brand-new session.** The session is a row in the `session` table, and the browser gets a `talaan.sid` cookie:
    - `HttpOnly`: the page's JavaScript can't read it
    - `SameSite=Lax`
    - `Secure` in production: it's only sent over HTTPS
-4. **Protected API routes** use the `requireAuth` middleware and read the user's id from the session.
-5. **Sign out** (`POST /api/auth/logout`) deletes the session row, so the old cookie stops working.
-6. **Rate limit**: 20 sign-in or register tries per visitor every 15 minutes (in memory). The limit is in `buildApp.ts`.
+4. **Protected API routes** use the `requireAuth(clock)` middleware and read the user's id from the session.
+5. **Idle lock**: the session remembers when this browser last used the API. After the person's chosen minutes (5, 15, 30 or 60) with nothing, protected routes answer **423 Locked** until `POST /api/auth/unlock` gets the right password. The website also watches for clicks, typing and scrolling: it locks itself after the same time, and while someone is reading it tells the API every 2 minutes (`POST /api/auth/activity`) so the API doesn't lock them out.
+6. **Forgot password** (3 steps): `request` emails a 6-digit code, `check` tests it, `complete` saves the new password. Codes last 15 minutes and 5 wrong tries; asking again replaces the old code. Only an HMAC of the code (keyed with `SESSION_SECRET` and the account id) is stored. A new password signs out every device and sends a "password changed" email.
+7. **Sign out** (`POST /api/auth/logout`) deletes the session row, so the old cookie stops working. It works while locked too.
+8. **Rate limits** (in memory, per 15 minutes, in `buildApp.ts`): 20 sign-in/sign-up tries per visitor, 20 unlock and password-change tries per person, 20 reset steps per visitor, and 3 codes per email address. Each has its own counter, because a family at home shares one IP address.
 
-On the website, `useCurrentUser()` asks `GET /api/auth/me` once and every page shares that answer. `RequireAuth` protects pages, and `GuestOnly` sends signed-in users away from the sign-in and register pages.
+On the website, `useSession()` asks `GET /api/auth/me` once and every page shares that answer (`{ user, locked }`). `RequireAuth` protects pages and shows the lock screen when locked. Any 423 answer also switches to the lock screen. `GuestOnly` sends signed-in people away from the sign-in and sign-up pages.
+
+---
+
+## Sending emails (Brevo)
+
+Forgot-password codes and "password changed" notices are real emails on the live site. Talaan uses its own sender address:
+
+1. **Create the sender Gmail** for Talaan (for example `talaan.app@gmail.com`).
+2. **Sign up at [brevo.com](https://www.brevo.com)** (the free plan sends 300 emails a day) with that Gmail.
+3. **Verify the sender**: Brevo → _Senders, Domains & Dedicated IPs_ → _Senders_ → _Add a sender_ → that Gmail, then click the link Brevo emails you.
+4. **Get the SMTP login**: Brevo → _SMTP & API_ → _SMTP_ tab. Copy the **Login** (looks like `xxxxxx@smtp-brevo.com`), then _Generate a new SMTP key_ and copy it once (it's only shown once).
+5. **Put them in Render** (your service → _Environment_), never in the code:
+
+   | Variable    | Value                                     |
+   | ----------- | ----------------------------------------- |
+   | `SMTP_HOST` | `smtp-relay.brevo.com`                    |
+   | `SMTP_PORT` | `2525`                                    |
+   | `SMTP_USER` | the Login from step 4                     |
+   | `SMTP_PASS` | the SMTP key from step 4                  |
+   | `MAIL_FROM` | `Talaan <the Gmail you verified>`         |
+   | `APP_URL`   | your website's address, no `/` at the end |
+
+6. **Test it**: open Forgot password on the live site, enter your own email, and check the inbox (and the spam folder the first time).
+
+Gmail may put the first emails in spam because they come through Brevo. Marking one as "Not spam" usually fixes it.
 
 ---
 
@@ -279,21 +321,31 @@ On the website, `useCurrentUser()` asks `GET /api/auth/me` once and every page s
 
 All routes start with `/api`. Errors always look like `{ "message": "…", "errors": { "field": ["…"] } }`.
 
-| Method | Route                | Login? | What                                                        |
-| ------ | -------------------- | ------ | ----------------------------------------------------------- |
-| GET    | `/api/health`        | no     | `{ ok: true }` when the API can reach the database          |
-| POST   | `/api/auth/register` | no     | `{ username, email, password }` → 201 `{ user }`, signed in |
-| POST   | `/api/auth/login`    | no     | `{ login, password }` → `{ user }`                          |
-| GET    | `/api/auth/me`       | yes    | `{ user }`, or 401                                          |
-| POST   | `/api/auth/logout`   | no     | 204                                                         |
+| Method | Route                               | Login? | What                                                                   |
+| ------ | ----------------------------------- | ------ | ---------------------------------------------------------------------- |
+| GET    | `/api/health`                       | no     | `{ ok: true }` when the API can reach the database                     |
+| POST   | `/api/auth/register`                | no     | `{ name, email, password, consent: true }` → 201 `{ user }`, signed in |
+| POST   | `/api/auth/login`                   | no     | `{ email, password }` → `{ user }`                                     |
+| GET    | `/api/auth/me`                      | yes    | `{ user, locked }`, or 401                                             |
+| POST   | `/api/auth/activity`                | yes    | 204; keeps the session from locking                                    |
+| POST   | `/api/auth/lock`                    | yes    | 204; "Lock Talaan now"                                                 |
+| POST   | `/api/auth/unlock`                  | yes    | `{ password }` → `{ user }`                                            |
+| POST   | `/api/auth/logout`                  | no     | 204                                                                    |
+| POST   | `/api/auth/password-reset/request`  | no     | `{ email }` → 202, the same answer for every email                     |
+| POST   | `/api/auth/password-reset/check`    | no     | `{ email, code }` → 204                                                |
+| POST   | `/api/auth/password-reset/complete` | no     | `{ email, code, password }` → 204, every device signed out             |
+| PUT    | `/api/account/password`             | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out     |
+| PUT    | `/api/account/security`             | yes    | `{ lockAfterMinutes }` → `{ user }`                                    |
 
-| Status | When                                                        |
-| ------ | ----------------------------------------------------------- |
-| 400    | The form didn't pass validation (`errors` says which field) |
-| 401    | Not signed in, or wrong sign-in                             |
-| 404    | Not found                                                   |
-| 409    | Username or email already taken                             |
-| 429    | Too many sign-in or register tries                          |
+| Status | When                                                             |
+| ------ | ---------------------------------------------------------------- |
+| 400    | The form didn't pass validation (`errors` says which field)      |
+| 401    | Not signed in, or wrong sign-in                                  |
+| 423    | Signed in, but locked: enter the password again (`locked: true`) |
+| 404    | Not found                                                        |
+| 409    | Email already has an account                                     |
+| 429    | Too many tries (`Retry-After` says how many seconds to wait)     |
+| 503    | Forgot password, but email isn't set up on the server            |
 
 ---
 

@@ -20,6 +20,13 @@ export class ApiError extends Error {
 
 type Method = "GET" | "POST" | "PUT" | "DELETE";
 
+// Called when the API answers 423 Locked: nobody used the website for a while,
+// so the app shows its lock screen. Set once in main.tsx.
+let onLocked: (() => void) | null = null;
+export function setLockedHandler(handler: (() => void) | null) {
+  onLocked = handler;
+}
+
 // Every call to the API goes through here. The browser sends the login cookie by itself
 // (same address in production; Vite forwards /api in development).
 export async function request<T>(
@@ -41,6 +48,8 @@ export async function request<T>(
       "Couldn't reach the server. Check your connection and try again.",
     );
   }
+
+  if (response.status === 423) onLocked?.();
 
   if (!response.ok) {
     let data: Partial<ApiErrorBody> = {};

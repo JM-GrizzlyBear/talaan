@@ -7,16 +7,18 @@
   /* Change these to rebrand the whole app */
   --color-brand: #0e7c6b;
   --color-brand-hover: #0b6457;
+  --color-brand-soft: #e3f2ef;
+  --color-deep: #0e3b36;
   --color-page: #f5f6f3;
-  --color-edge: #d1d5db;
-  --color-muted: #4b5563;
+  --color-edge: #d6dcd4;
+  --color-muted: #5a6672;
   --color-danger: #b42318;
   --color-danger-soft: #fef3f2;
 }
 
 body {
   background-color: var(--color-page);
-  color: #111827;
+  color: #12263a;
   font-family: var(--font-sans);
 }
 

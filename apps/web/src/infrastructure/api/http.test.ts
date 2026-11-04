@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, request } from "./http";
+import { ApiError, request, setLockedHandler } from "./http";
 
 function answer(status: number, body?: unknown) {
   return vi.fn(
@@ -48,6 +48,21 @@ describe("calling the API", () => {
     );
     const error = await request("/api/example").catch((e: unknown) => e);
     expect(error).toMatchObject({ status: 0 });
+  });
+
+  it("tells the app when the API says the website is locked", async () => {
+    const locked = vi.fn();
+    setLockedHandler(locked);
+    vi.stubGlobal(
+      "fetch",
+      answer(423, { message: "Talaan is locked", locked: true }),
+    );
+    const error = await request("/api/auth/activity", "POST").catch(
+      (e: unknown) => e,
+    );
+    expect(locked).toHaveBeenCalledOnce();
+    expect(error).toMatchObject({ status: 423 });
+    setLockedHandler(null);
   });
 
   it("returns nothing for 204 No Content", async () => {

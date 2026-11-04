@@ -11,7 +11,7 @@ export function HomePage() {
       <TalaanLogo className="size-16" />
       <h1 className="text-3xl font-bold">Welcome to Talaan</h1>
       <p className="text-muted">
-        {user ? `Signed in as @${user.username}. ` : ""}Every X-ray, lab result
+        {user ? `Hi, ${user.name.split(" ")[0]}. ` : ""}Every X-ray, lab result
         and prescription for your family, and where the paper is.
       </p>
       <p className="text-muted">

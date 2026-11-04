@@ -1,19 +1,29 @@
 import { buildApp } from "./buildApp.js";
 import { readEnv } from "./config/env.js";
 import { createPool } from "./infrastructure/database/pool.js";
+import { SmtpAccountEmails } from "./infrastructure/email/SmtpAccountEmails.js";
 import { BcryptPasswordHasher } from "./infrastructure/security/BcryptPasswordHasher.js";
+import { HmacSecretCodes } from "./infrastructure/security/HmacSecretCodes.js";
 import { SystemClock } from "./infrastructure/time/SystemClock.js";
 
 const env = readEnv();
 const pool = createPool(env.databaseUrl);
 
+if (!env.smtp) {
+  console.warn(
+    "SMTP_HOST isn't set: Forgot password can't send codes. See apps/api/.env.example.",
+  );
+}
+
 const app = buildApp({
   pool,
   sessionSecret: env.sessionSecret,
   passwordHasher: new BcryptPasswordHasher(),
+  secretCodes: new HmacSecretCodes(env.sessionSecret),
+  emails: env.smtp ? new SmtpAccountEmails(env.smtp) : null,
   clock: new SystemClock(),
   secureCookie: env.secureCookie,
-  trustProxy: env.isProduction,
+  trustProxy: env.trustProxy,
   webDistDir: env.webDistDir,
 });
 

@@ -1,9 +1,12 @@
 import { Navigate, Outlet, useLocation } from "react-router";
-import { useCurrentUser } from "../../../application/auth/useAuth";
+import { useSession } from "../../../application/auth/useAuth";
+import { LockScreen } from "../../pages/LockScreen";
+import { IdleWatcher } from "../auth/IdleWatcher";
 
-// Pages inside this route need a login; anyone else goes to /login and comes back after
+// Pages inside this route need a sign-in; anyone else goes to /login and comes back after.
+// A locked session sees the lock screen instead of the page.
 export function RequireAuth() {
-  const { data: user, isPending } = useCurrentUser();
+  const { data: session, isPending } = useSession();
   const location = useLocation();
 
   if (isPending) {
@@ -13,7 +16,13 @@ export function RequireAuth() {
       </p>
     );
   }
-  if (!user)
+  if (!session)
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  return <Outlet />;
+  if (session.locked) return <LockScreen user={session.user} />;
+  return (
+    <>
+      <IdleWatcher lockAfterMinutes={session.user.lockAfterMinutes} />
+      <Outlet />
+    </>
+  );
 }
