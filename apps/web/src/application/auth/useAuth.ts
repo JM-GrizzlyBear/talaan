@@ -1,55 +1,98 @@
-import type { LoginInput, PublicUser, RegisterInput } from "@talaan/shared";
+import type {
+  LoginInput,
+  PublicUser,
+  RegisterInput,
+  SessionInfo,
+} from "@talaan/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  fetchCurrentUser,
+  fetchSession,
+  lockSession,
   logIn,
   logOut,
   register,
+  unlockSession,
 } from "../../infrastructure/api/authApi";
 
-export const CURRENT_USER_KEY = ["auth", "me"] as const;
+export const SESSION_KEY = ["auth", "me"] as const;
 
-// Who is logged in (null: nobody). Every page reads this one cached answer.
-export function useCurrentUser() {
+// Who is signed in and whether the website is locked (null: nobody).
+// Every page reads this one cached answer.
+export function useSession() {
   return useQuery({
-    queryKey: CURRENT_USER_KEY,
-    queryFn: async () => await fetchCurrentUser(),
+    queryKey: SESSION_KEY,
+    queryFn: async () => await fetchSession(),
     staleTime: Infinity,
     retry: false,
   });
 }
 
-function useSetUser() {
+// Just the signed-in person (null: nobody)
+export function useCurrentUser() {
+  const session = useSession();
+  return { ...session, data: session.data?.user ?? null };
+}
+
+function useSetSession() {
   const queryClient = useQueryClient();
-  return (user: PublicUser | null) => {
-    // Forget the previous user's data (their notes), but keep the login answer the pages watch
+  return (session: SessionInfo | null) => {
+    // Forget the previous person's data, but keep the sign-in answer the pages watch
     queryClient.removeQueries({
-      predicate: (query) => query.queryKey[0] !== CURRENT_USER_KEY[0],
+      predicate: (query) => query.queryKey[0] !== SESSION_KEY[0],
     });
-    queryClient.setQueryData(CURRENT_USER_KEY, user);
+    queryClient.setQueryData(SESSION_KEY, session);
   };
 }
 
+// Updates the cached session without forgetting anything else
+export function useUpdateSession() {
+  const queryClient = useQueryClient();
+  return (update: (session: SessionInfo) => SessionInfo) => {
+    queryClient.setQueryData<SessionInfo | null>(SESSION_KEY, (session) =>
+      session ? update(session) : session,
+    );
+  };
+}
+
+const signedIn = (user: PublicUser): SessionInfo => ({ user, locked: false });
+
 export function useRegister() {
-  const setUser = useSetUser();
+  const setSession = useSetSession();
   return useMutation({
     mutationFn: async (input: RegisterInput) => await register(input),
-    onSuccess: setUser,
+    onSuccess: (user) => setSession(signedIn(user)),
   });
 }
 
 export function useLogIn() {
-  const setUser = useSetUser();
+  const setSession = useSetSession();
   return useMutation({
     mutationFn: async (input: LoginInput) => await logIn(input),
-    onSuccess: setUser,
+    onSuccess: (user) => setSession(signedIn(user)),
   });
 }
 
 export function useLogOut() {
-  const setUser = useSetUser();
+  const setSession = useSetSession();
   return useMutation({
     mutationFn: async () => await logOut(),
-    onSuccess: () => setUser(null),
+    onSuccess: () => setSession(null),
+  });
+}
+
+export function useLock() {
+  const update = useUpdateSession();
+  return useMutation({
+    mutationFn: async () => await lockSession(),
+    // Lock the screen even if the request failed: the API locks on its own too
+    onSettled: () => update((session) => ({ ...session, locked: true })),
+  });
+}
+
+export function useUnlock() {
+  const update = useUpdateSession();
+  return useMutation({
+    mutationFn: async (password: string) => await unlockSession(password),
+    onSuccess: (user) => update(() => signedIn(user)),
   });
 }

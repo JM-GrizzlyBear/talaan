@@ -1,3 +1,4 @@
+import type { LockAfterMinutes } from "@talaan/shared";
 import type { Pool } from "pg";
 import type { User } from "../../domain/user/User.js";
 import type {
@@ -7,21 +8,32 @@ import type {
 
 interface UserRow {
   id: string;
-  username: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
   email: string;
   password_hash: string;
+  lock_after_minutes: number;
+  privacy_consent_at: Date;
+  password_changed_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
 
-const COLUMNS = "id, username, email, password_hash, created_at, updated_at";
+const COLUMNS =
+  "id, first_name, middle_name, last_name, email, password_hash, lock_after_minutes, privacy_consent_at, password_changed_at, created_at, updated_at";
 
 function toUser(row: UserRow): User {
   return {
     id: row.id,
-    username: row.username,
+    firstName: row.first_name,
+    middleName: row.middle_name,
+    lastName: row.last_name,
     email: row.email,
     passwordHash: row.password_hash,
+    lockAfterMinutes: row.lock_after_minutes as LockAfterMinutes,
+    privacyConsentAt: row.privacy_consent_at,
+    passwordChangedAt: row.password_changed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -42,20 +54,42 @@ export class PostgresUserRepository implements UserRepository {
     return await this.findOne("id", id);
   }
 
-  async findByUsername(username: string) {
-    return await this.findOne("username", username);
-  }
-
   async findByEmail(email: string) {
     return await this.findOne("email", email);
   }
 
   async create(user: NewUser) {
     const result = await this.pool.query<UserRow>(
-      `insert into users (username, email, password_hash)
-       values ($1, $2, $3)
+      `insert into users (first_name, middle_name, last_name, email, password_hash, privacy_consent_at)
+       values ($1, $2, $3, $4, $5, $6)
        returning ${COLUMNS}`,
-      [user.username, user.email, user.passwordHash],
+      [
+        user.firstName,
+        user.middleName,
+        user.lastName,
+        user.email,
+        user.passwordHash,
+        user.privacyConsentAt,
+      ],
+    );
+    return toUser(result.rows[0]);
+  }
+
+  async updatePassword(id: string, passwordHash: string, changedAt: Date) {
+    await this.pool.query(
+      `update users
+          set password_hash = $2, password_changed_at = $3, updated_at = $3
+        where id = $1`,
+      [id, passwordHash, changedAt],
+    );
+  }
+
+  async updateLockAfter(id: string, minutes: LockAfterMinutes) {
+    const result = await this.pool.query<UserRow>(
+      `update users set lock_after_minutes = $2, updated_at = now()
+        where id = $1
+        returning ${COLUMNS}`,
+      [id, minutes],
     );
     return toUser(result.rows[0]);
   }

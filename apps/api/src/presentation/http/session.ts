@@ -1,12 +1,20 @@
+import { DEFAULT_LOCK_AFTER_MINUTES } from "@talaan/shared";
 import connectPgSimple from "connect-pg-simple";
 import type { Request } from "express";
 import session from "express-session";
 import type { Pool } from "pg";
+import type { SafeUser } from "../../domain/user/User.js";
+import { isLockDue } from "../../domain/user/rules.js";
 
-// What's stored in a session: only who is logged in
+// What's stored in a session: who is signed in, and what the idle lock needs
 declare module "express-session" {
   interface SessionData {
     userId: string;
+    // When this browser last used the API (milliseconds)
+    lastSeenAt: number;
+    // Signed in, but the password is needed again
+    locked: boolean;
+    lockAfterMinutes: number;
   }
 }
 
@@ -33,12 +41,15 @@ export function createSessionMiddleware(options: {
   });
 }
 
-// A brand-new session id at login, so an id planted before login is useless (session fixation)
-export async function startSession(req: Request, userId: string) {
+// A brand-new session id at sign-in, so an id planted before sign-in is useless (session fixation)
+export async function startSession(req: Request, user: SafeUser, now: number) {
   await new Promise<void>((resolve, reject) => {
     req.session.regenerate((error) => (error ? reject(error) : resolve()));
   });
-  req.session.userId = userId;
+  req.session.userId = user.id;
+  req.session.lastSeenAt = now;
+  req.session.locked = false;
+  req.session.lockAfterMinutes = user.lockAfterMinutes;
 }
 
 // Deletes the session from Postgres, so the old cookie stops working
@@ -46,4 +57,24 @@ export async function endSession(req: Request) {
   await new Promise<void>((resolve, reject) => {
     req.session.destroy((error) => (error ? reject(error) : resolve()));
   });
+}
+
+// Locks the session when nobody used it for too long. Returns true when it's locked.
+export function checkIdleLock(req: Request, now: number) {
+  const s = req.session;
+  if (s.locked) return true;
+  const lockAfter = s.lockAfterMinutes ?? DEFAULT_LOCK_AFTER_MINUTES;
+  if (isLockDue(s.lastSeenAt ?? now, now, lockAfter)) {
+    s.locked = true;
+    return true;
+  }
+  return false;
+}
+
+// Counts this request as activity. Saved at most once a minute, so the session
+// row isn't rewritten on every single request.
+export function markActive(req: Request, now: number) {
+  if (now - (req.session.lastSeenAt ?? 0) >= 60 * 1000) {
+    req.session.lastSeenAt = now;
+  }
 }

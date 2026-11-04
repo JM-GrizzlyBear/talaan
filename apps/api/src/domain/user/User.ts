@@ -1,20 +1,40 @@
+import type { LockAfterMinutes } from "@talaan/shared";
+
 export interface User {
   id: string;
-  username: string;
+  firstName: string;
+  // null when the person has no middle name
+  middleName: string | null;
+  lastName: string;
   email: string;
   passwordHash: string;
+  lockAfterMinutes: LockAfterMinutes;
+  privacyConsentAt: Date;
+  passwordChangedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// Everything except the password hash: safe to send to the browser
-export type SafeUser = Omit<User, "passwordHash" | "updatedAt">;
+// Everything the browser may see: no password hash
+export type SafeUser = Pick<
+  User,
+  | "id"
+  | "firstName"
+  | "middleName"
+  | "lastName"
+  | "email"
+  | "lockAfterMinutes"
+  | "createdAt"
+>;
 
 export function toSafeUser(user: User): SafeUser {
   return {
     id: user.id,
-    username: user.username,
+    firstName: user.firstName,
+    middleName: user.middleName,
+    lastName: user.lastName,
     email: user.email,
+    lockAfterMinutes: user.lockAfterMinutes,
     createdAt: user.createdAt,
   };
 }

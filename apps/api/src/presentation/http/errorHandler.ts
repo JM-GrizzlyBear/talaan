@@ -2,10 +2,15 @@ import type { ApiErrorBody } from "@talaan/shared";
 import type { ErrorRequestHandler, RequestHandler } from "express";
 import { ZodError, z } from "zod";
 import {
+  EmailNotSetUpError,
+  ResetCodeError,
+} from "../../domain/passwordReset/errors.js";
+import {
   EmailTakenError,
   InvalidCredentialsError,
   NotLoggedInError,
-  UsernameTakenError,
+  SessionLockedError,
+  WrongPasswordError,
 } from "../../domain/user/errors.js";
 
 function send(
@@ -35,13 +40,6 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     });
     return;
   }
-  if (error instanceof UsernameTakenError) {
-    send(res, 409, {
-      message: error.message,
-      errors: { username: [error.message] },
-    });
-    return;
-  }
   if (error instanceof EmailTakenError) {
     send(res, 409, {
       message: error.message,
@@ -54,6 +52,29 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     error instanceof NotLoggedInError
   ) {
     send(res, 401, { message: error.message });
+    return;
+  }
+  // 423 Locked: the website shows its lock screen
+  if (error instanceof SessionLockedError) {
+    send(res, 423, { message: error.message, locked: true });
+    return;
+  }
+  if (error instanceof WrongPasswordError) {
+    send(res, 400, {
+      message: error.message,
+      errors: { [error.field]: [error.message] },
+    });
+    return;
+  }
+  if (error instanceof ResetCodeError) {
+    send(res, 400, {
+      message: error.message,
+      errors: { code: [error.message] },
+    });
+    return;
+  }
+  if (error instanceof EmailNotSetUpError) {
+    send(res, 503, { message: error.message });
     return;
   }
   // express.json(): body isn't valid JSON (400) or is too big (413)

@@ -1,52 +1,147 @@
 import { z } from "zod";
 
 export const AUTH_LIMITS = {
-  usernameMin: 3,
-  usernameMax: 25,
-  passwordMin: 8,
+  nameMax: 50,
+  emailMax: 255,
+  passwordMin: 10,
   passwordMax: 72, // bcrypt only uses the first 72 bytes
 } as const;
 
-export const registerSchema = z.object({
-  username: z
+// Forgot password: a 6-digit code sent by email
+export const RESET_CODE = {
+  length: 6,
+  minutes: 15,
+  maxTries: 3,
+} as const;
+
+// How long the website waits, with nobody using it, before it locks
+export const LOCK_AFTER_MINUTES = [5, 15, 30, 60] as const;
+export type LockAfterMinutes = (typeof LOCK_AFTER_MINUTES)[number];
+export const DEFAULT_LOCK_AFTER_MINUTES: LockAfterMinutes = 15;
+
+const email = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(AUTH_LIMITS.emailMax, `At most ${AUTH_LIMITS.emailMax} characters`)
+  .email("Enter an email address like juan@example.com");
+
+const newPassword = z
+  .string()
+  .min(
+    AUTH_LIMITS.passwordMin,
+    `At least ${AUTH_LIMITS.passwordMin} characters`,
+  )
+  .max(
+    AUTH_LIMITS.passwordMax,
+    `At most ${AUTH_LIMITS.passwordMax} characters`,
+  );
+
+const currentPassword = z
+  .string()
+  .min(1, "Enter your password")
+  .max(AUTH_LIMITS.passwordMax);
+
+const namePart = (label: string) =>
+  z
     .string()
     .trim()
-    .toLowerCase()
-    .min(
-      AUTH_LIMITS.usernameMin,
-      `At least ${AUTH_LIMITS.usernameMin} characters`,
-    )
-    .max(
-      AUTH_LIMITS.usernameMax,
-      `At most ${AUTH_LIMITS.usernameMax} characters`,
-    )
-    .regex(/^[a-z0-9_]+$/, "Only letters, numbers and _"),
-  email: z.string().trim().toLowerCase().email("Enter a valid email"),
-  password: z
+    .min(1, `Enter your ${label}`)
+    .max(AUTH_LIMITS.nameMax, `At most ${AUTH_LIMITS.nameMax} characters`);
+
+export const registerSchema = z.object({
+  firstName: namePart("first name"),
+  // Optional: not everyone has one. Empty means none.
+  middleName: z
     .string()
-    .min(
-      AUTH_LIMITS.passwordMin,
-      `At least ${AUTH_LIMITS.passwordMin} characters`,
-    )
-    .max(
-      AUTH_LIMITS.passwordMax,
-      `At most ${AUTH_LIMITS.passwordMax} characters`,
-    ),
+    .trim()
+    .max(AUTH_LIMITS.nameMax, `At most ${AUTH_LIMITS.nameMax} characters`)
+    .default(""),
+  lastName: namePart("last name"),
+  email,
+  password: newPassword,
+  // The Data Privacy Act asks for clear consent before keeping health records
+  consent: z.literal(true, {
+    error: "Tick the box to agree before Talaan keeps health records",
+  }),
 });
 
 export const loginSchema = z.object({
-  // A username or an email address
-  login: z.string().trim().toLowerCase().min(1, "Required"),
-  password: z.string().min(1, "Required").max(AUTH_LIMITS.passwordMax),
+  email: z.string().trim().toLowerCase().min(1, "Enter your email"),
+  password: currentPassword,
+});
+
+export const passwordResetRequestSchema = z.object({ email });
+
+export const passwordResetCodeSchema = z.object({
+  email,
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Enter the 6 digits from the email"),
+});
+
+export const passwordResetCompleteSchema = passwordResetCodeSchema.extend({
+  password: newPassword,
+});
+
+export const unlockSchema = z.object({ password: currentPassword });
+
+export const changePasswordSchema = z.object({
+  currentPassword,
+  newPassword,
+});
+
+export const securitySettingsSchema = z.object({
+  lockAfterMinutes: z.union(
+    LOCK_AFTER_MINUTES.map((minutes) => z.literal(minutes)),
+    { error: `Choose ${LOCK_AFTER_MINUTES.join(", ")} minutes` },
+  ),
 });
 
 export type RegisterInput = z.input<typeof registerSchema>;
 export type LoginInput = z.input<typeof loginSchema>;
+export type PasswordResetRequestInput = z.input<
+  typeof passwordResetRequestSchema
+>;
+export type PasswordResetCodeInput = z.input<typeof passwordResetCodeSchema>;
+export type PasswordResetCompleteInput = z.input<
+  typeof passwordResetCompleteSchema
+>;
+export type UnlockInput = z.input<typeof unlockSchema>;
+export type ChangePasswordInput = z.input<typeof changePasswordSchema>;
+export type SecuritySettingsInput = z.input<typeof securitySettingsSchema>;
 
-// What the API sends back about the logged-in user (never the password hash)
+// What the API sends back about the signed-in user (never the password hash)
 export interface PublicUser {
   id: string;
-  username: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
   email: string;
+  lockAfterMinutes: LockAfterMinutes;
   createdAt: string;
+}
+
+// GET /api/auth/me. "locked": signed in, but the password is needed again
+// because nobody used the website for a while.
+export interface SessionInfo {
+  user: PublicUser;
+  locked: boolean;
+}
+
+// The same answer whether or not the email has an account
+export const RESET_REQUESTED_MESSAGE =
+  "If that email has a Talaan account, we sent a 6-digit code to it.";
+
+// "Juan Santos dela Cruz", or "Juan dela Cruz" without a middle name
+export function fullName(person: {
+  firstName: string;
+  middleName?: string | null;
+  lastName: string;
+}) {
+  return [person.firstName, person.middleName, person.lastName]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
 }
