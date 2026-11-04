@@ -244,12 +244,13 @@ This builds the production image, waits for Postgres, runs the migrations and st
 
 ### Root `.env` (used by docker compose)
 
-| Variable            | Example                | Meaning                                          |
-| ------------------- | ---------------------- | ------------------------------------------------ |
-| `POSTGRES_USER`     | `talaan`               | Database user created by Docker                  |
-| `POSTGRES_PASSWORD` | `pick_a_password`      | Its password (letters, numbers, `_`; no `@ : /`) |
-| `POSTGRES_DB`       | `talaan`               | Database name                                    |
-| `SESSION_SECRET`    | `openssl rand -hex 32` | Only for Option B (the app container)            |
+| Variable            | Example                | Meaning                                            |
+| ------------------- | ---------------------- | -------------------------------------------------- |
+| `POSTGRES_USER`     | `talaan`               | Database user created by Docker                    |
+| `POSTGRES_PASSWORD` | `pick_a_password`      | Its password (letters, numbers, `_`; no `@ : /`)   |
+| `POSTGRES_DB`       | `talaan`               | Database name                                      |
+| `POSTGRES_PORT`     | `5432`                 | Port on your computer; use `5433` if 5432 is taken |
+| `SESSION_SECRET`    | `openssl rand -hex 32` | Only for Option B (the app container)              |
 
 ### `apps/api/.env` (used by the API and dbmate)
 
@@ -448,15 +449,16 @@ git push -u origin feat/something
 
 ## Troubleshooting
 
-| Problem                                                 | Fix                                                                                                                                                      |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `turbo: command not found`                              | `pnpm add -g turbo`                                                                                                                                      |
-| dbmate: connection refused on `[::1]:5432`              | Start Docker Desktop and `docker compose up -d db`; use `127.0.0.1` in `DATABASE_URL`                                                                    |
-| `password authentication failed`                        | `DATABASE_URL` doesn't match `.env`, or the database was created with old values: `docker compose down -v`, then `docker compose up -d db`               |
-| Port 5432 already in use                                | Another Postgres is running (another project?): stop it, or change `"5432:5432"` to `"5433:5432"` in `docker-compose.yml` and the port in `DATABASE_URL` |
-| `Cannot find module '@talaan/shared'`                   | `turbo run build` (the shared package must be built first)                                                                                               |
-| `SESSION_SECRET must be at least 32 characters`         | `openssl rand -hex 32` and paste the result                                                                                                              |
-| A 500 error right after pulling new code                | A migration hasn't run: `turbo run db:migrate`                                                                                                           |
-| Logged out after every request in Docker or on a server | Plain `http`: set `COOKIE_SECURE=false`; behind a proxy with HTTPS, keep it `true`                                                                       |
-| `Set TEST_DATABASE_URL (or DATABASE_URL …)` in tests    | Create `apps/api/.env`, or run tests through `turbo run` (it passes these variables on)                                                                  |
-| CI fails but it works on Windows                        | File name case: Linux sees `HomePage.tsx` and `homepage.tsx` as different files                                                                          |
+| Problem                                                   | Fix                                                                                                                                                                                              |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `turbo: command not found`                                | `pnpm add -g turbo`                                                                                                                                                                              |
+| dbmate: connection refused on `[::1]:5432`                | Start Docker Desktop and `docker compose up -d db`; use `127.0.0.1` in `DATABASE_URL`                                                                                                            |
+| `password authentication failed`                          | `DATABASE_URL` doesn't match `.env`, or the database was created with old values: `docker compose down -v`, then `docker compose up -d db`                                                       |
+| Port 5432 already in use                                  | Another Postgres is running (another project?): stop it, or change `"5432:5432"` to `"5433:5432"` in `docker-compose.yml` and the port in `DATABASE_URL`                                         |
+| `Bind for 0.0.0.0:5432 failed: port is already allocated` | Another database uses port 5432. Stop it (`docker ps`, then `docker stop <name>`), or set `POSTGRES_PORT=5433` in `.env` and use `:5433` in `DATABASE_URL`, then `docker compose up -d db` again |
+| `Cannot find module '@talaan/shared'`                     | `turbo run build` (the shared package must be built first)                                                                                                                                       |
+| `SESSION_SECRET must be at least 32 characters`           | `openssl rand -hex 32` and paste the result                                                                                                                                                      |
+| A 500 error right after pulling new code                  | A migration hasn't run: `turbo run db:migrate`                                                                                                                                                   |
+| Logged out after every request in Docker or on a server   | Plain `http`: set `COOKIE_SECURE=false`; behind a proxy with HTTPS, keep it `true`                                                                                                               |
+| `Set TEST_DATABASE_URL (or DATABASE_URL …)` in tests      | Create `apps/api/.env`, or run tests through `turbo run` (it passes these variables on)                                                                                                          |
+| CI fails but it works on Windows                          | File name case: Linux sees `HomePage.tsx` and `homepage.tsx` as different files                                                                                                                  |
