@@ -1,4 +1,5 @@
 import {
+  fullName,
   loginSchema,
   passwordResetCodeSchema,
   registerSchema,
@@ -10,19 +11,24 @@ describe("shared form rules (used by the API and the website)", () => {
   it("sign up: trims, lowercases the email, and needs the consent", () => {
     expect(
       registerSchema.parse({
-        name: "  Juan dela Cruz ",
+        firstName: "  Juan ",
+        middleName: " Santos ",
+        lastName: " dela Cruz ",
         email: " Juan@X.COM ",
         password: "1234567890",
         consent: true,
       }),
     ).toEqual({
-      name: "Juan dela Cruz",
+      firstName: "Juan",
+      middleName: "Santos",
+      lastName: "dela Cruz",
       email: "juan@x.com",
       password: "1234567890",
       consent: true,
     });
     const noConsent = registerSchema.safeParse({
-      name: "Juan",
+      firstName: "Juan",
+      lastName: "dela Cruz",
       email: "juan@x.com",
       password: "1234567890",
       consent: false,
@@ -33,12 +39,41 @@ describe("shared form rules (used by the API and the website)", () => {
   it("sign up: passwords need at least 10 characters", () => {
     expect(
       registerSchema.safeParse({
-        name: "Juan",
+        firstName: "Juan",
+        lastName: "dela Cruz",
         email: "juan@x.com",
         password: "123456789",
         consent: true,
       }).success,
     ).toBe(false);
+  });
+
+  it("sign up: first and last name are needed, the middle name isn't", () => {
+    const base = { email: "juan@x.com", password: "1234567890", consent: true };
+    expect(
+      registerSchema.safeParse({
+        ...base,
+        firstName: "Juan",
+        lastName: "dela Cruz",
+      }).data?.middleName,
+    ).toBe("");
+    expect(
+      registerSchema.safeParse({ ...base, firstName: "Juan", lastName: " " })
+        .success,
+    ).toBe(false);
+  });
+
+  it("full name: joins the parts and skips a missing middle name", () => {
+    expect(
+      fullName({
+        firstName: "Juan",
+        middleName: "Santos",
+        lastName: "dela Cruz",
+      }),
+    ).toBe("Juan Santos dela Cruz");
+    expect(
+      fullName({ firstName: "Ana", middleName: null, lastName: "Reyes" }),
+    ).toBe("Ana Reyes");
   });
 
   it("sign in: needs both fields", () => {

@@ -46,7 +46,7 @@ export function authRoutes(deps: {
   });
 
   // Who is signed in, and whether the website is locked. Answers even when
-  // locked, so the lock screen can greet the person by name.
+  // locked, so the lock screen can show who is signed in.
   router.get("/auth/me", async (req, res) => {
     if (!req.session.userId) throw new NotLoggedInError();
     const user = await deps.getCurrentUser.execute(req.session.userId);

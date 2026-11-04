@@ -8,7 +8,9 @@ import type {
 
 interface UserRow {
   id: string;
-  name: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
   email: string;
   password_hash: string;
   lock_after_minutes: number;
@@ -19,12 +21,14 @@ interface UserRow {
 }
 
 const COLUMNS =
-  "id, name, email, password_hash, lock_after_minutes, privacy_consent_at, password_changed_at, created_at, updated_at";
+  "id, first_name, middle_name, last_name, email, password_hash, lock_after_minutes, privacy_consent_at, password_changed_at, created_at, updated_at";
 
 function toUser(row: UserRow): User {
   return {
     id: row.id,
-    name: row.name,
+    firstName: row.first_name,
+    middleName: row.middle_name,
+    lastName: row.last_name,
     email: row.email,
     passwordHash: row.password_hash,
     lockAfterMinutes: row.lock_after_minutes as LockAfterMinutes,
@@ -56,10 +60,17 @@ export class PostgresUserRepository implements UserRepository {
 
   async create(user: NewUser) {
     const result = await this.pool.query<UserRow>(
-      `insert into users (name, email, password_hash, privacy_consent_at)
-       values ($1, $2, $3, $4)
+      `insert into users (first_name, middle_name, last_name, email, password_hash, privacy_consent_at)
+       values ($1, $2, $3, $4, $5, $6)
        returning ${COLUMNS}`,
-      [user.name, user.email, user.passwordHash, user.privacyConsentAt],
+      [
+        user.firstName,
+        user.middleName,
+        user.lastName,
+        user.email,
+        user.passwordHash,
+        user.privacyConsentAt,
+      ],
     );
     return toUser(result.rows[0]);
   }

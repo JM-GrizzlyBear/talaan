@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const AUTH_LIMITS = {
-  nameMax: 80,
+  nameMax: 50,
   emailMax: 255,
   passwordMin: 10,
   passwordMax: 72, // bcrypt only uses the first 72 bytes
@@ -11,7 +11,7 @@ export const AUTH_LIMITS = {
 export const RESET_CODE = {
   length: 6,
   minutes: 15,
-  maxTries: 5,
+  maxTries: 3,
 } as const;
 
 // How long the website waits, with nobody using it, before it locks
@@ -42,12 +42,22 @@ const currentPassword = z
   .min(1, "Enter your password")
   .max(AUTH_LIMITS.passwordMax);
 
-export const registerSchema = z.object({
-  name: z
+const namePart = (label: string) =>
+  z
     .string()
     .trim()
-    .min(1, "Enter your name")
-    .max(AUTH_LIMITS.nameMax, `At most ${AUTH_LIMITS.nameMax} characters`),
+    .min(1, `Enter your ${label}`)
+    .max(AUTH_LIMITS.nameMax, `At most ${AUTH_LIMITS.nameMax} characters`);
+
+export const registerSchema = z.object({
+  firstName: namePart("first name"),
+  // Optional: not everyone has one. Empty means none.
+  middleName: z
+    .string()
+    .trim()
+    .max(AUTH_LIMITS.nameMax, `At most ${AUTH_LIMITS.nameMax} characters`)
+    .default(""),
+  lastName: namePart("last name"),
   email,
   password: newPassword,
   // The Data Privacy Act asks for clear consent before keeping health records
@@ -105,7 +115,9 @@ export type SecuritySettingsInput = z.input<typeof securitySettingsSchema>;
 // What the API sends back about the signed-in user (never the password hash)
 export interface PublicUser {
   id: string;
-  name: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
   email: string;
   lockAfterMinutes: LockAfterMinutes;
   createdAt: string;
@@ -121,3 +133,15 @@ export interface SessionInfo {
 // The same answer whether or not the email has an account
 export const RESET_REQUESTED_MESSAGE =
   "If that email has a Talaan account, we sent a 6-digit code to it.";
+
+// "Juan Santos dela Cruz", or "Juan dela Cruz" without a middle name
+export function fullName(person: {
+  firstName: string;
+  middleName?: string | null;
+  lastName: string;
+}) {
+  return [person.firstName, person.middleName, person.lastName]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
+}

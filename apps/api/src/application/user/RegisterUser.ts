@@ -6,7 +6,9 @@ import type { Clock } from "../ports/Clock.js";
 import type { PasswordHasher } from "../ports/PasswordHasher.js";
 
 export interface RegisterUserInput {
-  name: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
   email: string;
   password: string;
 }
@@ -24,7 +26,9 @@ export class RegisterUser {
     if (await this.users.findByEmail(email)) throw new EmailTakenError();
 
     const user = await this.users.create({
-      name: input.name.trim(),
+      firstName: input.firstName.trim(),
+      middleName: input.middleName?.trim() || null,
+      lastName: input.lastName.trim(),
       email,
       passwordHash: await this.passwords.hash(input.password),
       privacyConsentAt: this.clock.now(),

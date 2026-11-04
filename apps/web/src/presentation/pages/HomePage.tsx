@@ -11,8 +11,8 @@ export function HomePage() {
       <TalaanLogo className="size-16" />
       <h1 className="text-3xl font-bold">Welcome to Talaan</h1>
       <p className="text-muted">
-        {user ? `Hi, ${user.name.split(" ")[0]}. ` : ""}Every X-ray, lab result
-        and prescription for your family, and where the paper is.
+        {user ? `Hi, ${user.firstName}. ` : ""}Every X-ray, lab result and
+        prescription for your family, and where the paper is.
       </p>
       <p className="text-muted">
         Coming next: records, scanning and uploads, places with QR labels,

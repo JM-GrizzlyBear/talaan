@@ -32,7 +32,7 @@ export class RequestPasswordReset {
       expiresAt: resetCodeExpiry(this.clock.now()),
     });
     await this.emails.sendPasswordResetCode(
-      { email: user.email, name: user.name },
+      { email: user.email, firstName: user.firstName },
       code,
     );
   }

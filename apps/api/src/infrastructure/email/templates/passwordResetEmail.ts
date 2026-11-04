@@ -4,7 +4,7 @@ import { box, codeBlock, escapeHtml, layout, paragraph } from "./layout.js";
 
 export function passwordResetEmail(to: EmailRecipient, code: string) {
   const subject = `${code} is your Talaan code`;
-  const name = escapeHtml(to.name);
+  const name = escapeHtml(to.firstName);
 
   const html = layout({
     title: "Reset your password",
@@ -27,7 +27,7 @@ export function passwordResetEmail(to: EmailRecipient, code: string) {
   });
 
   const text = [
-    `Hi ${to.name},`,
+    `Hi ${to.firstName},`,
     "",
     "Someone asked to reset your Talaan password. If it was you, enter this code:",
     "",

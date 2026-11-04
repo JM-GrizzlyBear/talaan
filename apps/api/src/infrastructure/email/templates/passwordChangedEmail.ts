@@ -33,7 +33,7 @@ export function passwordChangedEmail(
     title: "Your password was changed",
     preview: `Your password was changed on ${when}.`,
     body: [
-      paragraph(`Hi ${escapeHtml(to.name)},`),
+      paragraph(`Hi ${escapeHtml(to.firstName)},`),
       paragraph(
         `The password for <strong>${escapeHtml(to.email)}</strong> was changed on <strong>${escapeHtml(when)}</strong>. Other phones and computers were signed out.`,
       ),
@@ -47,7 +47,7 @@ export function passwordChangedEmail(
   });
 
   const text = [
-    `Hi ${to.name},`,
+    `Hi ${to.firstName},`,
     "",
     `The password for ${to.email} was changed on ${when}. Other phones and computers were signed out.`,
     "",

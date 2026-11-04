@@ -2,7 +2,9 @@ import type { LockAfterMinutes } from "@talaan/shared";
 import type { User } from "./User.js";
 
 export interface NewUser {
-  name: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
   email: string;
   passwordHash: string;
   privacyConsentAt: Date;

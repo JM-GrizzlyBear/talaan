@@ -68,7 +68,9 @@ function fakeCodes(): ResetCodeRepository & { all: Map<string, ResetCode> } {
 
 const maria: User = {
   id: "u1",
-  name: "Maria",
+  firstName: "Maria",
+  middleName: null,
+  lastName: "Santos",
   email: "maria@example.com",
   passwordHash: "hashed:password1234",
   lockAfterMinutes: 15,
@@ -83,12 +85,16 @@ describe("RegisterUser", () => {
     const users = fakeUsers();
     const clock = new FakeClock();
     await new RegisterUser(users, plainHasher, clock).execute({
-      name: " Ben ",
+      firstName: " Ben ",
+      middleName: "  ",
+      lastName: " dela Cruz ",
       email: "Ben@X.com",
       password: "pw-1234567",
     });
     expect(users.all[0]).toMatchObject({
-      name: "Ben",
+      firstName: "Ben",
+      middleName: null,
+      lastName: "dela Cruz",
       email: "ben@x.com",
       passwordHash: "hashed:pw-1234567",
       privacyConsentAt: clock.now(),
@@ -103,7 +109,8 @@ describe("RegisterUser", () => {
     );
     await expect(
       register.execute({
-        name: "M",
+        firstName: "M",
+        lastName: "S",
         email: "MARIA@example.com",
         password: "pw-1234567",
       }),
@@ -180,7 +187,7 @@ describe("CheckResetCode", () => {
 
     await expect(
       check.execute({ email: maria.email, code: "999999" }),
-    ).rejects.toThrow("4 tries left");
+    ).rejects.toThrow("2 tries left");
     expect(
       (await check.execute({ email: maria.email, code: "123456" })).id,
     ).toBe("u1");

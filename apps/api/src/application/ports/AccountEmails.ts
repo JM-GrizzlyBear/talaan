@@ -1,6 +1,7 @@
 export interface EmailRecipient {
   email: string;
-  name: string;
+  // Emails greet people by their first name
+  firstName: string;
 }
 
 // The emails about someone's account. The use cases don't know how email is sent.

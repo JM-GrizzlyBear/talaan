@@ -14,9 +14,16 @@ export async function resetDatabase(pool: Pool) {
 
   for (const user of Object.values(USERS)) {
     await pool.query(
-      `insert into users (id, name, email, password_hash, privacy_consent_at)
-       values ($1, $2, $3, $4, now())`,
-      [user.id, user.name, user.email, PASSWORD_HASH],
+      `insert into users (id, first_name, middle_name, last_name, email, password_hash, privacy_consent_at)
+       values ($1, $2, $3, $4, $5, $6, now())`,
+      [
+        user.id,
+        user.firstName,
+        user.middleName,
+        user.lastName,
+        user.email,
+        PASSWORD_HASH,
+      ],
     );
   }
 }

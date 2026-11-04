@@ -9,7 +9,7 @@ import { normalizeEmail } from "../../domain/user/rules.js";
 import type { Clock } from "../ports/Clock.js";
 import type { SecretCodes } from "../ports/SecretCodes.js";
 
-// Step 2: is this the code we emailed? A wrong guess uses up one of the 5 tries.
+// Step 2: is this the code we emailed? A wrong guess uses up one of the 3 tries.
 export class CheckResetCode {
   constructor(
     private readonly users: UserRepository,

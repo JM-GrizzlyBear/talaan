@@ -10,7 +10,9 @@ describe("sign up", () => {
     const response = await browser.post("/api/auth/register").send(NEW_USER);
     expect(response.status).toBe(201);
     expect(response.body.user).toMatchObject({
-      name: "Ben dela Cruz",
+      firstName: "Ben",
+      middleName: "Garcia",
+      lastName: "dela Cruz",
       email: "ben@example.com",
       lockAfterMinutes: 15,
     });
@@ -19,9 +21,18 @@ describe("sign up", () => {
     const me = await browser.get("/api/auth/me");
     expect(me.status).toBe(200);
     expect(me.body).toMatchObject({
-      user: { name: "Ben dela Cruz" },
+      user: { firstName: "Ben", lastName: "dela Cruz" },
       locked: false,
     });
+  });
+
+  it("keeps the middle name optional", async () => {
+    const response = await t
+      .api()
+      .post("/api/auth/register")
+      .send({ ...NEW_USER, middleName: "   " });
+    expect(response.status).toBe(201);
+    expect(response.body.user.middleName).toBeNull();
   });
 
   it("records when the privacy consent was given", async () => {
@@ -61,12 +72,13 @@ describe("sign up", () => {
     const response = await t
       .api()
       .post("/api/auth/register")
-      .send({ name: " ", email: "nope", password: "short" });
+      .send({ firstName: " ", lastName: "", email: "nope", password: "short" });
     expect(response.status).toBe(400);
     expect(Object.keys(response.body.errors).sort()).toEqual([
       "consent",
       "email",
-      "name",
+      "firstName",
+      "lastName",
       "password",
     ]);
   });

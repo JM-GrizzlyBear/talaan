@@ -2,7 +2,10 @@ import type { LockAfterMinutes } from "@talaan/shared";
 
 export interface User {
   id: string;
-  name: string;
+  firstName: string;
+  // null when the person has no middle name
+  middleName: string | null;
+  lastName: string;
   email: string;
   passwordHash: string;
   lockAfterMinutes: LockAfterMinutes;
@@ -15,13 +18,21 @@ export interface User {
 // Everything the browser may see: no password hash
 export type SafeUser = Pick<
   User,
-  "id" | "name" | "email" | "lockAfterMinutes" | "createdAt"
+  | "id"
+  | "firstName"
+  | "middleName"
+  | "lastName"
+  | "email"
+  | "lockAfterMinutes"
+  | "createdAt"
 >;
 
 export function toSafeUser(user: User): SafeUser {
   return {
     id: user.id,
-    name: user.name,
+    firstName: user.firstName,
+    middleName: user.middleName,
+    lastName: user.lastName,
     email: user.email,
     lockAfterMinutes: user.lockAfterMinutes,
     createdAt: user.createdAt,

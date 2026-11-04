@@ -25,7 +25,7 @@ describe("forgot password: asking for a code", () => {
 
     expect(t.emails.codes).toHaveLength(1);
     expect(t.emails.codes[0]).toMatchObject({
-      to: { email, name: "Maria Santos" },
+      to: { email, firstName: "Maria" },
       code: "123456",
     });
   });
@@ -58,7 +58,7 @@ describe("forgot password: checking the code", () => {
     expect(response.status).toBe(204);
   });
 
-  it("counts wrong codes, and stops after 5", async () => {
+  it("counts wrong codes, and stops after 3", async () => {
     await requestCode();
     const check = (code: string) =>
       t.api().post("/api/auth/password-reset/check").send({ email, code });
@@ -66,9 +66,11 @@ describe("forgot password: checking the code", () => {
     const first = await check("000000");
     expect(first.status).toBe(400);
     expect(first.body.errors.code[0]).toBe(
-      "That code isn't right. 4 tries left.",
+      "That code isn't right. 2 tries left.",
     );
-    for (let i = 0; i < 4; i++) await check("000000");
+    await check("000000");
+    const third = await check("000000");
+    expect(third.body.message).toMatch(/stopped working/);
 
     const right = await check("123456");
     expect(right.status).toBe(400);
@@ -87,7 +89,7 @@ describe("forgot password: checking the code", () => {
 
   it("asking again replaces the old code and its tries", async () => {
     await requestCode();
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 3; i++) {
       await t
         .api()
         .post("/api/auth/password-reset/check")

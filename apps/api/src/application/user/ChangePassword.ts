@@ -42,7 +42,7 @@ export class ChangePassword {
     );
     await this.sessions.deleteAllSessions(user.id, input.sessionId);
     await this.emails?.sendPasswordChanged(
-      { email: user.email, name: user.name },
+      { email: user.email, firstName: user.firstName },
       now,
     );
   }

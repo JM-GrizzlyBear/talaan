@@ -14,7 +14,7 @@ describe("locking after nobody uses the website", () => {
     expect(me.status).toBe(200);
     expect(me.body).toMatchObject({
       locked: true,
-      user: { name: "Maria Santos" },
+      user: { firstName: "Maria", lastName: "Santos" },
     });
 
     const activity = await maria.post("/api/auth/activity");

@@ -10,7 +10,9 @@ import { buttonPrimary } from "../components/ui/styles";
 import { errorMessage, fieldError } from "../format/errorMessage";
 
 export function RegisterPage() {
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [consent, setConsent] = useState(false);
@@ -22,7 +24,9 @@ export function RegisterPage() {
     try {
       // The API checks the box too; "consent" must be exactly true
       await register.mutateAsync({
-        name,
+        firstName,
+        middleName,
+        lastName,
         email,
         password,
         consent: consent as true,
@@ -42,12 +46,28 @@ export function RegisterPage() {
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         {register.isError && <ErrorAlert message={errorMessage(error)} />}
         <TextField
-          label="Your name"
-          value={name}
-          onChange={setName}
-          autoComplete="name"
+          label="First name"
+          value={firstName}
+          onChange={setFirstName}
+          autoComplete="given-name"
           maxLength={AUTH_LIMITS.nameMax}
-          error={fieldError(error, "name")}
+          error={fieldError(error, "firstName")}
+        />
+        <TextField
+          label="Middle name (optional)"
+          value={middleName}
+          onChange={setMiddleName}
+          autoComplete="additional-name"
+          maxLength={AUTH_LIMITS.nameMax}
+          error={fieldError(error, "middleName")}
+        />
+        <TextField
+          label="Last name"
+          value={lastName}
+          onChange={setLastName}
+          autoComplete="family-name"
+          maxLength={AUTH_LIMITS.nameMax}
+          error={fieldError(error, "lastName")}
         />
         <TextField
           label="Email"

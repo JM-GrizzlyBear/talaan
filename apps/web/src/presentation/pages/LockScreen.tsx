@@ -1,4 +1,4 @@
-import type { PublicUser } from "@talaan/shared";
+import { fullName, type PublicUser } from "@talaan/shared";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useLogOut, useUnlock } from "../../application/auth/useAuth";
@@ -39,10 +39,10 @@ export function LockScreen({ user }: { user: PublicUser }) {
             aria-hidden="true"
             className="flex size-10 items-center justify-center rounded-full bg-brand-soft font-bold text-deep"
           >
-            {user.name.slice(0, 1).toUpperCase()}
+            {user.firstName.slice(0, 1).toUpperCase()}
           </span>
           <span className="flex min-w-0 flex-col text-sm">
-            <strong className="truncate">{user.name}</strong>
+            <strong className="truncate">{fullName(user)}</strong>
             <span className="truncate text-muted">{user.email}</span>
           </span>
         </div>

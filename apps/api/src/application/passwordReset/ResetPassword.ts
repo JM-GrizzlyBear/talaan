@@ -31,7 +31,7 @@ export class ResetPassword {
     await this.codes.remove(user.id);
     await this.sessions.deleteAllSessions(user.id);
     await this.emails?.sendPasswordChanged(
-      { email: user.email, name: user.name },
+      { email: user.email, firstName: user.firstName },
       now,
     );
   }

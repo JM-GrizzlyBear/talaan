@@ -25,7 +25,9 @@ describe("user rules", () => {
   it("never exposes the password hash", () => {
     const safe = toSafeUser({
       id: "u1",
-      name: "Maria",
+      firstName: "Maria",
+      middleName: null,
+      lastName: "Santos",
       email: "maria@example.com",
       passwordHash: "secret-hash",
       lockAfterMinutes: 15,
@@ -39,13 +41,13 @@ describe("user rules", () => {
 });
 
 describe("reset code rules", () => {
-  it("works for 15 minutes and 5 tries", () => {
+  it("works for 15 minutes and 3 tries", () => {
     const expiresAt = resetCodeExpiry(NOW);
     expect(expiresAt.getTime() - NOW.getTime()).toBe(minutes(15));
-    expect(isResetCodeUsable({ expiresAt, tries: 4 }, NOW)).toBe(true);
-    expect(isResetCodeUsable({ expiresAt, tries: 5 }, NOW)).toBe(false);
+    expect(isResetCodeUsable({ expiresAt, tries: 2 }, NOW)).toBe(true);
+    expect(isResetCodeUsable({ expiresAt, tries: 3 }, NOW)).toBe(false);
     expect(isResetCodeUsable({ expiresAt, tries: 0 }, expiresAt)).toBe(false);
-    expect(triesLeft(3)).toBe(2);
+    expect(triesLeft(1)).toBe(2);
     expect(triesLeft(9)).toBe(0);
   });
 });
