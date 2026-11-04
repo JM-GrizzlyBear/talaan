@@ -1,0 +1,7 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+allowBuilds:
+  esbuild: false
+# Exact versions only: pnpm add saves "1.2.3", never "^1.2.3"
+saveExact: true

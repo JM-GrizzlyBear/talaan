@@ -1,0 +1,29 @@
+{
+  "name": "pern-template",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Starter for PostgreSQL, Express, React and Node apps with Clean Architecture",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "check-types": "turbo run check-types",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "license": "MIT",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.8.1",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.8.1+sha512.f64ba907507f5ceafe06c8d38e6052d0179444580ec1279ddd5bfc11cb48aa8a2644b66598e07e761da84872a9fc57d5f902b87fa49d024198d558612aabbe45",
+  "type": "module",
+  "devDependencies": {
+    "prettier": "3.9.10",
+    "turbo": "2.11.5"
+  }
+}
