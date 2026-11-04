@@ -1,6 +1,6 @@
-import { resetCodeExpiry } from "../../domain/passwordReset/rules.js";
-import { EmailNotSetUpError } from "../../domain/passwordReset/errors.js";
-import type { ResetCodeRepository } from "../../domain/passwordReset/ResetCodeRepository.js";
+import { codeExpiry } from "../../domain/emailCode/rules.js";
+import { EmailNotSetUpError } from "../../domain/emailCode/errors.js";
+import type { EmailCodeRepository } from "../../domain/emailCode/EmailCodeRepository.js";
 import type { UserRepository } from "../../domain/user/UserRepository.js";
 import { normalizeEmail } from "../../domain/user/rules.js";
 import type { AccountEmails } from "../ports/AccountEmails.js";
@@ -12,7 +12,7 @@ import type { SecretCodes } from "../ports/SecretCodes.js";
 export class RequestPasswordReset {
   constructor(
     private readonly users: UserRepository,
-    private readonly codes: ResetCodeRepository,
+    private readonly codes: EmailCodeRepository,
     private readonly secrets: SecretCodes,
     private readonly clock: Clock,
     private readonly emails: AccountEmails | null,
@@ -29,7 +29,7 @@ export class RequestPasswordReset {
     await this.codes.replace({
       userId: user.id,
       codeHash: this.secrets.hash(code, user.id),
-      expiresAt: resetCodeExpiry(this.clock.now()),
+      expiresAt: codeExpiry(this.clock.now()),
     });
     await this.emails.sendPasswordResetCode(
       { email: user.email, firstName: user.firstName },

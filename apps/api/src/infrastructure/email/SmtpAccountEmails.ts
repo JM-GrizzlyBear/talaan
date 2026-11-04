@@ -5,6 +5,7 @@ import type {
 } from "../../application/ports/AccountEmails.js";
 import { passwordChangedEmail } from "./templates/passwordChangedEmail.js";
 import { passwordResetEmail } from "./templates/passwordResetEmail.js";
+import { signInCodeEmail } from "./templates/signInCodeEmail.js";
 
 export interface SmtpSettings {
   host: string;
@@ -46,6 +47,15 @@ export class SmtpAccountEmails implements AccountEmails {
 
   async sendPasswordResetCode(to: EmailRecipient, code: string) {
     await this.send(to.email, passwordResetEmail(to, code));
+  }
+
+  async sendSignInCode(to: EmailRecipient, code: string) {
+    await this.send(
+      to.email,
+      signInCodeEmail(to, code, {
+        forgotPasswordUrl: `${this.settings.appUrl}/forgot-password`,
+      }),
+    );
   }
 
   async sendPasswordChanged(to: EmailRecipient, changedAt: Date) {

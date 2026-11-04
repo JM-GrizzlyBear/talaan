@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { USERS } from "../fixtures/users.js";
+import { PASSWORD, USERS } from "../fixtures/users.js";
 import { useTestApp } from "./support/testApp.js";
 
 // A server with no email service set up
@@ -15,5 +15,17 @@ describe("forgot password without an email service", () => {
       expect(response.status).toBe(503);
       expect(response.body.message).toMatch(/isn't set up/);
     }
+  });
+});
+
+describe("two-step sign-in without email", () => {
+  it("is skipped, so nobody gets locked out", async () => {
+    await t.pool.query("update users set two_step_enabled = true");
+    const response = await t
+      .api()
+      .post("/api/auth/login")
+      .send({ email: USERS.maria.email, password: PASSWORD });
+    expect(response.status).toBe(200);
+    expect(response.body.twoStep).toBe(false);
   });
 });

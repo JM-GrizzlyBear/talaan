@@ -9,6 +9,10 @@ export interface User {
   email: string;
   passwordHash: string;
   lockAfterMinutes: LockAfterMinutes;
+  // Asks for an emailed code when signing in on a browser that isn't remembered
+  twoStepEnabled: boolean;
+  // How many passkeys the person has added
+  passkeyCount: number;
   privacyConsentAt: Date;
   passwordChangedAt: Date | null;
   createdAt: Date;
@@ -24,6 +28,8 @@ export type SafeUser = Pick<
   | "lastName"
   | "email"
   | "lockAfterMinutes"
+  | "twoStepEnabled"
+  | "passkeyCount"
   | "createdAt"
 >;
 
@@ -35,6 +41,8 @@ export function toSafeUser(user: User): SafeUser {
     lastName: user.lastName,
     email: user.email,
     lockAfterMinutes: user.lockAfterMinutes,
+    twoStepEnabled: user.twoStepEnabled,
+    passkeyCount: user.passkeyCount,
     createdAt: user.createdAt,
   };
 }

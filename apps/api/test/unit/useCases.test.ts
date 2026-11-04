@@ -3,13 +3,18 @@ import { CheckResetCode } from "../../src/application/passwordReset/CheckResetCo
 import { RequestPasswordReset } from "../../src/application/passwordReset/RequestPasswordReset.js";
 import type { PasswordHasher } from "../../src/application/ports/PasswordHasher.js";
 import { LogInUser } from "../../src/application/user/LogInUser.js";
+import { SendSignInCode } from "../../src/application/twoStep/SendSignInCode.js";
+import { TrustedBrowsers } from "../../src/application/twoStep/TrustedBrowsers.js";
 import { RegisterUser } from "../../src/application/user/RegisterUser.js";
-import type { ResetCode } from "../../src/domain/passwordReset/ResetCode.js";
-import type { ResetCodeRepository } from "../../src/domain/passwordReset/ResetCodeRepository.js";
+import { UpdateSecuritySettings } from "../../src/application/user/UpdateSecuritySettings.js";
+import type { EmailCode } from "../../src/domain/emailCode/EmailCode.js";
+import type { EmailCodeRepository } from "../../src/domain/emailCode/EmailCodeRepository.js";
 import {
   EmailNotSetUpError,
-  ResetCodeError,
-} from "../../src/domain/passwordReset/errors.js";
+  CodeError,
+} from "../../src/domain/emailCode/errors.js";
+import type { TrustedBrowser } from "../../src/domain/trustedBrowser/TrustedBrowser.js";
+import type { TrustedBrowserRepository } from "../../src/domain/trustedBrowser/TrustedBrowserRepository.js";
 import type { User } from "../../src/domain/user/User.js";
 import type {
   NewUser,
@@ -18,6 +23,7 @@ import type {
 import {
   EmailTakenError,
   InvalidCredentialsError,
+  WrongPasswordError,
 } from "../../src/domain/user/errors.js";
 import { FakeClock } from "../fixtures/clock.js";
 import { FakeEmails, FixedSecretCodes } from "../fixtures/fakes.js";
@@ -39,6 +45,8 @@ function fakeUsers(existing: User[] = []): UserRepository & { all: User[] } {
         ...user,
         id: `u${all.length + 1}`,
         lockAfterMinutes: 15,
+        twoStepEnabled: true,
+        passkeyCount: 0,
         passwordChangedAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -47,12 +55,19 @@ function fakeUsers(existing: User[] = []): UserRepository & { all: User[] } {
       return created;
     },
     updatePassword: async () => {},
-    updateLockAfter: async (id) => all.find((u) => u.id === id)!,
+    updateSecurity: async (id, settings) => {
+      const user = all.find((u) => u.id === id)!;
+      if (settings.lockAfterMinutes !== undefined)
+        user.lockAfterMinutes = settings.lockAfterMinutes;
+      if (settings.twoStepEnabled !== undefined)
+        user.twoStepEnabled = settings.twoStepEnabled;
+      return user;
+    },
   };
 }
 
-function fakeCodes(): ResetCodeRepository & { all: Map<string, ResetCode> } {
-  const all = new Map<string, ResetCode>();
+function fakeCodes(): EmailCodeRepository & { all: Map<string, EmailCode> } {
+  const all = new Map<string, EmailCode>();
   return {
     all,
     replace: async (code) => void all.set(code.userId, { ...code, tries: 0 }),
@@ -74,6 +89,8 @@ const maria: User = {
   email: "maria@example.com",
   passwordHash: "hashed:password1234",
   lockAfterMinutes: 15,
+  twoStepEnabled: false,
+  passkeyCount: 0,
   privacyConsentAt: new Date(),
   passwordChangedAt: null,
   createdAt: new Date(),
@@ -118,23 +135,147 @@ describe("RegisterUser", () => {
   });
 });
 
+function fakeTrusted(): TrustedBrowserRepository & { all: TrustedBrowser[] } {
+  const all: TrustedBrowser[] = [];
+  return {
+    all,
+    create: async (b) => {
+      const created: TrustedBrowser = {
+        ...b,
+        id: `00000000-0000-4000-8000-00000000000${all.length + 1}`,
+        createdAt: new Date(),
+        lastUsedAt: new Date(),
+      };
+      all.push(created);
+      return created;
+    },
+    find: async (id) => all.find((b) => b.id === id) ?? null,
+    touch: async () => {},
+    listActive: async (userId) => all.filter((b) => b.userId === userId),
+    remove: async () => true,
+    removeAll: async (userId) => {
+      for (let i = all.length - 1; i >= 0; i--)
+        if (all[i].userId === userId) all.splice(i, 1);
+    },
+  };
+}
+
+function logInSetup(user: User) {
+  const clock = new FakeClock();
+  const secrets = new FixedSecretCodes();
+  const emails = new FakeEmails();
+  const codes = fakeCodes();
+  const trusted = new TrustedBrowsers(fakeTrusted(), secrets, clock);
+  const logIn = new LogInUser(
+    fakeUsers([user]),
+    plainHasher,
+    trusted,
+    new SendSignInCode(codes, secrets, clock, emails),
+  );
+  return { logIn, trusted, emails, codes, clock };
+}
+
 describe("LogInUser", () => {
   it("accepts the right password and refuses the rest the same way", async () => {
-    const logIn = new LogInUser(fakeUsers([maria]), plainHasher);
-    expect(
-      (
-        await logIn.execute({
-          email: "Maria@example.com",
-          password: "password1234",
-        })
-      ).id,
-    ).toBe("u1");
+    const { logIn } = logInSetup(maria);
+    const result = await logIn.execute({
+      email: "Maria@example.com",
+      password: "password1234",
+    });
+    expect(result).toMatchObject({ kind: "signedIn", user: { id: "u1" } });
     await expect(
       logIn.execute({ email: maria.email, password: "nope" }),
     ).rejects.toThrow(InvalidCredentialsError);
     await expect(
       logIn.execute({ email: "ghost@example.com", password: "nope" }),
     ).rejects.toThrow(InvalidCredentialsError);
+  });
+
+  it("with two-step on, emails a code instead of signing in", async () => {
+    const { logIn, emails } = logInSetup({ ...maria, twoStepEnabled: true });
+    const result = await logIn.execute({
+      email: maria.email,
+      password: "password1234",
+    });
+    expect(result.kind).toBe("needsCode");
+    expect(emails.signInCodes).toHaveLength(1);
+  });
+
+  it("doesn't ask a remembered browser for a code, but asks another person's", async () => {
+    const { logIn, trusted, emails } = logInSetup({
+      ...maria,
+      twoStepEnabled: true,
+    });
+    const { cookie } = await trusted.remember("u1", "Chrome on Windows");
+    const signIn = (trustCookie: string) =>
+      logIn.execute({
+        email: maria.email,
+        password: "password1234",
+        trustCookie,
+      });
+
+    expect((await signIn(cookie)).kind).toBe("signedIn");
+    expect(emails.signInCodes).toHaveLength(0);
+    // Right id, wrong token
+    expect((await signIn(`${cookie.split(".")[0]}.not-the-token`)).kind).toBe(
+      "needsCode",
+    );
+    const other = await trusted.remember("u2", "Safari on iPhone");
+    expect((await signIn(other.cookie)).kind).toBe("needsCode");
+  });
+
+  it("asks a remembered browser again after 30 days", async () => {
+    const { logIn, trusted, clock } = logInSetup({
+      ...maria,
+      twoStepEnabled: true,
+    });
+    const { cookie } = await trusted.remember("u1", "Chrome on Windows");
+    clock.advance(31 * 24 * 60 * 60 * 1000);
+    const result = await logIn.execute({
+      email: maria.email,
+      password: "password1234",
+      trustCookie: cookie,
+    });
+    expect(result.kind).toBe("needsCode");
+  });
+
+  it("skips two-step when the server can't send email", async () => {
+    const clock = new FakeClock();
+    const logIn = new LogInUser(
+      fakeUsers([{ ...maria, twoStepEnabled: true }]),
+      plainHasher,
+      new TrustedBrowsers(fakeTrusted(), new FixedSecretCodes(), clock),
+      null,
+    );
+    const result = await logIn.execute({
+      email: maria.email,
+      password: "password1234",
+    });
+    expect(result.kind).toBe("signedIn");
+  });
+});
+
+describe("UpdateSecuritySettings", () => {
+  it("needs the password to turn two-step off, but not to turn it on", async () => {
+    const users = fakeUsers([{ ...maria, twoStepEnabled: true }]);
+    const update = new UpdateSecuritySettings(users, plainHasher);
+    await expect(
+      update.execute("u1", { twoStepEnabled: false }),
+    ).rejects.toThrow(WrongPasswordError);
+    await expect(
+      update.execute("u1", { twoStepEnabled: false, currentPassword: "nope" }),
+    ).rejects.toThrow(WrongPasswordError);
+    expect(
+      (
+        await update.execute("u1", {
+          twoStepEnabled: false,
+          currentPassword: "password1234",
+        })
+      ).twoStepEnabled,
+    ).toBe(false);
+    expect(
+      (await update.execute("u1", { twoStepEnabled: true })).twoStepEnabled,
+    ).toBe(true);
   });
 });
 
@@ -193,6 +334,6 @@ describe("CheckResetCode", () => {
     ).toBe("u1");
     await expect(
       check.execute({ email: "ghost@example.com", code: "123456" }),
-    ).rejects.toThrow(ResetCodeError);
+    ).rejects.toThrow(CodeError);
   });
 });

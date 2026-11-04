@@ -3,6 +3,7 @@ import type {
   PublicUser,
   RegisterInput,
   SessionInfo,
+  SignInCodeInput,
 } from "@talaan/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,7 +12,11 @@ import {
   logIn,
   logOut,
   register,
+  resendSignInCode,
+  signInWithPasskey,
+  submitSignInCode,
   unlockSession,
+  unlockWithPasskey,
 } from "../../infrastructure/api/authApi";
 
 export const SESSION_KEY = ["auth", "me"] as const;
@@ -64,10 +69,33 @@ export function useRegister() {
   });
 }
 
+// Signed in, or { twoStep: true }: the page then asks for the emailed code
 export function useLogIn() {
   const setSession = useSetSession();
   return useMutation({
     mutationFn: async (input: LoginInput) => await logIn(input),
+    onSuccess: (result) => {
+      if (!result.twoStep) setSession(signedIn(result.user));
+    },
+  });
+}
+
+export function useSignInCode() {
+  const setSession = useSetSession();
+  return useMutation({
+    mutationFn: async (input: SignInCodeInput) => await submitSignInCode(input),
+    onSuccess: (user) => setSession(signedIn(user)),
+  });
+}
+
+export function useResendSignInCode() {
+  return useMutation({ mutationFn: async () => await resendSignInCode() });
+}
+
+export function usePasskeySignIn() {
+  const setSession = useSetSession();
+  return useMutation({
+    mutationFn: async () => await signInWithPasskey(),
     onSuccess: (user) => setSession(signedIn(user)),
   });
 }
@@ -93,6 +121,14 @@ export function useUnlock() {
   const update = useUpdateSession();
   return useMutation({
     mutationFn: async (password: string) => await unlockSession(password),
+    onSuccess: (user) => update(() => signedIn(user)),
+  });
+}
+
+export function usePasskeyUnlock() {
+  const update = useUpdateSession();
+  return useMutation({
+    mutationFn: async () => await unlockWithPasskey(),
     onSuccess: (user) => update(() => signedIn(user)),
   });
 }

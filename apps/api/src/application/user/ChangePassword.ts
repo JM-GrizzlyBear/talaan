@@ -1,3 +1,4 @@
+import type { TrustedBrowsers } from "../twoStep/TrustedBrowsers.js";
 import type { UserRepository } from "../../domain/user/UserRepository.js";
 import {
   NotLoggedInError,
@@ -21,6 +22,7 @@ export class ChangePassword {
     private readonly users: UserRepository,
     private readonly passwords: PasswordHasher,
     private readonly sessions: SessionStore,
+    private readonly trustedBrowsers: TrustedBrowsers,
     private readonly clock: Clock,
     private readonly emails: AccountEmails | null,
   ) {}
@@ -41,6 +43,8 @@ export class ChangePassword {
       now,
     );
     await this.sessions.deleteAllSessions(user.id, input.sessionId);
+    // A new password means starting over: every browser asks for a code again
+    await this.trustedBrowsers.forgetAll(user.id);
     await this.emails?.sendPasswordChanged(
       { email: user.email, firstName: user.firstName },
       now,

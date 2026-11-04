@@ -1,26 +1,45 @@
 import { fullName, type PublicUser } from "@talaan/shared";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router";
-import { useLogOut, useUnlock } from "../../application/auth/useAuth";
+import {
+  useLogOut,
+  usePasskeyUnlock,
+  useUnlock,
+} from "../../application/auth/useAuth";
+import { passkeysSupported } from "../../infrastructure/passkeys/devicePasskeys";
+import { PasskeyButton } from "../components/auth/PasskeyButton";
+import { Notice } from "../components/ui/Notice";
 import { TalaanLogo } from "../components/brand/TalaanLogo";
 import { ErrorAlert } from "../components/ui/ErrorAlert";
 import { TextField } from "../components/ui/TextField";
 import { buttonPrimary } from "../components/ui/styles";
-import { errorMessage, fieldError } from "../format/errorMessage";
+import {
+  errorMessage,
+  fieldError,
+  isPasskeyCancelled,
+} from "../format/errorMessage";
 
 // Shown instead of any page after nobody used the website for a while
 export function LockScreen({ user }: { user: PublicUser }) {
   const [password, setPassword] = useState("");
   const unlock = useUnlock();
+  const passkey = usePasskeyUnlock();
   const logOut = useLogOut();
+  const canUsePasskey = user.passkeyCount > 0 && passkeysSupported();
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    passkey.reset();
     try {
       await unlock.mutateAsync(password);
     } catch {
       // Shown below from unlock.error
     }
+  }
+
+  function handlePasskey() {
+    unlock.reset();
+    passkey.mutate();
   }
 
   const error = unlock.error;
@@ -32,7 +51,10 @@ export function LockScreen({ user }: { user: PublicUser }) {
         <h1 className="mt-4 text-2xl font-bold">Talaan is locked</h1>
         <p className="mt-2 text-muted">
           Nobody used Talaan for {user.lockAfterMinutes} minutes, so we locked
-          your records. Enter your password to continue.
+          your records.{" "}
+          {canUsePasskey
+            ? "Use your passkey or enter your password to continue."
+            : "Enter your password to continue."}
         </p>
         <div className="mt-5 flex items-center gap-3 rounded-xl bg-page px-3 py-2.5">
           <span
@@ -46,6 +68,26 @@ export function LockScreen({ user }: { user: PublicUser }) {
             <span className="truncate text-muted">{user.email}</span>
           </span>
         </div>
+        {canUsePasskey && (
+          <div className="mt-5 flex flex-col gap-3">
+            {passkey.isError &&
+              (isPasskeyCancelled(passkey.error) ? (
+                <Notice>{errorMessage(passkey.error)}</Notice>
+              ) : (
+                <ErrorAlert message={errorMessage(passkey.error)} />
+              ))}
+            <PasskeyButton
+              onClick={handlePasskey}
+              pending={passkey.isPending}
+              label="Unlock with a passkey"
+            />
+            <p className="flex items-center gap-3 text-xs font-semibold tracking-wide text-muted uppercase">
+              <span className="h-px flex-1 bg-edge" />
+              or your password
+              <span className="h-px flex-1 bg-edge" />
+            </p>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4">
           {unlock.isError && !passwordError && (
             <ErrorAlert message={errorMessage(error)} />
@@ -56,7 +98,7 @@ export function LockScreen({ user }: { user: PublicUser }) {
             value={password}
             onChange={setPassword}
             autoComplete="current-password"
-            autoFocus
+            autoFocus={!canUsePasskey}
             required
             error={passwordError}
           />

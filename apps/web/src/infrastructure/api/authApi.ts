@@ -1,9 +1,12 @@
 import type {
   LoginInput,
+  LoginResult,
   PublicUser,
   RegisterInput,
   SessionInfo,
+  SignInCodeInput,
 } from "@talaan/shared";
+import { signWithPasskeyOnDevice } from "../passkeys/devicePasskeys";
 import { ApiError, request } from "./http";
 
 // Who is signed in and whether the website is locked, or null when nobody is
@@ -25,11 +28,46 @@ export async function register(input: RegisterInput) {
   return data.user;
 }
 
+// Signed in, or (two-step) a code was emailed first
 export async function logIn(input: LoginInput) {
+  return await request<LoginResult>("/api/auth/login", "POST", input);
+}
+
+export async function submitSignInCode(input: SignInCodeInput) {
   const data = await request<{ user: PublicUser }>(
-    "/api/auth/login",
+    "/api/auth/login/code",
     "POST",
     input,
+  );
+  return data.user;
+}
+
+export async function resendSignInCode() {
+  await request<void>("/api/auth/login/resend", "POST");
+}
+
+// The API makes a challenge, the device signs it, the API checks the signature
+export async function signInWithPasskey() {
+  const options = await request<unknown>("/api/auth/passkey/options", "POST");
+  const response = await signWithPasskeyOnDevice(options);
+  const data = await request<{ user: PublicUser }>(
+    "/api/auth/passkey/verify",
+    "POST",
+    { response },
+  );
+  return data.user;
+}
+
+export async function unlockWithPasskey() {
+  const options = await request<unknown>(
+    "/api/auth/unlock/passkey/options",
+    "POST",
+  );
+  const response = await signWithPasskeyOnDevice(options);
+  const data = await request<{ user: PublicUser }>(
+    "/api/auth/unlock/passkey",
+    "POST",
+    { response },
   );
   return data.user;
 }

@@ -18,10 +18,15 @@ export class FixedSecretCodes extends HmacSecretCodes {
 // Keeps every email instead of sending it
 export class FakeEmails implements AccountEmails {
   readonly codes: { to: EmailRecipient; code: string }[] = [];
+  readonly signInCodes: { to: EmailRecipient; code: string }[] = [];
   readonly changed: { to: EmailRecipient; at: Date }[] = [];
 
   async sendPasswordResetCode(to: EmailRecipient, code: string) {
     this.codes.push({ to, code });
+  }
+
+  async sendSignInCode(to: EmailRecipient, code: string) {
+    this.signInCodes.push({ to, code });
   }
 
   async sendPasswordChanged(to: EmailRecipient, at: Date) {
@@ -30,6 +35,7 @@ export class FakeEmails implements AccountEmails {
 
   clear() {
     this.codes.length = 0;
+    this.signInCodes.length = 0;
     this.changed.length = 0;
   }
 }

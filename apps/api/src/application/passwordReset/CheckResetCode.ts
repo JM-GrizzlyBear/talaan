@@ -1,9 +1,6 @@
-import { ResetCodeError } from "../../domain/passwordReset/errors.js";
-import type { ResetCodeRepository } from "../../domain/passwordReset/ResetCodeRepository.js";
-import {
-  isResetCodeUsable,
-  triesLeft,
-} from "../../domain/passwordReset/rules.js";
+import { CodeError } from "../../domain/emailCode/errors.js";
+import type { EmailCodeRepository } from "../../domain/emailCode/EmailCodeRepository.js";
+import { isCodeUsable, triesLeft } from "../../domain/emailCode/rules.js";
 import type { UserRepository } from "../../domain/user/UserRepository.js";
 import { normalizeEmail } from "../../domain/user/rules.js";
 import type { Clock } from "../ports/Clock.js";
@@ -13,7 +10,7 @@ import type { SecretCodes } from "../ports/SecretCodes.js";
 export class CheckResetCode {
   constructor(
     private readonly users: UserRepository,
-    private readonly codes: ResetCodeRepository,
+    private readonly codes: EmailCodeRepository,
     private readonly secrets: SecretCodes,
     private readonly clock: Clock,
   ) {}
@@ -21,12 +18,12 @@ export class CheckResetCode {
   async execute(input: { email: string; code: string }) {
     const user = await this.users.findByEmail(normalizeEmail(input.email));
     const saved = user ? await this.codes.find(user.id) : null;
-    if (!user || !saved || !isResetCodeUsable(saved, this.clock.now())) {
-      throw ResetCodeError.unusable();
+    if (!user || !saved || !isCodeUsable(saved, this.clock.now())) {
+      throw CodeError.unusable();
     }
     if (!this.secrets.matches(input.code.trim(), user.id, saved.codeHash)) {
       const used = await this.codes.addTry(user.id);
-      throw ResetCodeError.wrong(triesLeft(used));
+      throw CodeError.wrong(triesLeft(used));
     }
     return user;
   }

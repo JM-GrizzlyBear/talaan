@@ -36,9 +36,11 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
   - Sign up with your first name, middle name (optional), last name, email, a password of at least 10 characters, and the privacy consent (the time it was given is saved)
   - Sign in with your email; passwords hashed with bcrypt
   - Sessions stored in Postgres, sent as an HTTP-only cookie
+- **Two-step sign-in** (on for new accounts): on a browser Talaan doesn't know yet, the password is followed by a 6-digit code from email. "Remember this browser" skips the code there for 30 days. Turning it off needs the password.
+- **Passkeys**: add one on the Security page, then sign in or unlock with Face ID, a fingerprint, Windows Hello or the phone's PIN. No password, no code. Talaan keeps only the public key.
 - **Forgot password**: a 6-digit code by email (15 minutes, 3 tries, only a keyed hash is stored), then a new password; every device is signed out and a "password changed" email is sent
 - **Lock after idle time**: the website locks after 5, 15, 30 or 60 minutes with nobody using it (15 by default). The password unlocks it; the API enforces the lock too.
-- **Security page**: choose the lock time, lock now, change the password (other devices are signed out)
+- **Security page**: passkeys (add, remove), two-step sign-in on or off, the lock time, lock now, change the password, remembered browsers (forget one or all), and "Sign out everywhere else"
 - **Protection**: separate rate limits for sign-in, unlock, password reset and codes per email; security headers (helmet); the same answers whether or not an email has an account
 - **Protected pages**: signed-out visitors are sent to `/login` and come back after signing in
 - **One source of truth for forms**: the same zod rules check the form in the browser and the request in the API
@@ -138,17 +140,17 @@ talaan/
 ├── apps/
 │   ├── api/                 # Express API
 │   │   ├── .env.example     # copy to apps/api/.env → the API's settings
-│   │   ├── db/migrations/   # SQL migrations (dbmate): users, session
+│   │   ├── db/migrations/   # SQL migrations (dbmate): users, session, codes, passkeys, remembered browsers
 │   │   ├── vitest.config.ts # two test projects: unit and integration
 │   │   ├── test/
-│   │   │   ├── fixtures/            # test data: users, a fake clock
+│   │   │   ├── fixtures/            # test data: users, a fake clock, fake emails, a fake passkey device
 │   │   │   ├── unit/                # rules, schemas, use cases with fakes (no database)
 │   │   │   └── integration/         # real HTTP requests against the test database
 │   │   │       └── support/         # test database setup, seed, logged-in test browsers
 │   │   └── src/
-│   │       ├── domain/              # user/: entity, rules, errors, repository interface
-│   │       ├── application/         # user/ use cases; ports/ (PasswordHasher, Clock)
-│   │       ├── infrastructure/      # database/ (Postgres repositories), security/ (bcrypt), time/
+│   │       ├── domain/              # user/, emailCode/, passkey/, trustedBrowser/: entities, rules, errors, repository interfaces
+│   │       ├── application/         # use cases: user/, passwordReset/, twoStep/, passkey/; ports/ (PasswordHasher, Clock, PasskeyCeremonies, …)
+│   │       ├── infrastructure/      # database/ (Postgres repositories), security/ (bcrypt, HMAC), email/, webauthn/, time/
 │   │       ├── presentation/http/   # routes/, middleware/ (requireAuth, rateLimit), session, errors
 │   │       ├── config/env.ts        # reads and checks the environment variables
 │   │       ├── buildApp.ts          # composition root (also used by the tests)
@@ -157,12 +159,12 @@ talaan/
 │       ├── public/          # favicon and app icons (the Talaan logo)
 │       ├── vite.config.ts   # dev server: forwards /api to the API on port 4000
 │       └── src/
-│           ├── infrastructure/api/  # http.ts (fetch + ApiError), authApi
+│           ├── infrastructure/      # api/ (fetch + ApiError, authApi, accountApi), passkeys/ (the device prompt)
 │           ├── application/         # auth/ hooks (TanStack Query)
 │           ├── presentation/
 │           │   ├── components/      # brand/ (TalaanLogo), layout/, routing/ (RequireAuth, GuestOnly), ui/
-│           │   ├── pages/           # LoginPage, RegisterPage, HomePage
-│           │   └── format/          # dates and error messages (+ tests)
+│           │   ├── pages/           # LoginPage (password, code), RegisterPage, SecurityPage, LockScreen, …
+│           │   └── format/          # dates, error messages, passkey names (+ tests)
 │           ├── App.tsx              # routes
 │           └── index.css            # Tailwind and the theme colors
 └── packages/
@@ -254,22 +256,26 @@ This builds the production image, waits for Postgres, runs the migrations and st
 
 ### `apps/api/.env` (used by the API and dbmate)
 
-| Variable         | Required  | Example / meaning                                                                          |
-| ---------------- | --------- | ------------------------------------------------------------------------------------------ |
-| `PORT`           | no        | `4000`                                                                                     |
-| `DATABASE_URL`   | yes       | `postgres://talaan:pick_a_password@127.0.0.1:5432/talaan?sslmode=disable` (same as `.env`) |
-| `SESSION_SECRET` | yes       | at least 32 random characters: `openssl rand -hex 32`                                      |
-| `COOKIE_SECURE`  | no        | `true` in production by default (HTTPS-only cookie); `false` for plain http                |
-| `WEB_DIST_DIR`   | no        | Set by the Docker image: the built website the API should serve                            |
-| `TRUST_PROXY`    | no        | How many proxies sit in front: `0` locally, `1` behind Render, `2` behind Netlify → Render |
-| `SMTP_HOST`      | no        | Turns email on. `127.0.0.1` (Mailpit) locally, `smtp-relay.brevo.com` live                 |
-| `SMTP_PORT`      | no        | `1025` (Mailpit), `2525` on Render (its free plan blocks 25, 465 and 587)                  |
-| `SMTP_USER`      | no        | Brevo's SMTP login (looks like `xxxxxx@smtp-brevo.com`). Empty for Mailpit                 |
-| `SMTP_PASS`      | no        | Brevo's SMTP key. Empty for Mailpit. Only in your `.env` or Render's settings              |
-| `MAIL_FROM`      | with SMTP | `Talaan <your-new-sender@gmail.com>`, a sender verified on Brevo                           |
-| `APP_URL`        | with SMTP | The website's address for links in emails, e.g. `http://localhost:5173`                    |
+| Variable          | Required  | Example / meaning                                                                                                              |
+| ----------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `PORT`            | no        | `4000`                                                                                                                         |
+| `DATABASE_URL`    | yes       | `postgres://talaan:pick_a_password@127.0.0.1:5432/talaan?sslmode=disable` (same as `.env`)                                     |
+| `SESSION_SECRET`  | yes       | at least 32 random characters: `openssl rand -hex 32`                                                                          |
+| `COOKIE_SECURE`   | no        | `true` in production by default (HTTPS-only cookie); `false` for plain http                                                    |
+| `WEB_DIST_DIR`    | no        | Set by the Docker image: the built website the API should serve                                                                |
+| `TRUST_PROXY`     | no        | How many proxies sit in front: `0` locally, `1` behind Render, `2` behind Netlify → Render                                     |
+| `SMTP_HOST`       | no        | Turns email on. `127.0.0.1` (Mailpit) locally, `smtp-relay.brevo.com` live                                                     |
+| `SMTP_PORT`       | no        | `1025` (Mailpit), `2525` on Render (its free plan blocks 25, 465 and 587)                                                      |
+| `SMTP_USER`       | no        | Brevo's SMTP login (looks like `xxxxxx@smtp-brevo.com`). Empty for Mailpit                                                     |
+| `SMTP_PASS`       | no        | Brevo's SMTP key. Empty for Mailpit. Only in your `.env` or Render's settings                                                  |
+| `MAIL_FROM`       | with SMTP | `Talaan <your-new-sender@gmail.com>`, a sender verified on Brevo                                                               |
+| `APP_URL`         | live site | The website's address: links in emails, and passkeys belong to it. Defaults to `http://localhost:5173`; required in production |
+| `WEBAUTHN_RP_ID`  | no        | Overrides the passkey domain (normally the host of `APP_URL`, like `talaan.netlify.app`)                                       |
+| `WEBAUTHN_ORIGIN` | no        | Overrides the passkey origin (normally `APP_URL` without a path)                                                               |
 
-Without `SMTP_HOST`, everything works except Forgot password, which answers that email isn't set up yet.
+Without `SMTP_HOST`, everything works except Forgot password, which answers that email isn't set up yet, and two-step sign-in, which is skipped (nobody gets locked out of their account).
+
+Passkeys only work on the exact address in `APP_URL`. A passkey made on `http://localhost:5173` won't work on the live site, and the other way round. If you change the live address (for example a custom domain), people add their passkeys again.
 
 Use `127.0.0.1` instead of `localhost` in `DATABASE_URL` on Windows if dbmate says the connection was refused on `[::1]:5432`.
 
@@ -279,15 +285,18 @@ Use `127.0.0.1` instead of `localhost` in `DATABASE_URL` on Windows if dbmate sa
 
 1. **Sign up** (`POST /api/auth/register`): the API checks the form with `registerSchema` (first name, optional middle name, last name, email, password of at least 10 characters, and `consent: true`). It stores the email in lowercase, saves when the privacy consent was given, hashes the password with bcrypt (12 rounds) and signs the new person in.
 2. **Sign in** (`POST /api/auth/login`): the email and password are checked. A wrong password and an unknown email get the **same** answer, so nobody can find out which accounts exist.
+   - **Two-step**: when it's on and this browser isn't remembered, the answer is **202** `{ twoStep: true, email: "m•••a@example.com" }` and a 6-digit code is emailed. Nobody is signed in yet; the session only holds who is waiting for a code (15 minutes). `POST /api/auth/login/code` with the code signs in. Codes follow the Forgot password rules (15 minutes, 3 tries, HMAC-hashed) in their own table, `sign_in_codes`.
+   - **Remember this browser**: the browser gets a `talaan.tb` cookie (`HttpOnly`, `SameSite=Lax`, path `/api`, 30 days) holding a row id and a 256-bit random token; only a SHA-256 of the token is stored in `trusted_browsers`. A new password, "Forget", or 30 days ends it.
+   - **Passkeys** (WebAuthn, with `@simplewebauthn/server` and `@simplewebauthn/browser`): the API makes a one-time challenge and keeps it in the session for 5 minutes, the device signs it after Face ID, a fingerprint or its PIN, and the API checks the signature with the stored public key and that the key's counter went up. Talaan always asks for that check (`userVerification: "required"`), and passkeys are discoverable, so signing in needs no email. A passkey skips the emailed code: it's already something you have (the device) and something you are or know (face, finger, PIN).
 3. **Signing in starts a brand-new session.** The session is a row in the `session` table, and the browser gets a `talaan.sid` cookie:
    - `HttpOnly`: the page's JavaScript can't read it
    - `SameSite=Lax`
    - `Secure` in production: it's only sent over HTTPS
 4. **Protected API routes** use the `requireAuth(clock)` middleware and read the user's id from the session.
-5. **Idle lock**: the session remembers when this browser last used the API. After the person's chosen minutes (5, 15, 30 or 60) with nothing, protected routes answer **423 Locked** until `POST /api/auth/unlock` gets the right password. The website also watches for clicks, typing and scrolling: it locks itself after the same time, and while someone is reading it tells the API every 2 minutes (`POST /api/auth/activity`) so the API doesn't lock them out.
+5. **Idle lock**: the session remembers when this browser last used the API. After the person's chosen minutes (5, 15, 30 or 60) with nothing, protected routes answer **423 Locked** until `POST /api/auth/unlock` gets the right password (or `POST /api/auth/unlock/passkey` one of that person's passkeys). The website also watches for clicks, typing and scrolling: it locks itself after the same time, and while someone is reading it tells the API every 2 minutes (`POST /api/auth/activity`) so the API doesn't lock them out.
 6. **Forgot password** (3 steps): `request` emails a 6-digit code, `check` tests it, `complete` saves the new password. Codes last 15 minutes and 3 wrong tries; asking again replaces the old code. Only an HMAC of the code (keyed with `SESSION_SECRET` and the account id) is stored. A new password signs out every device and sends a "password changed" email.
 7. **Sign out** (`POST /api/auth/logout`) deletes the session row, so the old cookie stops working. It works while locked too.
-8. **Rate limits** (in memory, per 15 minutes, in `buildApp.ts`): 20 sign-in/sign-up tries per visitor, 20 unlock and password-change tries per person, 20 reset steps per visitor, and 3 codes per email address. Each has its own counter, because a family at home shares one IP address.
+8. **Rate limits** (in memory, per 15 minutes, in `buildApp.ts`): 20 sign-in/sign-up tries per visitor, 20 unlock and password-change tries per person, 20 reset steps per visitor, 3 codes per email address, and 3 new sign-in codes per person waiting for one. Each has its own counter, because a family at home shares one IP address.
 
 On the website, `useSession()` asks `GET /api/auth/me` once and every page shares that answer (`{ user, locked }`). `RequireAuth` protects pages and shows the lock screen when locked. Any 423 answer also switches to the lock screen. `GuestOnly` sends signed-in people away from the sign-in and sign-up pages.
 
@@ -322,31 +331,45 @@ Gmail may put the first emails in spam because they come through Brevo. Marking 
 
 All routes start with `/api`. Errors always look like `{ "message": "…", "errors": { "field": ["…"] } }`.
 
-| Method | Route                               | Login? | What                                                                                              |
-| ------ | ----------------------------------- | ------ | ------------------------------------------------------------------------------------------------- |
-| GET    | `/api/health`                       | no     | `{ ok: true }` when the API can reach the database                                                |
-| POST   | `/api/auth/register`                | no     | `{ firstName, middleName, lastName, email, password, consent: true }` → 201 `{ user }`, signed in |
-| POST   | `/api/auth/login`                   | no     | `{ email, password }` → `{ user }`                                                                |
-| GET    | `/api/auth/me`                      | yes    | `{ user, locked }`, or 401                                                                        |
-| POST   | `/api/auth/activity`                | yes    | 204; keeps the session from locking                                                               |
-| POST   | `/api/auth/lock`                    | yes    | 204; "Lock Talaan now"                                                                            |
-| POST   | `/api/auth/unlock`                  | yes    | `{ password }` → `{ user }`                                                                       |
-| POST   | `/api/auth/logout`                  | no     | 204                                                                                               |
-| POST   | `/api/auth/password-reset/request`  | no     | `{ email }` → 202, the same answer for every email                                                |
-| POST   | `/api/auth/password-reset/check`    | no     | `{ email, code }` → 204                                                                           |
-| POST   | `/api/auth/password-reset/complete` | no     | `{ email, code, password }` → 204, every device signed out                                        |
-| PUT    | `/api/account/password`             | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out                                |
-| PUT    | `/api/account/security`             | yes    | `{ lockAfterMinutes }` → `{ user }`                                                               |
+| Method | Route                               | Login? | What                                                                                                                   |
+| ------ | ----------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/health`                       | no     | `{ ok: true }` when the API can reach the database                                                                     |
+| POST   | `/api/auth/register`                | no     | `{ firstName, middleName, lastName, email, password, consent: true }` → 201 `{ user }`, signed in                      |
+| POST   | `/api/auth/login`                   | no     | `{ email, password }` → `{ twoStep: false, user }`, or 202 `{ twoStep: true, email }`                                  |
+| POST   | `/api/auth/login/code`              | no     | `{ code, rememberBrowser }` → `{ user }`, signed in                                                                    |
+| POST   | `/api/auth/login/resend`            | no     | 204; emails a new sign-in code                                                                                         |
+| POST   | `/api/auth/passkey/options`         | no     | The passkey prompt for the browser                                                                                     |
+| POST   | `/api/auth/passkey/verify`          | no     | `{ response }` → `{ user }`, signed in                                                                                 |
+| GET    | `/api/auth/me`                      | yes    | `{ user, locked }`, or 401                                                                                             |
+| POST   | `/api/auth/activity`                | yes    | 204; keeps the session from locking                                                                                    |
+| POST   | `/api/auth/lock`                    | yes    | 204; "Lock Talaan now"                                                                                                 |
+| POST   | `/api/auth/unlock`                  | yes    | `{ password }` → `{ user }`                                                                                            |
+| POST   | `/api/auth/unlock/passkey/options`  | yes    | The passkey prompt, only this person's passkeys                                                                        |
+| POST   | `/api/auth/unlock/passkey`          | yes    | `{ response }` → `{ user }`                                                                                            |
+| POST   | `/api/auth/logout`                  | no     | 204                                                                                                                    |
+| POST   | `/api/auth/password-reset/request`  | no     | `{ email }` → 202, the same answer for every email                                                                     |
+| POST   | `/api/auth/password-reset/check`    | no     | `{ email, code }` → 204                                                                                                |
+| POST   | `/api/auth/password-reset/complete` | no     | `{ email, code, password }` → 204, every device signed out                                                             |
+| PUT    | `/api/account/password`             | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out                                                     |
+| PUT    | `/api/account/security`             | yes    | `{ lockAfterMinutes?, twoStepEnabled?, currentPassword? }` → `{ user }` (turning two-step off needs `currentPassword`) |
+| GET    | `/api/account/passkeys`             | yes    | `{ passkeys }`: name, dates, synced                                                                                    |
+| POST   | `/api/account/passkeys/options`     | yes    | The prompt to make a new passkey                                                                                       |
+| POST   | `/api/account/passkeys`             | yes    | `{ name, response }` → 201 `{ passkey }`                                                                               |
+| DELETE | `/api/account/passkeys/:id`         | yes    | 204                                                                                                                    |
+| GET    | `/api/account/browsers`             | yes    | `{ browsers }`: remembered browsers, `current` marks this one                                                          |
+| DELETE | `/api/account/browsers/:id`         | yes    | 204; that browser gets the code again                                                                                  |
+| DELETE | `/api/account/browsers`             | yes    | 204; forget them all                                                                                                   |
+| POST   | `/api/account/sign-out-others`      | yes    | 204; every other browser and device is signed out                                                                      |
 
-| Status | When                                                             |
-| ------ | ---------------------------------------------------------------- |
-| 400    | The form didn't pass validation (`errors` says which field)      |
-| 401    | Not signed in, or wrong sign-in                                  |
-| 423    | Signed in, but locked: enter the password again (`locked: true`) |
-| 404    | Not found                                                        |
-| 409    | Email already has an account                                     |
-| 429    | Too many tries (`Retry-After` says how many seconds to wait)     |
-| 503    | Forgot password, but email isn't set up on the server            |
+| Status | When                                                                                                                                              |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | The form didn't pass validation (`errors` says which field), a code or passkey didn't work, or two-step sign-in timed out (`signInExpired: true`) |
+| 401    | Not signed in, or wrong sign-in                                                                                                                   |
+| 423    | Signed in, but locked: enter the password again (`locked: true`)                                                                                  |
+| 404    | Not found                                                                                                                                         |
+| 409    | Email already has an account                                                                                                                      |
+| 429    | Too many tries (`Retry-After` says how many seconds to wait)                                                                                      |
+| 503    | Forgot password, but email isn't set up on the server                                                                                             |
 
 ---
 
@@ -384,11 +407,11 @@ docker compose up -d db
 turbo run test
 ```
 
-| Suite           | Where                       | What it checks                                                             |
-| --------------- | --------------------------- | -------------------------------------------------------------------------- |
-| API unit        | `apps/api/test/unit`        | User rules, shared schemas, use cases with fake repositories (no database) |
-| API integration | `apps/api/test/integration` | Register, sign in, sign out, sessions, rate limit, errors                  |
-| Website unit    | `apps/web/src/**/*.test.ts` | The API client (`ApiError`), error messages, dates                         |
+| Suite           | Where                       | What it checks                                                                                                      |
+| --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| API unit        | `apps/api/test/unit`        | User rules, shared schemas, use cases with fake repositories (no database)                                          |
+| API integration | `apps/api/test/integration` | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), sessions, rate limit, errors |
+| Website unit    | `apps/web/src/**/*.test.ts` | The API client (`ApiError`), error messages, dates                                                                  |
 
 ### The test database
 
@@ -458,6 +481,8 @@ git push -u origin feat/something
 | `Bind for 0.0.0.0:5432 failed: port is already allocated` | Another database uses port 5432. Stop it (`docker ps`, then `docker stop <name>`), or set `POSTGRES_PORT=5433` in `.env` and use `:5433` in `DATABASE_URL`, then `docker compose up -d db` again |
 | `Cannot find module '@talaan/shared'`                     | `turbo run build` (the shared package must be built first)                                                                                                                                       |
 | `SESSION_SECRET must be at least 32 characters`           | `openssl rand -hex 32` and paste the result                                                                                                                                                      |
+| "Passkeys don't work on this address"                     | The page's address isn't `APP_URL`. Open the site from that address (locally `http://localhost:5173`, not `127.0.0.1`), or fix `APP_URL`                                                         |
+| No sign-in code arrives locally                           | Start Mailpit (`docker compose up -d mail`) and look at http://localhost:8025                                                                                                                    |
 | A 500 error right after pulling new code                  | A migration hasn't run: `turbo run db:migrate`                                                                                                                                                   |
 | Logged out after every request in Docker or on a server   | Plain `http`: set `COOKIE_SECURE=false`; behind a proxy with HTTPS, keep it `true`                                                                                                               |
 | `Set TEST_DATABASE_URL (or DATABASE_URL …)` in tests      | Create `apps/api/.env`, or run tests through `turbo run` (it passes these variables on)                                                                                                          |

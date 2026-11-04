@@ -6,6 +6,7 @@ import { createPool } from "../../../src/infrastructure/database/pool.js";
 import { BcryptPasswordHasher } from "../../../src/infrastructure/security/BcryptPasswordHasher.js";
 import { FakeClock } from "../../fixtures/clock.js";
 import { FakeEmails, FixedSecretCodes } from "../../fixtures/fakes.js";
+import { FakePasskeyCeremonies } from "../../fixtures/passkeys.js";
 import { PASSWORD, USERS, type SeededUser } from "../../fixtures/users.js";
 import { resetDatabase } from "./seed.js";
 import { testDatabaseUrl } from "./testDatabase.js";
@@ -16,6 +17,7 @@ export interface TestContext {
   clock: FakeClock;
   // Every email the app "sent"
   emails: FakeEmails;
+  passkeys: FakePasskeyCeremonies;
   // A fresh browser with no sign-in
   api: () => ReturnType<typeof request.agent>;
   // A browser signed in as a seeded user (it keeps their cookie)
@@ -28,6 +30,7 @@ export function useTestApp(
   options: {
     authLimit?: number;
     resetEmailLimit?: number;
+    signInCodeLimit?: number;
     withoutEmail?: boolean;
   } = {},
 ): TestContext {
@@ -37,17 +40,20 @@ export function useTestApp(
     context.pool = createPool(testDatabaseUrl());
     context.clock = new FakeClock();
     context.emails = new FakeEmails();
+    context.passkeys = new FakePasskeyCeremonies();
     context.app = buildApp({
       pool: context.pool,
       sessionSecret: "test-secret-that-is-at-least-32-characters-long",
       passwordHasher: new BcryptPasswordHasher(4),
       secretCodes: new FixedSecretCodes(),
       emails: options.withoutEmail ? null : context.emails,
+      passkeyCeremonies: context.passkeys,
       clock: context.clock,
       secureCookie: false,
       trustProxy: 0,
       authLimit: options.authLimit ?? 1000,
       resetEmailLimit: options.resetEmailLimit ?? 1000,
+      signInCodeLimit: options.signInCodeLimit ?? 1000,
     });
     context.api = () => request.agent(context.app);
     context.as = async (user) => {

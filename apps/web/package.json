@@ -12,8 +12,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@talaan/shared": "workspace:*",
+    "@simplewebauthn/browser": "14.0.0",
     "@tailwindcss/vite": "4.3.3",
+    "@talaan/shared": "workspace:*",
     "@tanstack/react-query": "5.104.1",
     "lucide-react": "1.50.0",
     "react": "19.3.0",
