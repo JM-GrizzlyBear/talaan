@@ -33,10 +33,10 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
 ## What's inside now
 
 - **Accounts**
-  - Sign up with your name, email, a password of at least 10 characters, and the privacy consent (the time it was given is saved)
+  - Sign up with your first name, middle name (optional), last name, email, a password of at least 10 characters, and the privacy consent (the time it was given is saved)
   - Sign in with your email; passwords hashed with bcrypt
   - Sessions stored in Postgres, sent as an HTTP-only cookie
-- **Forgot password**: a 6-digit code by email (15 minutes, 5 tries, only a keyed hash is stored), then a new password; every device is signed out and a "password changed" email is sent
+- **Forgot password**: a 6-digit code by email (15 minutes, 3 tries, only a keyed hash is stored), then a new password; every device is signed out and a "password changed" email is sent
 - **Lock after idle time**: the website locks after 5, 15, 30 or 60 minutes with nobody using it (15 by default). The password unlocks it; the API enforces the lock too.
 - **Security page**: choose the lock time, lock now, change the password (other devices are signed out)
 - **Protection**: separate rate limits for sign-in, unlock, password reset and codes per email; security headers (helmet); the same answers whether or not an email has an account
@@ -277,7 +277,7 @@ Use `127.0.0.1` instead of `localhost` in `DATABASE_URL` on Windows if dbmate sa
 
 ## How sign-in works
 
-1. **Sign up** (`POST /api/auth/register`): the API checks the form with `registerSchema` (name, email, password of at least 10 characters, and `consent: true`). It stores the email in lowercase, saves when the privacy consent was given, hashes the password with bcrypt (12 rounds) and signs the new person in.
+1. **Sign up** (`POST /api/auth/register`): the API checks the form with `registerSchema` (first name, optional middle name, last name, email, password of at least 10 characters, and `consent: true`). It stores the email in lowercase, saves when the privacy consent was given, hashes the password with bcrypt (12 rounds) and signs the new person in.
 2. **Sign in** (`POST /api/auth/login`): the email and password are checked. A wrong password and an unknown email get the **same** answer, so nobody can find out which accounts exist.
 3. **Signing in starts a brand-new session.** The session is a row in the `session` table, and the browser gets a `talaan.sid` cookie:
    - `HttpOnly`: the page's JavaScript can't read it
@@ -285,7 +285,7 @@ Use `127.0.0.1` instead of `localhost` in `DATABASE_URL` on Windows if dbmate sa
    - `Secure` in production: it's only sent over HTTPS
 4. **Protected API routes** use the `requireAuth(clock)` middleware and read the user's id from the session.
 5. **Idle lock**: the session remembers when this browser last used the API. After the person's chosen minutes (5, 15, 30 or 60) with nothing, protected routes answer **423 Locked** until `POST /api/auth/unlock` gets the right password. The website also watches for clicks, typing and scrolling: it locks itself after the same time, and while someone is reading it tells the API every 2 minutes (`POST /api/auth/activity`) so the API doesn't lock them out.
-6. **Forgot password** (3 steps): `request` emails a 6-digit code, `check` tests it, `complete` saves the new password. Codes last 15 minutes and 5 wrong tries; asking again replaces the old code. Only an HMAC of the code (keyed with `SESSION_SECRET` and the account id) is stored. A new password signs out every device and sends a "password changed" email.
+6. **Forgot password** (3 steps): `request` emails a 6-digit code, `check` tests it, `complete` saves the new password. Codes last 15 minutes and 3 wrong tries; asking again replaces the old code. Only an HMAC of the code (keyed with `SESSION_SECRET` and the account id) is stored. A new password signs out every device and sends a "password changed" email.
 7. **Sign out** (`POST /api/auth/logout`) deletes the session row, so the old cookie stops working. It works while locked too.
 8. **Rate limits** (in memory, per 15 minutes, in `buildApp.ts`): 20 sign-in/sign-up tries per visitor, 20 unlock and password-change tries per person, 20 reset steps per visitor, and 3 codes per email address. Each has its own counter, because a family at home shares one IP address.
 
@@ -322,21 +322,21 @@ Gmail may put the first emails in spam because they come through Brevo. Marking 
 
 All routes start with `/api`. Errors always look like `{ "message": "…", "errors": { "field": ["…"] } }`.
 
-| Method | Route                               | Login? | What                                                                   |
-| ------ | ----------------------------------- | ------ | ---------------------------------------------------------------------- |
-| GET    | `/api/health`                       | no     | `{ ok: true }` when the API can reach the database                     |
-| POST   | `/api/auth/register`                | no     | `{ name, email, password, consent: true }` → 201 `{ user }`, signed in |
-| POST   | `/api/auth/login`                   | no     | `{ email, password }` → `{ user }`                                     |
-| GET    | `/api/auth/me`                      | yes    | `{ user, locked }`, or 401                                             |
-| POST   | `/api/auth/activity`                | yes    | 204; keeps the session from locking                                    |
-| POST   | `/api/auth/lock`                    | yes    | 204; "Lock Talaan now"                                                 |
-| POST   | `/api/auth/unlock`                  | yes    | `{ password }` → `{ user }`                                            |
-| POST   | `/api/auth/logout`                  | no     | 204                                                                    |
-| POST   | `/api/auth/password-reset/request`  | no     | `{ email }` → 202, the same answer for every email                     |
-| POST   | `/api/auth/password-reset/check`    | no     | `{ email, code }` → 204                                                |
-| POST   | `/api/auth/password-reset/complete` | no     | `{ email, code, password }` → 204, every device signed out             |
-| PUT    | `/api/account/password`             | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out     |
-| PUT    | `/api/account/security`             | yes    | `{ lockAfterMinutes }` → `{ user }`                                    |
+| Method | Route                               | Login? | What                                                                                              |
+| ------ | ----------------------------------- | ------ | ------------------------------------------------------------------------------------------------- |
+| GET    | `/api/health`                       | no     | `{ ok: true }` when the API can reach the database                                                |
+| POST   | `/api/auth/register`                | no     | `{ firstName, middleName, lastName, email, password, consent: true }` → 201 `{ user }`, signed in |
+| POST   | `/api/auth/login`                   | no     | `{ email, password }` → `{ user }`                                                                |
+| GET    | `/api/auth/me`                      | yes    | `{ user, locked }`, or 401                                                                        |
+| POST   | `/api/auth/activity`                | yes    | 204; keeps the session from locking                                                               |
+| POST   | `/api/auth/lock`                    | yes    | 204; "Lock Talaan now"                                                                            |
+| POST   | `/api/auth/unlock`                  | yes    | `{ password }` → `{ user }`                                                                       |
+| POST   | `/api/auth/logout`                  | no     | 204                                                                                               |
+| POST   | `/api/auth/password-reset/request`  | no     | `{ email }` → 202, the same answer for every email                                                |
+| POST   | `/api/auth/password-reset/check`    | no     | `{ email, code }` → 204                                                                           |
+| POST   | `/api/auth/password-reset/complete` | no     | `{ email, code, password }` → 204, every device signed out                                        |
+| PUT    | `/api/account/password`             | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out                                |
+| PUT    | `/api/account/security`             | yes    | `{ lockAfterMinutes }` → `{ user }`                                                               |
 
 | Status | When                                                             |
 | ------ | ---------------------------------------------------------------- |
