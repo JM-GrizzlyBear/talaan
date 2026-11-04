@@ -8,10 +8,3 @@ export function shortDateTime(iso: string, locale?: string) {
     minute: "2-digit",
   }).format(new Date(iso));
 }
-
-// True when a note was changed after it was created
-export function wasEdited(note: { createdAt: string; updatedAt: string }) {
-  return (
-    new Date(note.updatedAt).getTime() > new Date(note.createdAt).getTime()
-  );
-}

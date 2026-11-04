@@ -1,7 +1,7 @@
 name: Clear database
 
 # Deletes EVERY row in EVERY table of the database in the DATABASE_URL secret
-# (users, sessions, notes and any table you add later). The tables themselves stay.
+# (users, sessions and any table you add later). The tables themselves stay.
 # Use it to wipe test data, for example before sharing a live app.
 # GitHub → Actions → "Clear database" → Run workflow → type CLEAR → Run workflow
 # Needs the repository secret DATABASE_URL (README → "Clearing a database").

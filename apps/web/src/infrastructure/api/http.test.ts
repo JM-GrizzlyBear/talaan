@@ -28,7 +28,7 @@ describe("calling the API", () => {
         errors: { title: ["Required"] },
       }),
     );
-    const error = await request("/api/notes", "POST", {}).catch(
+    const error = await request("/api/example", "POST", {}).catch(
       (e: unknown) => e,
     );
     expect(error).toBeInstanceOf(ApiError);
@@ -46,12 +46,12 @@ describe("calling the API", () => {
         throw new TypeError("Failed to fetch");
       }),
     );
-    const error = await request("/api/notes").catch((e: unknown) => e);
+    const error = await request("/api/example").catch((e: unknown) => e);
     expect(error).toMatchObject({ status: 0 });
   });
 
   it("returns nothing for 204 No Content", async () => {
     vi.stubGlobal("fetch", answer(204));
-    expect(await request("/api/notes/n1", "DELETE")).toBeUndefined();
+    expect(await request("/api/example/1", "DELETE")).toBeUndefined();
   });
 });

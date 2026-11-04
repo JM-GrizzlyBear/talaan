@@ -13,8 +13,8 @@ export function LoginPage() {
   const logIn = useLogIn();
   const navigate = useNavigate();
   const location = useLocation();
-  // Back to the page that asked for a login, or the notes
-  const from = (location.state as { from?: string } | null)?.from ?? "/notes";
+  // Back to the page that asked for a login, or the home page
+  const from = (location.state as { from?: string } | null)?.from ?? "/";
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();

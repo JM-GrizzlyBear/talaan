@@ -10,7 +10,7 @@ declare module "express-session" {
   }
 }
 
-export const SESSION_COOKIE = "app.sid";
+export const SESSION_COOKIE = "talaan.sid";
 
 export function createSessionMiddleware(options: {
   pool: Pool;

@@ -1,5 +1,5 @@
 {
-  "name": "@pern/api",
+  "name": "@talaan/api",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -16,7 +16,7 @@
     "test:integration": "vitest run --project integration"
   },
   "dependencies": {
-    "@pern/shared": "workspace:*",
+    "@talaan/shared": "workspace:*",
     "bcryptjs": "3.0.3",
     "connect-pg-simple": "10.0.0",
     "dbmate": "2.36.0",

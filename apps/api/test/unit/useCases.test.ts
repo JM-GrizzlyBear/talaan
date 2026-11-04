@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PasswordHasher } from "../../src/application/ports/PasswordHasher.js";
-import { DeleteNote } from "../../src/application/note/DeleteNote.js";
-import { UpdateNote } from "../../src/application/note/UpdateNote.js";
 import { LogInUser } from "../../src/application/user/LogInUser.js";
 import { RegisterUser } from "../../src/application/user/RegisterUser.js";
-import type { NoteRepository } from "../../src/domain/note/NoteRepository.js";
-import { NoteNotFoundError } from "../../src/domain/note/errors.js";
 import type { User } from "../../src/domain/user/User.js";
 import type {
   NewUser,
@@ -16,7 +12,6 @@ import {
   InvalidCredentialsError,
   UsernameTakenError,
 } from "../../src/domain/user/errors.js";
-import { note } from "../fixtures/notes.js";
 
 // Fakes: use cases only know the interfaces, so tests can swap in simple in-memory versions
 const plainHasher: PasswordHasher = {
@@ -112,28 +107,5 @@ describe("LogInUser", () => {
     await expect(
       logIn.execute({ login: "ghost", password: "nope" }),
     ).rejects.toThrow(InvalidCredentialsError);
-  });
-});
-
-describe("notes that aren't yours", () => {
-  // A repository that never finds the note: what Postgres answers for someone else's note
-  const nobodysNotes: NoteRepository = {
-    listByOwner: async () => [],
-    findOwned: async () => null,
-    create: async (userId, content) => note({ userId, ...content }),
-    update: async () => null,
-    delete: async () => false,
-  };
-
-  it("can't be updated or deleted", async () => {
-    await expect(
-      new UpdateNote(nobodysNotes).execute("n1", "u2", {
-        title: "x",
-        body: "",
-      }),
-    ).rejects.toThrow(NoteNotFoundError);
-    await expect(
-      new DeleteNote(nobodysNotes).execute("n1", "u2"),
-    ).rejects.toThrow(NoteNotFoundError);
   });
 });

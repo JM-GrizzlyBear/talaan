@@ -1,4 +1,4 @@
-import type { LoginInput, PublicUser, RegisterInput } from "@pern/shared";
+import type { LoginInput, PublicUser, RegisterInput } from "@talaan/shared";
 import { ApiError, request } from "./http";
 
 // The logged-in user, or null when nobody is logged in

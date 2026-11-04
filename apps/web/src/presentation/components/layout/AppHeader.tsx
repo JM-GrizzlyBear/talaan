@@ -1,6 +1,7 @@
 import { LogOut } from "lucide-react";
 import { Link } from "react-router";
 import { useCurrentUser, useLogOut } from "../../../application/auth/useAuth";
+import { TalaanLogo } from "../brand/TalaanLogo";
 import { buttonSecondary } from "../ui/styles";
 
 export function AppHeader() {
@@ -10,8 +11,9 @@ export function AppHeader() {
   return (
     <header className="border-b border-edge bg-white">
       <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <Link to="/" className="text-lg font-bold">
-          PERN Template
+        <Link to="/" className="flex items-center gap-2 text-lg font-bold">
+          <TalaanLogo className="size-8" />
+          Talaan
         </Link>
         {user && (
           <div className="flex items-center gap-3">
