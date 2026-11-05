@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { emailSchema, middleNamePart, namePart } from "./auth.js";
+import { isPastCalendarDate } from "./dates.js";
 
 // Who someone is to the account owner. Filipino family words, as people say them.
 export const FAMILY_RELATIONSHIPS = [
@@ -84,20 +85,9 @@ const birthDate = z
   .string()
   .trim()
   .default("")
-  .refine(
-    (value) => {
-      if (value === "") return true;
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-      const date = new Date(`${value}T00:00:00Z`);
-      return (
-        !Number.isNaN(date.getTime()) &&
-        date.toISOString().startsWith(value) &&
-        value >= "1900-01-01" &&
-        date.getTime() <= Date.now()
-      );
-    },
-    { error: "Enter a real date that isn't in the future" },
-  );
+  .refine((value) => value === "" || isPastCalendarDate(value), {
+    error: "Enter a real date that isn't in the future",
+  });
 
 // Someone without their own email or phone (a young child, a lolo), kept under your account
 export const familyProfileSchema = z.object({

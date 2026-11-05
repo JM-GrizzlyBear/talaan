@@ -33,7 +33,23 @@ const server = app.listen(env.port, () => {
   console.log(`API listening on http://localhost:${env.port}`);
 });
 
+// Records 30 days in the Trash are deleted for good: at start, then every hour.
+// (Opening the Trash also does it, so nothing old shows even between runs.)
+async function emptyOldTrash() {
+  try {
+    const deleted = await app.purgeExpiredTrash();
+    if (deleted > 0)
+      console.log(`Deleted ${deleted} records from the Trash (30 days)`);
+  } catch (error) {
+    console.error("Couldn't empty old records from the Trash:", error);
+  }
+}
+void emptyOldTrash();
+const trashTimer = setInterval(emptyOldTrash, 60 * 60 * 1000);
+trashTimer.unref();
+
 async function shutDown() {
+  clearInterval(trashTimer);
   server.close();
   await pool.end();
   process.exit(0);

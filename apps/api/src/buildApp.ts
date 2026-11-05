@@ -6,9 +6,11 @@ import type { Pool } from "pg";
 import { CheckResetCode } from "./application/passwordReset/CheckResetCode.js";
 import { RequestPasswordReset } from "./application/passwordReset/RequestPasswordReset.js";
 import { ResetPassword } from "./application/passwordReset/ResetPassword.js";
+import { AuditTrail } from "./application/audit/AuditTrail.js";
 import { FamilyInvitations } from "./application/family/FamilyInvitations.js";
 import { FamilyMembers } from "./application/family/FamilyMembers.js";
 import { FamilyProfiles } from "./application/family/FamilyProfiles.js";
+import { Records } from "./application/record/Records.js";
 import { ManagePasskeys } from "./application/passkey/ManagePasskeys.js";
 import { PasskeyRegistration } from "./application/passkey/PasskeyRegistration.js";
 import { PasskeySignIn } from "./application/passkey/PasskeySignIn.js";
@@ -27,11 +29,13 @@ import { RegisterUser } from "./application/user/RegisterUser.js";
 import { SignOutOtherSessions } from "./application/user/SignOutOtherSessions.js";
 import { UnlockSession } from "./application/user/UnlockSession.js";
 import { UpdateSecuritySettings } from "./application/user/UpdateSecuritySettings.js";
+import { PostgresAuditRepository } from "./infrastructure/database/PostgresAuditRepository.js";
 import { PostgresEmailCodeRepository } from "./infrastructure/database/PostgresEmailCodeRepository.js";
 import { PostgresFamilyAccessRepository } from "./infrastructure/database/PostgresFamilyAccessRepository.js";
 import { PostgresFamilyInvitationRepository } from "./infrastructure/database/PostgresFamilyInvitationRepository.js";
 import { PostgresFamilyProfileRepository } from "./infrastructure/database/PostgresFamilyProfileRepository.js";
 import { PostgresPasskeyRepository } from "./infrastructure/database/PostgresPasskeyRepository.js";
+import { PostgresRecordRepository } from "./infrastructure/database/PostgresRecordRepository.js";
 import { PostgresSessionStore } from "./infrastructure/database/PostgresSessionStore.js";
 import { PostgresTrustedBrowserRepository } from "./infrastructure/database/PostgresTrustedBrowserRepository.js";
 import { PostgresUserRepository } from "./infrastructure/database/PostgresUserRepository.js";
@@ -46,6 +50,7 @@ import { accountRoutes } from "./presentation/http/routes/accountRoutes.js";
 import { authRoutes } from "./presentation/http/routes/authRoutes.js";
 import { familyRoutes } from "./presentation/http/routes/familyRoutes.js";
 import { healthRoutes } from "./presentation/http/routes/healthRoutes.js";
+import { recordsRoutes } from "./presentation/http/routes/recordsRoutes.js";
 import { passwordResetRoutes } from "./presentation/http/routes/passwordResetRoutes.js";
 import { createSessionMiddleware } from "./presentation/http/session.js";
 
@@ -72,6 +77,8 @@ export interface BuildAppOptions {
   signInCodeLimit?: number;
   // Family invitations to one email address (and emails for one invitation) per day
   invitationEmailLimit?: number;
+  // Record changes per person every 15 minutes
+  recordsLimit?: number;
 }
 
 // The composition root: the only place that knows every concrete class.
@@ -163,6 +170,19 @@ export function buildApp(options: BuildAppOptions) {
     options.pool,
   );
   const familyProfiles = new PostgresFamilyProfileRepository(options.pool);
+  const records = new PostgresRecordRepository(options.pool);
+  const auditTrail = new AuditTrail(
+    new PostgresAuditRepository(options.pool),
+    users,
+    clock,
+  );
+  const familyMembers = new FamilyMembers(
+    familyAccess,
+    familyInvitations,
+    familyProfiles,
+    clock,
+    auditTrail,
+  );
 
   const app = express();
   app.disable("x-powered-by");
@@ -275,19 +295,39 @@ export function buildApp(options: BuildAppOptions) {
         options.secretCodes,
         clock,
         emails,
+        auditTrail,
       ),
-      members: new FamilyMembers(
-        familyAccess,
-        familyInvitations,
-        familyProfiles,
-        clock,
-      ),
-      profiles: new FamilyProfiles(familyProfiles),
+      members: familyMembers,
+      profiles: new FamilyProfiles(familyProfiles, records, auditTrail),
       requireAuth: requireAuth(clock),
       limit: tries(),
       userLimit: tries(userKey),
       inviteEmailLimit,
       resendLimit: invitationResendLimit,
+    }),
+  );
+  const recordsUseCases = new Records(
+    records,
+    familyProfiles,
+    users,
+    familyAccess,
+    familyMembers,
+    auditTrail,
+    clock,
+  );
+  app.use(
+    "/api",
+    recordsRoutes({
+      records: recordsUseCases,
+      requireAuth: requireAuth(clock),
+      // Adding a family's old records takes many saves in a row
+      limit: rateLimit({
+        windowMs: fifteenMinutes,
+        max: options.recordsLimit ?? 300,
+        clock,
+        key: userKey,
+        message: "That's a lot of changes at once. Please wait a few minutes.",
+      }),
     }),
   );
   app.use("/api", apiNotFound);
@@ -303,5 +343,8 @@ export function buildApp(options: BuildAppOptions) {
   }
 
   app.use(errorHandler);
-  return app;
+  // main.ts runs this every hour: records 30 days in the Trash are deleted for good
+  return Object.assign(app, {
+    purgeExpiredTrash: () => recordsUseCases.purgeExpired(),
+  });
 }

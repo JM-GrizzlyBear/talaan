@@ -1,6 +1,8 @@
 import {
+  ACCESS_LABELS,
   FAMILY_LIMITS,
   fullName,
+  relationshipLabel,
   type InviteFamilyInput,
 } from "@talaan/shared";
 import { EmailNotSetUpError } from "../../domain/emailCode/errors.js";
@@ -16,6 +18,7 @@ import {
 import type { UserRepository } from "../../domain/user/UserRepository.js";
 import { NotLoggedInError } from "../../domain/user/errors.js";
 import { normalizeEmail } from "../../domain/user/rules.js";
+import type { AuditTrail } from "../audit/AuditTrail.js";
 import type { AccountEmails } from "../ports/AccountEmails.js";
 import type { Clock } from "../ports/Clock.js";
 import type { SecretCodes } from "../ports/SecretCodes.js";
@@ -34,6 +37,7 @@ export class FamilyInvitations {
     private readonly secrets: SecretCodes,
     private readonly clock: Clock,
     private readonly emails: AccountEmails | null,
+    private readonly audit: AuditTrail,
   ) {}
 
   private requireEmails() {
@@ -95,6 +99,24 @@ export class FamilyInvitations {
       now,
     );
     await this.send(invitation, token);
+    await this.audit.log({
+      ownerId: inviterId,
+      action: "family.invited",
+      actorId: inviterId,
+      subject: email,
+      changes: [
+        {
+          field: "Who they are",
+          from: null,
+          to: relationshipLabel(invitation.relationship),
+        },
+        {
+          field: "Access",
+          from: null,
+          to: ACCESS_LABELS[invitation.access].name,
+        },
+      ],
+    });
     return invitation;
   }
 
@@ -135,6 +157,12 @@ export class FamilyInvitations {
     const invitation = await this.findOwn(inviterId, id);
     if (invitation.status === "accepted") throw FamilyError.cantRenewAccepted();
     await this.invitations.setStatus(id, "cancelled", this.clock.now());
+    await this.audit.log({
+      ownerId: inviterId,
+      action: "family.invitation_cancelled",
+      actorId: inviterId,
+      subject: invitation.email,
+    });
   }
 
   private async byToken(token: string) {
@@ -178,6 +206,19 @@ export class FamilyInvitations {
       access: invitation.access,
     });
     await this.invitations.setStatus(invitation.id, "accepted", now, user.id);
+    await this.audit.log({
+      ownerId: invitation.inviterId,
+      action: "family.accepted",
+      actorId: user.id,
+      subject: `${fullName(user)} (${user.email})`,
+      changes: [
+        {
+          field: "Access",
+          from: null,
+          to: ACCESS_LABELS[invitation.access].name,
+        },
+      ],
+    });
     return invitation;
   }
 
@@ -188,5 +229,12 @@ export class FamilyInvitations {
     const status = invitationStatus(invitation, now);
     if (status !== "pending") throw FamilyError.invitationUnusable(status);
     await this.invitations.setStatus(invitation.id, "declined", now);
+    // Declining needs no account, so there's no one to name
+    await this.audit.log({
+      ownerId: invitation.inviterId,
+      action: "family.declined",
+      actorId: null,
+      subject: invitation.email,
+    });
   }
 }

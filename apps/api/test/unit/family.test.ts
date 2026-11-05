@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { AuditTrail } from "../../src/application/audit/AuditTrail.js";
 import { FamilyMembers } from "../../src/application/family/FamilyMembers.js";
 import type { FamilyAccess } from "../../src/domain/family/FamilyAccess.js";
 import type { FamilyAccessRepository } from "../../src/domain/family/FamilyAccessRepository.js";
@@ -63,6 +64,7 @@ describe("who can do what with whose records", () => {
     {} as FamilyInvitationRepository,
     {} as FamilyProfileRepository,
     new FakeClock(NOW),
+    {} as AuditTrail,
   );
 
   it("is one way", async () => {

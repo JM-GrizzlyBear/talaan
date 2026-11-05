@@ -53,4 +53,10 @@ export class FamilyError extends Error {
   static cantRenewAccepted() {
     return new FamilyError("That invitation was already accepted.");
   }
+
+  static profileHasRecords(firstName: string, count: number) {
+    return new FamilyError(
+      `${firstName} still has ${count} ${count === 1 ? "record" : "records"} (counting the Trash). Delete them for good first, or keep the profile.`,
+    );
+  }
 }

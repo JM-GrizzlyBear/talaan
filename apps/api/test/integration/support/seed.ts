@@ -11,7 +11,7 @@ const PASSWORD_HASH = bcrypt.hashSync(PASSWORD, 4);
 // so each test starts from exactly the same state whatever the test before it did
 export async function resetDatabase(pool: Pool) {
   await pool.query(
-    "truncate session, password_reset_codes, sign_in_codes, passkeys, trusted_browsers, family_access, family_invitations, family_profiles, users restart identity cascade",
+    "truncate session, password_reset_codes, sign_in_codes, passkeys, trusted_browsers, audit_log, records, family_access, family_invitations, family_profiles, users restart identity cascade",
   );
 
   for (const user of Object.values(USERS)) {
