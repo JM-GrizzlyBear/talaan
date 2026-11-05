@@ -5,3 +5,11 @@ export class NotFoundError extends Error {
     this.name = "NotFoundError";
   }
 }
+
+// Signed in and allowed to look, but not to do this
+export class ForbiddenError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ForbiddenError";
+  }
+}

@@ -1,4 +1,4 @@
-import type { AccessLevel } from "@talaan/shared";
+import { ACCESS_LABELS, fullName, type AccessLevel } from "@talaan/shared";
 import { NotFoundError } from "../../domain/errors.js";
 import type { FamilyAccessRepository } from "../../domain/family/FamilyAccessRepository.js";
 import type { FamilyInvitationRepository } from "../../domain/family/FamilyInvitationRepository.js";
@@ -7,6 +7,7 @@ import {
   invitationStatus,
   type AccessRole,
 } from "../../domain/family/rules.js";
+import type { AuditTrail } from "../audit/AuditTrail.js";
 import type { Clock } from "../ports/Clock.js";
 
 // Who can see my records, whose records I can see, and the profiles in between
@@ -16,7 +17,24 @@ export class FamilyMembers {
     private readonly invitations: FamilyInvitationRepository,
     private readonly profiles: FamilyProfileRepository,
     private readonly clock: Clock,
+    private readonly audit: AuditTrail,
   ) {}
+
+  // The other person in an owner → member pair, for the history
+  private async describe(
+    ownerId: string,
+    memberId: string,
+    of: "owner" | "member",
+  ) {
+    const list =
+      of === "member"
+        ? await this.access.listMembers(ownerId)
+        : await this.access.listOwners(memberId);
+    const match = list.find((a) =>
+      of === "member" ? a.memberId === memberId : a.ownerId === ownerId,
+    );
+    return match ? `${fullName(match.person)} (${match.person.email})` : null;
+  }
 
   async overview(userId: string) {
     const now = this.clock.now();
@@ -45,23 +63,58 @@ export class FamilyMembers {
   }
 
   async changeAccess(ownerId: string, memberId: string, access: AccessLevel) {
-    if (!(await this.access.updateAccess(ownerId, memberId, access))) {
+    const before = await this.access.find(ownerId, memberId);
+    const who = await this.describe(ownerId, memberId, "member");
+    if (
+      !before ||
+      !who ||
+      !(await this.access.updateAccess(ownerId, memberId, access))
+    ) {
       throw new NotFoundError("That person can't see your records anymore.");
     }
+    if (before.access === access) return;
+    await this.audit.log({
+      ownerId,
+      action: "family.access_changed",
+      actorId: ownerId,
+      subject: who,
+      changes: [
+        {
+          field: "Access",
+          from: ACCESS_LABELS[before.access].name,
+          to: ACCESS_LABELS[access].name,
+        },
+      ],
+    });
   }
 
   // The owner stops sharing with someone
   async remove(ownerId: string, memberId: string) {
-    if (!(await this.access.remove(ownerId, memberId))) {
+    const who = await this.describe(ownerId, memberId, "member");
+    if (!who || !(await this.access.remove(ownerId, memberId))) {
       throw new NotFoundError("That person can't see your records anymore.");
     }
+    await this.audit.log({
+      ownerId,
+      action: "family.removed",
+      actorId: ownerId,
+      subject: who,
+    });
   }
 
   // A member stops seeing someone's records
   async leave(memberId: string, ownerId: string) {
-    if (!(await this.access.remove(ownerId, memberId))) {
+    const who = await this.describe(ownerId, memberId, "member");
+    if (!who || !(await this.access.remove(ownerId, memberId))) {
       throw new NotFoundError("You can't see those records anymore.");
     }
+    // In the owner's history: they should know who stopped seeing their records
+    await this.audit.log({
+      ownerId,
+      action: "family.left",
+      actorId: memberId,
+      subject: who,
+    });
   }
 
   // What the viewer may do with the owner's records (the records PRs use this).

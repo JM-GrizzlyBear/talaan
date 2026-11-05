@@ -1,11 +1,11 @@
 import type { ApiErrorBody } from "@talaan/shared";
 import type { ErrorRequestHandler, RequestHandler } from "express";
-import { ZodError, z } from "zod";
+import { ZodError } from "zod";
 import {
   EmailNotSetUpError,
   CodeError,
 } from "../../domain/emailCode/errors.js";
-import { NotFoundError } from "../../domain/errors.js";
+import { ForbiddenError, NotFoundError } from "../../domain/errors.js";
 import { FamilyError } from "../../domain/family/errors.js";
 import { PasskeyError } from "../../domain/passkey/errors.js";
 import { SignInExpiredError } from "../../domain/user/signIn.js";
@@ -38,10 +38,15 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     return;
   }
   if (error instanceof ZodError) {
-    send(res, 400, {
-      message: "Please check the form",
-      errors: z.flattenError(error).fieldErrors,
-    });
+    // Keyed by the full path, like "email" or "details.results.0.value",
+    // so a form can put each message next to the right box
+    const errors: Record<string, string[]> = {};
+    for (const issue of error.issues) {
+      const key = issue.path.map(String).join(".");
+      if (!key) continue;
+      (errors[key] ??= []).push(issue.message);
+    }
+    send(res, 400, { message: "Please check the form", errors });
     return;
   }
   if (error instanceof EmailTakenError) {
@@ -91,6 +96,10 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
   }
   if (error instanceof PasskeyError) {
     send(res, 400, { message: error.message });
+    return;
+  }
+  if (error instanceof ForbiddenError) {
+    send(res, 403, { message: error.message });
     return;
   }
   if (error instanceof NotFoundError) {

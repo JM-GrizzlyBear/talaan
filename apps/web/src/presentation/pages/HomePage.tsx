@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { useCurrentUser } from "../../application/auth/useAuth";
 import { TalaanLogo } from "../components/brand/TalaanLogo";
+import { buttonPrimary, buttonSecondary } from "../components/ui/styles";
 
 // For now: a welcome page after signing in. The dashboard, records, places and
 // family screens replace it in version 1.
@@ -15,13 +16,17 @@ export function HomePage() {
         {user ? `Hi, ${user.firstName}. ` : ""}Every X-ray, lab result and
         prescription for your family, and where the paper is.
       </p>
-      <p className="text-muted">
-        Start by inviting family or adding a profile for a child on the{" "}
-        <Link to="/family" className="font-semibold text-brand underline">
-          Family page
+      <div className="flex flex-wrap gap-2">
+        <Link to="/records" className={buttonPrimary}>
+          Open my records
         </Link>
-        . Coming next: records, scanning and uploads, places with QR labels and
-        reminders.
+        <Link to="/family" className={buttonSecondary}>
+          Family
+        </Link>
+      </div>
+      <p className="text-muted">
+        Coming next: photos and PDFs, reading lab results from a photo, places
+        with QR labels and reminders.
       </p>
     </main>
   );

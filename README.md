@@ -38,6 +38,12 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
   - Sessions stored in Postgres, sent as an HTTP-only cookie
 - **Two-step sign-in** (on for new accounts): on a browser Talaan doesn't know yet, the password is followed by a 6-digit code from email. "Remember this browser" skips the code there for 30 days. Turning it off needs the password.
 - **Passkeys**: add one on the Security page, then sign in or unlock with Face ID, a fingerprint, Windows Hello or the phone's PIN. No password, no code. Talaan keeps only the public key.
+- **Records**: 8 types (X-ray / imaging, lab result, prescription, consultation, medical certificate, vaccination, HMO / billing, other), for you or a family profile
+  - Each has a title, date, doctor, clinic or hospital, and notes; plus lab results (test, result, unit, normal range, with Low/High flags), medicines (name, dose, how often), the X-ray reading, the vaccine and dose, or the HMO, LOA number and amounts (total, HMO covered, you paid)
+  - A list per account and person, filtered by type; a page per record
+  - **Who can do what**: the owner does everything; "Can manage" family add, edit and move to the Trash; "Can view" family only look
+  - **Trash**: records stay 30 days, then Talaan deletes them for good (hourly, and whenever the Trash is opened). Only the owner restores or deletes sooner.
+  - **Audit trail**: every add, edit (with each changed field, before and after), move to the Trash, restore and delete is saved with who did it and when. Sharing changes (invitations, accepting, access changes, profiles) are too. Each record shows its history; the owner's Activity page shows everything. Entries can't be changed, not even directly in the database.
 - **Family** (one way: the people you invite see your records, not the other way round)
   - Invite by email with who they are to you (Anak, Nanay, Lolo, …) and what they can do: **Can view** (records and lab comparisons) or **Can manage** (also add records, scan and set reminders). Invitations last 7 days; send again or cancel any time.
   - The invited person accepts or declines from the email's link. Declining needs no account; accepting needs a Talaan account with that same email (a new account can be made on the way).
@@ -145,7 +151,7 @@ talaan/
 ├── apps/
 │   ├── api/                 # Express API
 │   │   ├── .env.example     # copy to apps/api/.env → the API's settings
-│   │   ├── db/migrations/   # SQL migrations (dbmate): users, session, codes, passkeys, remembered browsers, family
+│   │   ├── db/migrations/   # SQL migrations (dbmate): users, session, codes, passkeys, remembered browsers, family, records and the audit log
 │   │   ├── vitest.config.ts # two test projects: unit and integration
 │   │   ├── test/
 │   │   │   ├── fixtures/            # test data: users, a fake clock, fake emails, a fake passkey device
@@ -153,8 +159,8 @@ talaan/
 │   │   │   └── integration/         # real HTTP requests against the test database
 │   │   │       └── support/         # test database setup, seed, logged-in test browsers
 │   │   └── src/
-│   │       ├── domain/              # user/, emailCode/, passkey/, trustedBrowser/, family/: entities, rules, errors, repository interfaces
-│   │       ├── application/         # use cases: user/, passwordReset/, twoStep/, passkey/, family/; ports/ (PasswordHasher, Clock, PasskeyCeremonies, …)
+│   │       ├── domain/              # user/, emailCode/, passkey/, trustedBrowser/, family/, record/, audit/: entities, rules, errors, repository interfaces
+│   │       ├── application/         # use cases: user/, passwordReset/, twoStep/, passkey/, family/, record/, audit/; ports/ (PasswordHasher, Clock, PasskeyCeremonies, …)
 │   │       ├── infrastructure/      # database/ (Postgres repositories), security/ (bcrypt, HMAC), email/, webauthn/, time/
 │   │       ├── presentation/http/   # routes/, middleware/ (requireAuth, rateLimit), session, errors
 │   │       ├── config/env.ts        # reads and checks the environment variables
@@ -165,11 +171,11 @@ talaan/
 │       ├── vite.config.ts   # dev server: forwards /api to the API on port 4000
 │       └── src/
 │           ├── infrastructure/      # api/ (fetch + ApiError, authApi, accountApi), passkeys/ (the device prompt)
-│           ├── application/         # auth/ and family/ hooks (TanStack Query)
+│           ├── application/         # auth/, family/ and records/ hooks (TanStack Query)
 │           ├── presentation/
 │           │   ├── components/      # brand/ (TalaanLogo), layout/, routing/ (RequireAuth, GuestOnly), ui/
-│           │   ├── pages/           # LoginPage (password, code), RegisterPage, FamilyPage, InvitationPage, SecurityPage, LockScreen, …
-│           │   └── format/          # dates, ages, error messages, passkey names (+ tests)
+│           │   ├── pages/           # LoginPage (password, code), RegisterPage, RecordsPage, RecordPage, RecordFormPage, TrashPage, ActivityPage, FamilyPage, InvitationPage, SecurityPage, LockScreen, …
+│           │   └── format/          # dates, ages, history sentences, error messages, passkey names (+ tests)
 │           ├── App.tsx              # routes
 │           └── index.css            # Tailwind and the theme colors
 └── packages/
@@ -301,8 +307,9 @@ Use `127.0.0.1` instead of `localhost` in `DATABASE_URL` on Windows if dbmate sa
 5. **Idle lock**: the session remembers when this browser last used the API. After the person's chosen minutes (5, 15, 30 or 60) with nothing, protected routes answer **423 Locked** until `POST /api/auth/unlock` gets the right password (or `POST /api/auth/unlock/passkey` one of that person's passkeys). The website also watches for clicks, typing and scrolling: it locks itself after the same time, and while someone is reading it tells the API every 2 minutes (`POST /api/auth/activity`) so the API doesn't lock them out.
 6. **Forgot password** (3 steps): `request` emails a 6-digit code, `check` tests it, `complete` saves the new password. Codes last 15 minutes and 3 wrong tries; asking again replaces the old code. Only an HMAC of the code (keyed with `SESSION_SECRET` and the account id) is stored. A new password signs out every device and sends a "password changed" email.
 7. **Family invitations**: `POST /api/family/invitations` stores the invitation with a SHA-256 of a random 256-bit token and emails the link `APP_URL/invite/<token>`. The website sends the token back in the request **body** (not the address), so it stays out of server logs. Accepting needs the token (it proves the person can read that inbox) **and** a signed-in account whose email is the invited one, because emails aren't verified at sign-up. Access is one row per owner → member in `family_access`; `FamilyMembers.roleFor(viewer, owner)` answers "owner", "manage", "view" or nothing, for the records features to use.
-8. **Sign out** (`POST /api/auth/logout`) deletes the session row, so the old cookie stops working. It works while locked too.
-9. **Rate limits** (in memory, per 15 minutes, in `buildApp.ts`): 20 sign-in/sign-up tries per visitor, 20 unlock and password-change tries per person, 20 reset steps per visitor, 3 codes per email address, 3 new sign-in codes per person waiting for one, and 3 family invitations per email address (and per invitation) a day. Each has its own counter, because a family at home shares one IP address.
+8. **Records and the audit trail**: every record route checks `FamilyMembers.roleFor` first. Someone a record isn't shared with gets 404 (they don't learn it exists); "Can view" family get 403 for changes. Edits compare old and new fields (`diffRecords` in `domain/record/rules.ts`) and save only real changes. The `audit_log` table keeps the actor's name at the time and isn't tied to the record, so the history outlives a deleted record. A database trigger refuses any `UPDATE` on it.
+9. **Sign out** (`POST /api/auth/logout`) deletes the session row, so the old cookie stops working. It works while locked too.
+10. **Rate limits** (in memory, per 15 minutes, in `buildApp.ts`): 20 sign-in/sign-up tries per visitor, 20 unlock and password-change tries per person, 20 reset steps per visitor, 3 codes per email address, 3 new sign-in codes per person waiting for one, 3 family invitations per email address (and per invitation) a day, and 300 record changes per person. Each has its own counter, because a family at home shares one IP address.
 
 On the website, `useSession()` asks `GET /api/auth/me` once and every page shares that answer (`{ user, locked }`). `RequireAuth` protects pages and shows the lock screen when locked. Any 423 answer also switches to the lock screen. `GuestOnly` sends signed-in people away from the sign-in and sign-up pages.
 
@@ -369,6 +376,18 @@ All routes start with `/api`. Errors always look like `{ "message": "…", "erro
 | POST   | `/api/family/profiles`               | yes    | `{ firstName, middleName, lastName, relationship, birthDate }` → 201 `{ profile }`                                     |
 | PUT    | `/api/family/profiles/:id`           | yes    | same fields → `{ profile }`                                                                                            |
 | DELETE | `/api/family/profiles/:id`           | yes    | 204                                                                                                                    |
+| GET    | `/api/records/accounts`              | yes    | Accounts you can open (yours and shared ones), your role in each, and their people                                     |
+| GET    | `/api/records`                       | yes    | `?ownerId=&profileId=self\|<id>&type=` → `{ role, records }`, newest first                                             |
+| POST   | `/api/records`                       | yes    | `{ ownerId, type, profileId, title, recordDate, doctor, facility, notes, details }` → 201 `{ record }`                 |
+| GET    | `/api/records/:id`                   | yes    | `{ record }` with `role`                                                                                               |
+| PUT    | `/api/records/:id`                   | yes    | same fields → `{ record }` (owner or "Can manage")                                                                     |
+| DELETE | `/api/records/:id`                   | yes    | 204; moves it to the Trash (owner or "Can manage")                                                                     |
+| GET    | `/api/records/trash`                 | yes    | Your Trash (owner only), with who moved each and when it's deleted for good                                            |
+| DELETE | `/api/records/trash`                 | yes    | `{ deleted }`; empties your Trash                                                                                      |
+| POST   | `/api/records/:id/restore`           | yes    | 204 (owner only)                                                                                                       |
+| DELETE | `/api/records/:id/forever`           | yes    | 204; only from the Trash (owner only)                                                                                  |
+| GET    | `/api/records/:id/history`           | yes    | `{ entries }`: who did what, with the changed fields                                                                   |
+| GET    | `/api/activity`                      | yes    | `?before=` → `{ entries, next }`: your account's history, 50 at a time                                                 |
 | PUT    | `/api/account/password`              | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out                                                     |
 | PUT    | `/api/account/security`              | yes    | `{ lockAfterMinutes?, twoStepEnabled?, currentPassword? }` → `{ user }` (turning two-step off needs `currentPassword`) |
 | GET    | `/api/account/passkeys`              | yes    | `{ passkeys }`: name, dates, synced                                                                                    |
@@ -383,6 +402,7 @@ All routes start with `/api`. Errors always look like `{ "message": "…", "erro
 | Status | When                                                                                                                                              |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 400    | The form didn't pass validation (`errors` says which field), a code or passkey didn't work, or two-step sign-in timed out (`signInExpired: true`) |
+| 403    | Signed in, but not allowed (for example "Can view" family changing a record)                                                                      |
 | 401    | Not signed in, or wrong sign-in                                                                                                                   |
 | 423    | Signed in, but locked: enter the password again (`locked: true`)                                                                                  |
 | 404    | Not found                                                                                                                                         |
@@ -426,11 +446,11 @@ docker compose up -d db
 turbo run test
 ```
 
-| Suite           | Where                       | What it checks                                                                                                                                               |
-| --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| API unit        | `apps/api/test/unit`        | User rules, shared schemas, use cases with fake repositories (no database)                                                                                   |
-| API integration | `apps/api/test/integration` | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, sessions, rate limit, errors |
-| Website unit    | `apps/web/src/**/*.test.ts` | The API client (`ApiError`), error messages, dates                                                                                                           |
+| Suite           | Where                       | What it checks                                                                                                                                                                                       |
+| --------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API unit        | `apps/api/test/unit`        | User rules, shared schemas, use cases with fake repositories (no database)                                                                                                                           |
+| API integration | `apps/api/test/integration` | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, records, the Trash and the audit trail, sessions, rate limit, errors |
+| Website unit    | `apps/web/src/**/*.test.ts` | The API client (`ApiError`), error messages, dates                                                                                                                                                   |
 
 ### The test database
 
