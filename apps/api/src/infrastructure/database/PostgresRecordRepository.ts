@@ -26,6 +26,7 @@ interface RecordRow {
   deleted_at: Date | null;
   deleted_by: string | null;
   deleted_by_name: string | null;
+  file_count: number;
 }
 
 const NAME = (alias: string) =>
@@ -38,7 +39,8 @@ const SELECT = `
          r.doctor, r.facility, r.notes, r.details,
          r.created_by, ${NAME("cu")} as created_by_name, r.created_at,
          r.updated_by, ${NAME("uu")} as updated_by_name, r.updated_at,
-         r.deleted_at, r.deleted_by, ${NAME("du")} as deleted_by_name
+         r.deleted_at, r.deleted_by, ${NAME("du")} as deleted_by_name,
+         (select count(*) from record_files f where f.record_id = r.id)::int as file_count
     from records r
     left join users cu on cu.id = r.created_by
     left join users uu on uu.id = r.updated_by
@@ -65,6 +67,7 @@ function toRecord(row: RecordRow): HealthRecord {
     deletedAt: row.deleted_at,
     deletedBy: row.deleted_by,
     deletedByName: row.deleted_by ? row.deleted_by_name : null,
+    fileCount: row.file_count,
   } as HealthRecord;
 }
 

@@ -19,6 +19,7 @@
     "@simplewebauthn/server": "14.0.3",
     "@talaan/shared": "workspace:*",
     "bcryptjs": "3.0.3",
+    "cloudinary": "2.11.0",
     "connect-pg-simple": "10.0.0",
     "dbmate": "2.36.0",
     "dotenv": "18.0.4",

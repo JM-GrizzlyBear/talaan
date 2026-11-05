@@ -4,3 +4,6 @@ dist
 .env
 *.tsbuildinfo
 AGENTS.md
+
+# Files uploaded while developing without Cloudinary (apps/api/.uploads)
+.uploads/

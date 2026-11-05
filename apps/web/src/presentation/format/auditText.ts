@@ -17,6 +17,10 @@ export function auditSentence(entry: AuditEntryInfo) {
       return `${who} deleted ${what} for good`;
     case "record.purged":
       return `Talaan deleted ${what} for good after 30 days in the Trash`;
+    case "record.file_added":
+      return `${who} attached a file to ${what}`;
+    case "record.file_removed":
+      return `${who} removed a file from ${what}`;
     case "profile.added":
       return `${who} added a profile for ${entry.subject}`;
     case "profile.edited":

@@ -5,7 +5,7 @@ import {
   type RecordAccountInfo,
   type RecordType,
 } from "@talaan/shared";
-import { ClipboardList, Plus, Trash } from "lucide-react";
+import { ClipboardList, Paperclip, Plus, Trash } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 import {
   useRecordAccounts,
@@ -182,6 +182,18 @@ export function RecordsPage() {
                     )}
                   </span>
                   <span className="text-sm text-muted">
+                    {record.fileCount > 0 && (
+                      <span
+                        className="mr-1.5 inline-flex items-center gap-0.5 align-middle"
+                        title={`${record.fileCount} ${record.fileCount === 1 ? "file" : "files"}`}
+                      >
+                        <Paperclip aria-hidden="true" className="size-3.5" />
+                        {record.fileCount}
+                        <span className="sr-only">
+                          {record.fileCount === 1 ? " file" : " files"}
+                        </span>
+                      </span>
+                    )}
                     {RECORD_TYPE_LABELS[record.type]} · {record.personName}
                     {record.facility && ` · ${record.facility}`}
                   </span>

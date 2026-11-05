@@ -208,6 +208,8 @@ export interface RecordSummary {
   doctor: string;
   // Lab results outside the normal range
   outOfRange: number;
+  // Photos and PDFs attached
+  fileCount: number;
   updatedAt: string;
 }
 
@@ -266,6 +268,8 @@ export const AUDIT_ACTIONS = [
   "record.restored",
   "record.deleted",
   "record.purged",
+  "record.file_added",
+  "record.file_removed",
   "profile.added",
   "profile.edited",
   "profile.removed",

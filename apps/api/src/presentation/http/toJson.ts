@@ -1,5 +1,6 @@
 import {
   fullName,
+  type RecordFileInfo,
   type AuditEntryInfo,
   type RecordAccountInfo,
   type RecordInfo,
@@ -19,6 +20,7 @@ import type {
 import type { FamilyAccessWithPerson } from "../../domain/family/FamilyAccess.js";
 import type { FamilyInvitation } from "../../domain/family/FamilyInvitation.js";
 import type { FamilyProfile } from "../../domain/family/FamilyProfile.js";
+import type { RecordFile } from "../../domain/file/RecordFile.js";
 import type { AuditEntry } from "../../domain/audit/AuditEntry.js";
 import type { HealthRecord } from "../../domain/record/HealthRecord.js";
 import { outOfRangeCount, purgeAt } from "../../domain/record/rules.js";
@@ -142,6 +144,7 @@ export function recordSummaryJson(
     facility: record.facility,
     doctor: record.doctor,
     outOfRange: outOfRangeCount(record),
+    fileCount: record.fileCount,
     updatedAt: record.updatedAt.toISOString(),
   };
 }
@@ -212,5 +215,21 @@ export function recordAccountJson(
         relationship: p.relationship,
       })),
     ],
+  };
+}
+
+// No storage key: the browser only ever reads files through the API
+export function recordFileJson(file: RecordFile): RecordFileInfo {
+  return {
+    id: file.id,
+    recordId: file.recordId,
+    name: file.originalName,
+    format: file.format,
+    bytes: file.bytes,
+    width: file.width,
+    height: file.height,
+    pages: file.pages,
+    uploadedByName: file.uploadedByName,
+    createdAt: file.createdAt.toISOString(),
   };
 }

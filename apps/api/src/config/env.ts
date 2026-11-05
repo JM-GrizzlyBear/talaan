@@ -1,5 +1,9 @@
 import "dotenv/config";
 import type { SmtpSettings } from "../infrastructure/email/SmtpAccountEmails.js";
+import {
+  parseCloudinaryUrl,
+  type CloudinarySettings,
+} from "../infrastructure/storage/CloudinaryFileStorage.js";
 import { readWebAuthn } from "./webauthn.js";
 
 function required(name: string) {
@@ -37,6 +41,28 @@ function readSmtp(appUrl: string): SmtpSettings | null {
   };
 }
 
+// Where photos and PDFs go. CLOUDINARY_URL: Cloudinary. Without it, a local
+// folder while developing, and no uploads on the live site.
+function readStorage(
+  isProduction: boolean,
+):
+  | { kind: "cloudinary"; settings: CloudinarySettings }
+  | { kind: "local"; dir: string }
+  | null {
+  const url = optional("CLOUDINARY_URL");
+  if (url) {
+    return {
+      kind: "cloudinary",
+      settings: {
+        ...parseCloudinaryUrl(url),
+        folder: optional("CLOUDINARY_FOLDER") ?? "talaan",
+      },
+    };
+  }
+  if (isProduction) return null;
+  return { kind: "local", dir: optional("LOCAL_UPLOADS_DIR") ?? ".uploads" };
+}
+
 // Reads and checks every setting once, at startup, so a mistake fails loudly right away
 export function readEnv() {
   const sessionSecret = required("SESSION_SECRET");
@@ -65,6 +91,7 @@ export function readEnv() {
     // so rate limits see each visitor's real IP address
     trustProxy,
     smtp: readSmtp(appUrl),
+    storage: readStorage(isProduction),
     webAuthn: readWebAuthn({
       appUrl,
       rpId: optional("WEBAUTHN_RP_ID"),
