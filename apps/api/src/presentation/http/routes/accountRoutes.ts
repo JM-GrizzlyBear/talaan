@@ -4,7 +4,6 @@ import {
   securitySettingsSchema,
 } from "@talaan/shared";
 import { Router, type RequestHandler } from "express";
-import { z } from "zod";
 import type { ManagePasskeys } from "../../../application/passkey/ManagePasskeys.js";
 import type { PasskeyRegistration } from "../../../application/passkey/PasskeyRegistration.js";
 import type { Clock } from "../../../application/ports/Clock.js";
@@ -12,18 +11,11 @@ import type { TrustedBrowsers } from "../../../application/twoStep/TrustedBrowse
 import type { ChangePassword } from "../../../application/user/ChangePassword.js";
 import type { SignOutOtherSessions } from "../../../application/user/SignOutOtherSessions.js";
 import type { UpdateSecuritySettings } from "../../../application/user/UpdateSecuritySettings.js";
-import { NotFoundError } from "../../../domain/errors.js";
 import { currentUserId } from "../middleware/requireAuth.js";
 import { savePasskeyChallenge, takePasskeyChallenge } from "../session.js";
-import { browserJson, passkeyJson, userJson } from "../toJson.js";
+import { browserJson, passkeyJson, userJson } from "../json/account.js";
 import { clearTrustCookie, readTrustCookie } from "../trustCookie.js";
-
-// An id in the address must be a uuid, or there's nothing to find
-function idParam(value: unknown) {
-  const parsed = z.uuid().safeParse(value);
-  if (!parsed.success) throw new NotFoundError();
-  return parsed.data;
-}
+import { idParam } from "../params.js";
 
 // The signed-in person's own settings
 export function accountRoutes(deps: {

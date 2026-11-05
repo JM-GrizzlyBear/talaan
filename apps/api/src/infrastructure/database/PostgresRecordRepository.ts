@@ -5,6 +5,7 @@ import type {
   RecordFilters,
   RecordRepository,
 } from "../../domain/record/RecordRepository.js";
+import { fullNameSql } from "./sql.js";
 
 interface RecordRow {
   id: string;
@@ -29,17 +30,14 @@ interface RecordRow {
   file_count: number;
 }
 
-const NAME = (alias: string) =>
-  `concat_ws(' ', ${alias}.first_name, nullif(${alias}.middle_name, ''), ${alias}.last_name)`;
-
 // Every column, the date as plain text, and the names of who added, edited and deleted it
 const SELECT = `
   select r.id, r.owner_id, r.profile_id, r.type, r.title,
          to_char(r.record_date, 'YYYY-MM-DD') as record_date,
          r.doctor, r.facility, r.notes, r.details,
-         r.created_by, ${NAME("cu")} as created_by_name, r.created_at,
-         r.updated_by, ${NAME("uu")} as updated_by_name, r.updated_at,
-         r.deleted_at, r.deleted_by, ${NAME("du")} as deleted_by_name,
+         r.created_by, ${fullNameSql("cu")} as created_by_name, r.created_at,
+         r.updated_by, ${fullNameSql("uu")} as updated_by_name, r.updated_at,
+         r.deleted_at, r.deleted_by, ${fullNameSql("du")} as deleted_by_name,
          (select count(*) from record_files f where f.record_id = r.id)::int as file_count
     from records r
     left join users cu on cu.id = r.created_by

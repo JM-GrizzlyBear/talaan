@@ -2,6 +2,7 @@ import type { FileFormat } from "@talaan/shared";
 import type { Pool } from "pg";
 import type { RecordFile, StoredFile } from "../../domain/file/RecordFile.js";
 import type { RecordFileRepository } from "../../domain/file/RecordFileRepository.js";
+import { fullNameSql } from "./sql.js";
 
 interface FileRow {
   id: string;
@@ -22,7 +23,7 @@ interface FileRow {
 const SELECT = `
   select f.id, f.record_id, f.owner_id, f.storage_key, f.format, f.bytes, f.width,
          f.height, f.pages, f.original_name, f.uploaded_by, f.created_at,
-         concat_ws(' ', u.first_name, nullif(u.middle_name, ''), u.last_name) as uploaded_by_name
+         ${fullNameSql("u")} as uploaded_by_name
     from record_files f
     left join users u on u.id = f.uploaded_by`;
 

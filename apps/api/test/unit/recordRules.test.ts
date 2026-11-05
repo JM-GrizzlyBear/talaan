@@ -5,8 +5,8 @@ import {
   type RecordFields,
 } from "@talaan/shared";
 import { describe, expect, it } from "vitest";
+import { diffRecords } from "../../src/domain/record/diff.js";
 import {
-  diffRecords,
   outOfRangeCount,
   purgeAt,
   purgeCutoff,
