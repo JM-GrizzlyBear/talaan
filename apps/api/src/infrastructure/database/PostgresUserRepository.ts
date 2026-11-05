@@ -14,14 +14,21 @@ interface UserRow {
   email: string;
   password_hash: string;
   lock_after_minutes: number;
+  two_step_enabled: boolean;
+  passkey_count: number;
   privacy_consent_at: Date;
   password_changed_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
 
-const COLUMNS =
-  "id, first_name, middle_name, last_name, email, password_hash, lock_after_minutes, privacy_consent_at, password_changed_at, created_at, updated_at";
+// Every user column, plus how many passkeys they have
+const SELECT = `
+  select u.id, u.first_name, u.middle_name, u.last_name, u.email, u.password_hash,
+         u.lock_after_minutes, u.two_step_enabled, u.privacy_consent_at,
+         u.password_changed_at, u.created_at, u.updated_at,
+         (select count(*) from passkeys p where p.user_id = u.id)::int as passkey_count
+    from users u`;
 
 function toUser(row: UserRow): User {
   return {
@@ -32,6 +39,8 @@ function toUser(row: UserRow): User {
     email: row.email,
     passwordHash: row.password_hash,
     lockAfterMinutes: row.lock_after_minutes as LockAfterMinutes,
+    twoStepEnabled: row.two_step_enabled,
+    passkeyCount: row.passkey_count,
     privacyConsentAt: row.privacy_consent_at,
     passwordChangedAt: row.password_changed_at,
     createdAt: row.created_at,
@@ -44,10 +53,16 @@ export class PostgresUserRepository implements UserRepository {
 
   private async findOne(where: string, value: string) {
     const result = await this.pool.query<UserRow>(
-      `select ${COLUMNS} from users where ${where} = $1`,
+      `${SELECT} where u.${where} = $1`,
       [value],
     );
     return result.rows[0] ? toUser(result.rows[0]) : null;
+  }
+
+  private async mustFind(id: string) {
+    const user = await this.findById(id);
+    if (!user) throw new Error(`User ${id} disappeared`);
+    return user;
   }
 
   async findById(id: string) {
@@ -59,10 +74,10 @@ export class PostgresUserRepository implements UserRepository {
   }
 
   async create(user: NewUser) {
-    const result = await this.pool.query<UserRow>(
+    const result = await this.pool.query<{ id: string }>(
       `insert into users (first_name, middle_name, last_name, email, password_hash, privacy_consent_at)
        values ($1, $2, $3, $4, $5, $6)
-       returning ${COLUMNS}`,
+       returning id`,
       [
         user.firstName,
         user.middleName,
@@ -72,7 +87,7 @@ export class PostgresUserRepository implements UserRepository {
         user.privacyConsentAt,
       ],
     );
-    return toUser(result.rows[0]);
+    return await this.mustFind(result.rows[0].id);
   }
 
   async updatePassword(id: string, passwordHash: string, changedAt: Date) {
@@ -84,13 +99,19 @@ export class PostgresUserRepository implements UserRepository {
     );
   }
 
-  async updateLockAfter(id: string, minutes: LockAfterMinutes) {
-    const result = await this.pool.query<UserRow>(
-      `update users set lock_after_minutes = $2, updated_at = now()
-        where id = $1
-        returning ${COLUMNS}`,
-      [id, minutes],
+  async updateSecurity(
+    id: string,
+    settings: { lockAfterMinutes?: LockAfterMinutes; twoStepEnabled?: boolean },
+  ) {
+    // Only the settings that were given change; the others keep their value
+    await this.pool.query(
+      `update users
+          set lock_after_minutes = coalesce($2, lock_after_minutes),
+              two_step_enabled = coalesce($3, two_step_enabled),
+              updated_at = now()
+        where id = $1`,
+      [id, settings.lockAfterMinutes ?? null, settings.twoStepEnabled ?? null],
     );
-    return toUser(result.rows[0]);
+    return await this.mustFind(id);
   }
 }

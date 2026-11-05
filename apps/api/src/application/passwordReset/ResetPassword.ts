@@ -1,4 +1,5 @@
-import type { ResetCodeRepository } from "../../domain/passwordReset/ResetCodeRepository.js";
+import type { EmailCodeRepository } from "../../domain/emailCode/EmailCodeRepository.js";
+import type { TrustedBrowsers } from "../twoStep/TrustedBrowsers.js";
 import type { UserRepository } from "../../domain/user/UserRepository.js";
 import type { AccountEmails } from "../ports/AccountEmails.js";
 import type { Clock } from "../ports/Clock.js";
@@ -12,9 +13,10 @@ export class ResetPassword {
   constructor(
     private readonly checkCode: CheckResetCode,
     private readonly users: UserRepository,
-    private readonly codes: ResetCodeRepository,
+    private readonly codes: EmailCodeRepository,
     private readonly passwords: PasswordHasher,
     private readonly sessions: SessionStore,
+    private readonly trustedBrowsers: TrustedBrowsers,
     private readonly clock: Clock,
     private readonly emails: AccountEmails | null,
   ) {}
@@ -30,6 +32,8 @@ export class ResetPassword {
     );
     await this.codes.remove(user.id);
     await this.sessions.deleteAllSessions(user.id);
+    // A new password means starting over: every browser asks for a code again
+    await this.trustedBrowsers.forgetAll(user.id);
     await this.emails?.sendPasswordChanged(
       { email: user.email, firstName: user.firstName },
       now,

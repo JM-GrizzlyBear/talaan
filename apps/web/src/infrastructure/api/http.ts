@@ -5,16 +5,20 @@ export class ApiError extends Error {
   readonly status: number;
   // Field name → messages, when the API rejected a form
   readonly fieldErrors: Record<string, string[] | undefined>;
+  // Two-step sign-in took too long: start again from the email and password
+  readonly signInExpired: boolean;
 
   constructor(
     status: number,
     message: string,
     fieldErrors: ApiErrorBody["errors"] = {},
+    signInExpired = false,
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.fieldErrors = fieldErrors;
+    this.signInExpired = signInExpired;
   }
 }
 
@@ -62,6 +66,7 @@ export async function request<T>(
       response.status,
       data.message ?? `Request failed (${response.status})`,
       data.errors,
+      data.signInExpired === true,
     );
   }
   if (response.status === 204) return undefined as T;

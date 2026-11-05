@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  isResetCodeUsable,
-  resetCodeExpiry,
+  isCodeUsable,
+  codeExpiry,
   triesLeft,
-} from "../../src/domain/passwordReset/rules.js";
+} from "../../src/domain/emailCode/rules.js";
 import { toSafeUser } from "../../src/domain/user/User.js";
 import { isLockDue, normalizeEmail } from "../../src/domain/user/rules.js";
 import { HmacSecretCodes } from "../../src/infrastructure/security/HmacSecretCodes.js";
@@ -31,6 +31,8 @@ describe("user rules", () => {
       email: "maria@example.com",
       passwordHash: "secret-hash",
       lockAfterMinutes: 15,
+      twoStepEnabled: true,
+      passkeyCount: 0,
       privacyConsentAt: NOW,
       passwordChangedAt: null,
       createdAt: NOW,
@@ -42,11 +44,11 @@ describe("user rules", () => {
 
 describe("reset code rules", () => {
   it("works for 15 minutes and 3 tries", () => {
-    const expiresAt = resetCodeExpiry(NOW);
+    const expiresAt = codeExpiry(NOW);
     expect(expiresAt.getTime() - NOW.getTime()).toBe(minutes(15));
-    expect(isResetCodeUsable({ expiresAt, tries: 2 }, NOW)).toBe(true);
-    expect(isResetCodeUsable({ expiresAt, tries: 3 }, NOW)).toBe(false);
-    expect(isResetCodeUsable({ expiresAt, tries: 0 }, expiresAt)).toBe(false);
+    expect(isCodeUsable({ expiresAt, tries: 2 }, NOW)).toBe(true);
+    expect(isCodeUsable({ expiresAt, tries: 3 }, NOW)).toBe(false);
+    expect(isCodeUsable({ expiresAt, tries: 0 }, expiresAt)).toBe(false);
     expect(triesLeft(1)).toBe(2);
     expect(triesLeft(9)).toBe(0);
   });

@@ -19,5 +19,8 @@ export interface UserRepository {
     passwordHash: string,
     changedAt: Date,
   ): Promise<void>;
-  updateLockAfter(id: string, minutes: LockAfterMinutes): Promise<User>;
+  updateSecurity(
+    id: string,
+    settings: { lockAfterMinutes?: LockAfterMinutes; twoStepEnabled?: boolean },
+  ): Promise<User>;
 }

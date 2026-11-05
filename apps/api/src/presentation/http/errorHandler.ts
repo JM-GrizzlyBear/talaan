@@ -3,8 +3,11 @@ import type { ErrorRequestHandler, RequestHandler } from "express";
 import { ZodError, z } from "zod";
 import {
   EmailNotSetUpError,
-  ResetCodeError,
-} from "../../domain/passwordReset/errors.js";
+  CodeError,
+} from "../../domain/emailCode/errors.js";
+import { NotFoundError } from "../../domain/errors.js";
+import { PasskeyError } from "../../domain/passkey/errors.js";
+import { SignInExpiredError } from "../../domain/user/signIn.js";
 import {
   EmailTakenError,
   InvalidCredentialsError,
@@ -66,11 +69,24 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     });
     return;
   }
-  if (error instanceof ResetCodeError) {
+  if (error instanceof CodeError) {
     send(res, 400, {
       message: error.message,
       errors: { code: [error.message] },
     });
+    return;
+  }
+  // The website goes back to the email and password step
+  if (error instanceof SignInExpiredError) {
+    send(res, 400, { message: error.message, signInExpired: true });
+    return;
+  }
+  if (error instanceof PasskeyError) {
+    send(res, 400, { message: error.message });
+    return;
+  }
+  if (error instanceof NotFoundError) {
+    send(res, 404, { message: error.message });
     return;
   }
   if (error instanceof EmailNotSetUpError) {

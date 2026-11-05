@@ -6,18 +6,28 @@ import type { Pool } from "pg";
 import { CheckResetCode } from "./application/passwordReset/CheckResetCode.js";
 import { RequestPasswordReset } from "./application/passwordReset/RequestPasswordReset.js";
 import { ResetPassword } from "./application/passwordReset/ResetPassword.js";
+import { ManagePasskeys } from "./application/passkey/ManagePasskeys.js";
+import { PasskeyRegistration } from "./application/passkey/PasskeyRegistration.js";
+import { PasskeySignIn } from "./application/passkey/PasskeySignIn.js";
 import type { AccountEmails } from "./application/ports/AccountEmails.js";
 import type { Clock } from "./application/ports/Clock.js";
+import type { PasskeyCeremonies } from "./application/ports/PasskeyCeremonies.js";
 import type { PasswordHasher } from "./application/ports/PasswordHasher.js";
 import type { SecretCodes } from "./application/ports/SecretCodes.js";
+import { SendSignInCode } from "./application/twoStep/SendSignInCode.js";
+import { TrustedBrowsers } from "./application/twoStep/TrustedBrowsers.js";
+import { VerifySignInCode } from "./application/twoStep/VerifySignInCode.js";
 import { ChangePassword } from "./application/user/ChangePassword.js";
 import { GetCurrentUser } from "./application/user/GetCurrentUser.js";
 import { LogInUser } from "./application/user/LogInUser.js";
 import { RegisterUser } from "./application/user/RegisterUser.js";
+import { SignOutOtherSessions } from "./application/user/SignOutOtherSessions.js";
 import { UnlockSession } from "./application/user/UnlockSession.js";
 import { UpdateSecuritySettings } from "./application/user/UpdateSecuritySettings.js";
-import { PostgresResetCodeRepository } from "./infrastructure/database/PostgresResetCodeRepository.js";
+import { PostgresEmailCodeRepository } from "./infrastructure/database/PostgresEmailCodeRepository.js";
+import { PostgresPasskeyRepository } from "./infrastructure/database/PostgresPasskeyRepository.js";
 import { PostgresSessionStore } from "./infrastructure/database/PostgresSessionStore.js";
+import { PostgresTrustedBrowserRepository } from "./infrastructure/database/PostgresTrustedBrowserRepository.js";
 import { PostgresUserRepository } from "./infrastructure/database/PostgresUserRepository.js";
 import { apiNotFound, errorHandler } from "./presentation/http/errorHandler.js";
 import {
@@ -39,6 +49,7 @@ export interface BuildAppOptions {
   secretCodes: SecretCodes;
   // null: no email service set up, so Forgot password can't send codes
   emails: AccountEmails | null;
+  passkeyCeremonies: PasskeyCeremonies;
   clock: Clock;
   // HTTPS-only cookies (production)
   secureCookie: boolean;
@@ -50,6 +61,8 @@ export interface BuildAppOptions {
   authLimit?: number;
   // Forgot-password codes per email address every 15 minutes
   resetEmailLimit?: number;
+  // New two-step sign-in codes per person every 15 minutes
+  signInCodeLimit?: number;
 }
 
 // The composition root: the only place that knows every concrete class.
@@ -57,8 +70,31 @@ export interface BuildAppOptions {
 export function buildApp(options: BuildAppOptions) {
   const { clock, passwordHasher, emails } = options;
   const users = new PostgresUserRepository(options.pool);
-  const resetCodes = new PostgresResetCodeRepository(options.pool);
+  const resetCodes = new PostgresEmailCodeRepository(
+    options.pool,
+    "password_reset_codes",
+  );
+  const signInCodes = new PostgresEmailCodeRepository(
+    options.pool,
+    "sign_in_codes",
+  );
+  const passkeys = new PostgresPasskeyRepository(options.pool);
   const sessions = new PostgresSessionStore(options.pool);
+  const trustedBrowsers = new TrustedBrowsers(
+    new PostgresTrustedBrowserRepository(options.pool),
+    options.secretCodes,
+    clock,
+  );
+  // Two-step sign-in needs email; without it, signing in takes just the password
+  const sendSignInCode = emails
+    ? new SendSignInCode(signInCodes, options.secretCodes, clock, emails)
+    : null;
+  const passkeySignIn = new PasskeySignIn(
+    users,
+    passkeys,
+    options.passkeyCeremonies,
+    clock,
+  );
 
   // Each action gets its own counter, so signing in, unlocking and resetting a
   // password don't use up each other's tries. A family at home shares one IP address.
@@ -78,6 +114,17 @@ export function buildApp(options: BuildAppOptions) {
     key: emailKey,
     message:
       "We already sent a few codes to that email. Please wait a few minutes, then check your inbox and spam folder.",
+  });
+  const resendLimit = rateLimit({
+    windowMs: fifteenMinutes,
+    max: options.signInCodeLimit ?? 3,
+    clock,
+    key: (req) =>
+      req.session?.pendingUserId
+        ? `pending:${req.session.pendingUserId}`
+        : undefined,
+    message:
+      "We already sent a few codes. Please wait a few minutes, then check your inbox and spam folder.",
   });
 
   const app = express();
@@ -107,12 +154,28 @@ export function buildApp(options: BuildAppOptions) {
     "/api",
     authRoutes({
       registerUser: new RegisterUser(users, passwordHasher, clock),
-      logInUser: new LogInUser(users, passwordHasher),
+      logInUser: new LogInUser(
+        users,
+        passwordHasher,
+        trustedBrowsers,
+        sendSignInCode,
+      ),
+      verifySignInCode: new VerifySignInCode(
+        users,
+        signInCodes,
+        options.secretCodes,
+        clock,
+      ),
+      sendSignInCode,
+      trustedBrowsers,
       getCurrentUser: new GetCurrentUser(users),
       unlockSession: new UnlockSession(users, passwordHasher),
+      passkeySignIn,
       clock,
+      secureCookie: options.secureCookie,
       limit: tries(),
       unlockLimit: tries(userKey),
+      resendLimit,
     }),
   );
   app.use(
@@ -132,6 +195,7 @@ export function buildApp(options: BuildAppOptions) {
         resetCodes,
         passwordHasher,
         sessions,
+        trustedBrowsers,
         clock,
         emails,
       ),
@@ -146,10 +210,20 @@ export function buildApp(options: BuildAppOptions) {
         users,
         passwordHasher,
         sessions,
+        trustedBrowsers,
         clock,
         emails,
       ),
-      updateSecuritySettings: new UpdateSecuritySettings(users),
+      updateSecuritySettings: new UpdateSecuritySettings(users, passwordHasher),
+      passkeyRegistration: new PasskeyRegistration(
+        users,
+        passkeys,
+        options.passkeyCeremonies,
+      ),
+      managePasskeys: new ManagePasskeys(passkeys),
+      trustedBrowsers,
+      signOutOtherSessions: new SignOutOtherSessions(sessions),
+      clock,
       requireAuth: requireAuth(clock),
       limit: tries(userKey),
     }),
