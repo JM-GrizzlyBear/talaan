@@ -23,10 +23,10 @@ export class CodeError extends Error {
 
 // The server has no way to send email (SMTP isn't set up)
 export class EmailNotSetUpError extends Error {
-  constructor() {
-    super(
-      "Password reset by email isn't set up on this server yet. Please try again later.",
-    );
+  constructor(
+    message = "Password reset by email isn't set up on this server yet. Please try again later.",
+  ) {
+    super(message);
     this.name = "EmailNotSetUpError";
   }
 }

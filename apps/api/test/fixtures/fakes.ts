@@ -1,6 +1,7 @@
 import type {
   AccountEmails,
   EmailRecipient,
+  FamilyInvitationEmail,
 } from "../../src/application/ports/AccountEmails.js";
 import { HmacSecretCodes } from "../../src/infrastructure/security/HmacSecretCodes.js";
 
@@ -19,6 +20,8 @@ export class FixedSecretCodes extends HmacSecretCodes {
 export class FakeEmails implements AccountEmails {
   readonly codes: { to: EmailRecipient; code: string }[] = [];
   readonly signInCodes: { to: EmailRecipient; code: string }[] = [];
+  readonly invitations: { to: string; invitation: FamilyInvitationEmail }[] =
+    [];
   readonly changed: { to: EmailRecipient; at: Date }[] = [];
 
   async sendPasswordResetCode(to: EmailRecipient, code: string) {
@@ -29,6 +32,10 @@ export class FakeEmails implements AccountEmails {
     this.signInCodes.push({ to, code });
   }
 
+  async sendFamilyInvitation(to: string, invitation: FamilyInvitationEmail) {
+    this.invitations.push({ to, invitation });
+  }
+
   async sendPasswordChanged(to: EmailRecipient, at: Date) {
     this.changed.push({ to, at });
   }
@@ -36,6 +43,7 @@ export class FakeEmails implements AccountEmails {
   clear() {
     this.codes.length = 0;
     this.signInCodes.length = 0;
+    this.invitations.length = 0;
     this.changed.length = 0;
   }
 }

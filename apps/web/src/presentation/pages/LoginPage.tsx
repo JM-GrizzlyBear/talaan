@@ -81,6 +81,8 @@ function PasswordStep({
   const [password, setPassword] = useState("");
   const logIn = useLogIn();
   const passkey = usePasskeySignIn();
+  // Kept when switching to sign-up, so both come back to the same page
+  const from = (useLocation().state as { from?: string } | null)?.from;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -166,7 +168,11 @@ function PasswordStep({
       )}
       <p className="mt-6 text-sm text-muted">
         New here?{" "}
-        <Link to="/register" className="font-semibold text-brand underline">
+        <Link
+          to="/register"
+          state={from ? { from } : undefined}
+          className="font-semibold text-brand underline"
+        >
           Create an account
         </Link>
       </p>

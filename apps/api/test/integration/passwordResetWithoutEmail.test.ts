@@ -29,3 +29,16 @@ describe("two-step sign-in without email", () => {
     expect(response.body.twoStep).toBe(false);
   });
 });
+
+describe("family invitations without email", () => {
+  it("say email isn't set up", async () => {
+    const maria = await t.as("maria");
+    const response = await maria.post("/api/family/invitations").send({
+      email: "lolo@example.com",
+      relationship: "Lolo",
+      access: "view",
+    });
+    expect(response.status).toBe(503);
+    expect(response.body.message).toContain("Invitations by email");
+  });
+});

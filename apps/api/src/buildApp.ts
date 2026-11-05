@@ -6,6 +6,9 @@ import type { Pool } from "pg";
 import { CheckResetCode } from "./application/passwordReset/CheckResetCode.js";
 import { RequestPasswordReset } from "./application/passwordReset/RequestPasswordReset.js";
 import { ResetPassword } from "./application/passwordReset/ResetPassword.js";
+import { FamilyInvitations } from "./application/family/FamilyInvitations.js";
+import { FamilyMembers } from "./application/family/FamilyMembers.js";
+import { FamilyProfiles } from "./application/family/FamilyProfiles.js";
 import { ManagePasskeys } from "./application/passkey/ManagePasskeys.js";
 import { PasskeyRegistration } from "./application/passkey/PasskeyRegistration.js";
 import { PasskeySignIn } from "./application/passkey/PasskeySignIn.js";
@@ -25,6 +28,9 @@ import { SignOutOtherSessions } from "./application/user/SignOutOtherSessions.js
 import { UnlockSession } from "./application/user/UnlockSession.js";
 import { UpdateSecuritySettings } from "./application/user/UpdateSecuritySettings.js";
 import { PostgresEmailCodeRepository } from "./infrastructure/database/PostgresEmailCodeRepository.js";
+import { PostgresFamilyAccessRepository } from "./infrastructure/database/PostgresFamilyAccessRepository.js";
+import { PostgresFamilyInvitationRepository } from "./infrastructure/database/PostgresFamilyInvitationRepository.js";
+import { PostgresFamilyProfileRepository } from "./infrastructure/database/PostgresFamilyProfileRepository.js";
 import { PostgresPasskeyRepository } from "./infrastructure/database/PostgresPasskeyRepository.js";
 import { PostgresSessionStore } from "./infrastructure/database/PostgresSessionStore.js";
 import { PostgresTrustedBrowserRepository } from "./infrastructure/database/PostgresTrustedBrowserRepository.js";
@@ -38,6 +44,7 @@ import {
 import { requireAuth } from "./presentation/http/middleware/requireAuth.js";
 import { accountRoutes } from "./presentation/http/routes/accountRoutes.js";
 import { authRoutes } from "./presentation/http/routes/authRoutes.js";
+import { familyRoutes } from "./presentation/http/routes/familyRoutes.js";
 import { healthRoutes } from "./presentation/http/routes/healthRoutes.js";
 import { passwordResetRoutes } from "./presentation/http/routes/passwordResetRoutes.js";
 import { createSessionMiddleware } from "./presentation/http/session.js";
@@ -63,6 +70,8 @@ export interface BuildAppOptions {
   resetEmailLimit?: number;
   // New two-step sign-in codes per person every 15 minutes
   signInCodeLimit?: number;
+  // Family invitations to one email address (and emails for one invitation) per day
+  invitationEmailLimit?: number;
 }
 
 // The composition root: the only place that knows every concrete class.
@@ -126,6 +135,34 @@ export function buildApp(options: BuildAppOptions) {
     message:
       "We already sent a few codes. Please wait a few minutes, then check your inbox and spam folder.",
   });
+
+  const oneDay = 24 * 60 * 60 * 1000;
+  const inviteEmailLimit = rateLimit({
+    windowMs: oneDay,
+    max: options.invitationEmailLimit ?? 3,
+    clock,
+    key: (req) => {
+      const key = emailKey(req);
+      return key && `invite:${key}`;
+    },
+    message:
+      "That email already got a few invitations today. Please try again tomorrow.",
+  });
+  const invitationResendLimit = rateLimit({
+    windowMs: oneDay,
+    max: options.invitationEmailLimit ?? 3,
+    clock,
+    key: (req) =>
+      typeof req.params.id === "string" ? `resend:${req.params.id}` : undefined,
+    message:
+      "That invitation was already sent a few times today. Please try again tomorrow.",
+  });
+
+  const familyAccess = new PostgresFamilyAccessRepository(options.pool);
+  const familyInvitations = new PostgresFamilyInvitationRepository(
+    options.pool,
+  );
+  const familyProfiles = new PostgresFamilyProfileRepository(options.pool);
 
   const app = express();
   app.disable("x-powered-by");
@@ -226,6 +263,31 @@ export function buildApp(options: BuildAppOptions) {
       clock,
       requireAuth: requireAuth(clock),
       limit: tries(userKey),
+    }),
+  );
+  app.use(
+    "/api",
+    familyRoutes({
+      invitations: new FamilyInvitations(
+        users,
+        familyInvitations,
+        familyAccess,
+        options.secretCodes,
+        clock,
+        emails,
+      ),
+      members: new FamilyMembers(
+        familyAccess,
+        familyInvitations,
+        familyProfiles,
+        clock,
+      ),
+      profiles: new FamilyProfiles(familyProfiles),
+      requireAuth: requireAuth(clock),
+      limit: tries(),
+      userLimit: tries(userKey),
+      inviteEmailLimit,
+      resendLimit: invitationResendLimit,
     }),
   );
   app.use("/api", apiNotFound);
