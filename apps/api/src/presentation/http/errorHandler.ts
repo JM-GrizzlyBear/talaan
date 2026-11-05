@@ -6,6 +6,7 @@ import {
   CodeError,
 } from "../../domain/emailCode/errors.js";
 import { NotFoundError } from "../../domain/errors.js";
+import { FamilyError } from "../../domain/family/errors.js";
 import { PasskeyError } from "../../domain/passkey/errors.js";
 import { SignInExpiredError } from "../../domain/user/signIn.js";
 import {
@@ -79,6 +80,13 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
   // The website goes back to the email and password step
   if (error instanceof SignInExpiredError) {
     send(res, 400, { message: error.message, signInExpired: true });
+    return;
+  }
+  if (error instanceof FamilyError) {
+    send(res, 400, {
+      message: error.message,
+      errors: error.field ? { [error.field]: [error.message] } : undefined,
+    });
     return;
   }
   if (error instanceof PasskeyError) {

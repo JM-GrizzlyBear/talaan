@@ -1,5 +1,5 @@
 import { fullName } from "@talaan/shared";
-import { LogOut, ShieldCheck } from "lucide-react";
+import { LogOut, ShieldCheck, Users } from "lucide-react";
 import { Link } from "react-router";
 import { useLogOut, useSession } from "../../../application/auth/useAuth";
 import { TalaanLogo } from "../brand/TalaanLogo";
@@ -22,6 +22,10 @@ export function AppHeader() {
         {user && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="mr-1 text-sm text-muted">{fullName(user)}</span>
+            <Link to="/family" className={buttonSecondary}>
+              <Users aria-hidden="true" className="size-4" />
+              Family
+            </Link>
             <Link to="/settings/security" className={buttonSecondary}>
               <ShieldCheck aria-hidden="true" className="size-4" />
               Security

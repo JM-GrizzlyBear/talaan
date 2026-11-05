@@ -1,10 +1,13 @@
-import { Navigate, Outlet } from "react-router";
+import { Navigate, Outlet, useLocation } from "react-router";
 import { useCurrentUser } from "../../../application/auth/useAuth";
 
-// Sign in and sign up: someone already signed in goes straight to the app
+// Sign in and sign up: someone already signed in goes straight to the app,
+// or back to the page that sent them here (like an invitation link)
 export function GuestOnly() {
   const { data: user, isPending } = useCurrentUser();
+  const location = useLocation();
   if (isPending) return null;
-  if (user) return <Navigate to="/" replace />;
+  const from = (location.state as { from?: string } | null)?.from;
+  if (user) return <Navigate to={from ?? "/"} replace />;
   return <Outlet />;
 }

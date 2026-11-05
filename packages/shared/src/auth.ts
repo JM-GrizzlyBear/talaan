@@ -23,7 +23,7 @@ export const LOCK_AFTER_MINUTES = [5, 15, 30, 60] as const;
 export type LockAfterMinutes = (typeof LOCK_AFTER_MINUTES)[number];
 export const DEFAULT_LOCK_AFTER_MINUTES: LockAfterMinutes = 15;
 
-const email = z
+export const emailSchema = z
   .string()
   .trim()
   .toLowerCase()
@@ -46,23 +46,26 @@ const currentPassword = z
   .min(1, "Enter your password")
   .max(AUTH_LIMITS.passwordMax);
 
-const namePart = (label: string) =>
+// A first or last name (shared with family profiles)
+export const namePart = (label: string) =>
   z
     .string()
     .trim()
     .min(1, `Enter your ${label}`)
     .max(AUTH_LIMITS.nameMax, `At most ${AUTH_LIMITS.nameMax} characters`);
 
+// Optional: not everyone has one. Empty means none.
+export const middleNamePart = z
+  .string()
+  .trim()
+  .max(AUTH_LIMITS.nameMax, `At most ${AUTH_LIMITS.nameMax} characters`)
+  .default("");
+
 export const registerSchema = z.object({
   firstName: namePart("first name"),
-  // Optional: not everyone has one. Empty means none.
-  middleName: z
-    .string()
-    .trim()
-    .max(AUTH_LIMITS.nameMax, `At most ${AUTH_LIMITS.nameMax} characters`)
-    .default(""),
+  middleName: middleNamePart,
   lastName: namePart("last name"),
-  email,
+  email: emailSchema,
   password: newPassword,
   // The Data Privacy Act asks for clear consent before keeping health records
   consent: z.literal(true, {
@@ -75,10 +78,10 @@ export const loginSchema = z.object({
   password: currentPassword,
 });
 
-export const passwordResetRequestSchema = z.object({ email });
+export const passwordResetRequestSchema = z.object({ email: emailSchema });
 
 export const passwordResetCodeSchema = z.object({
-  email,
+  email: emailSchema,
   code: z
     .string()
     .trim()

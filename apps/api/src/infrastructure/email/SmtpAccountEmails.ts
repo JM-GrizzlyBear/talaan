@@ -2,7 +2,9 @@ import nodemailer, { type Transporter } from "nodemailer";
 import type {
   AccountEmails,
   EmailRecipient,
+  FamilyInvitationEmail,
 } from "../../application/ports/AccountEmails.js";
+import { familyInvitationEmail } from "./templates/familyInvitationEmail.js";
 import { passwordChangedEmail } from "./templates/passwordChangedEmail.js";
 import { passwordResetEmail } from "./templates/passwordResetEmail.js";
 import { signInCodeEmail } from "./templates/signInCodeEmail.js";
@@ -55,6 +57,18 @@ export class SmtpAccountEmails implements AccountEmails {
       signInCodeEmail(to, code, {
         forgotPasswordUrl: `${this.settings.appUrl}/forgot-password`,
       }),
+    );
+  }
+
+  async sendFamilyInvitation(to: string, invitation: FamilyInvitationEmail) {
+    await this.send(
+      to,
+      familyInvitationEmail(
+        to,
+        invitation,
+        { invitationUrl: `${this.settings.appUrl}/invite/${invitation.token}` },
+        { timeZone: "Asia/Manila" },
+      ),
     );
   }
 

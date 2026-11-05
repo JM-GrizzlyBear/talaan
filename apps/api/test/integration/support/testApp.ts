@@ -31,6 +31,7 @@ export function useTestApp(
     authLimit?: number;
     resetEmailLimit?: number;
     signInCodeLimit?: number;
+    invitationEmailLimit?: number;
     withoutEmail?: boolean;
   } = {},
 ): TestContext {
@@ -54,6 +55,7 @@ export function useTestApp(
       authLimit: options.authLimit ?? 1000,
       resetEmailLimit: options.resetEmailLimit ?? 1000,
       signInCodeLimit: options.signInCodeLimit ?? 1000,
+      invitationEmailLimit: options.invitationEmailLimit ?? 1000,
     });
     context.api = () => request.agent(context.app);
     context.as = async (user) => {

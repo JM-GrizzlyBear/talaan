@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { useCurrentUser } from "../../application/auth/useAuth";
 import { TalaanLogo } from "../components/brand/TalaanLogo";
 
@@ -15,8 +16,12 @@ export function HomePage() {
         prescription for your family, and where the paper is.
       </p>
       <p className="text-muted">
-        Coming next: records, scanning and uploads, places with QR labels,
-        reminders and family invitations.
+        Start by inviting family or adding a profile for a child on the{" "}
+        <Link to="/family" className="font-semibold text-brand underline">
+          Family page
+        </Link>
+        . Coming next: records, scanning and uploads, places with QR labels and
+        reminders.
       </p>
     </main>
   );

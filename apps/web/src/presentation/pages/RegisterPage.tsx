@@ -1,6 +1,6 @@
 import { AUTH_LIMITS } from "@talaan/shared";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { useRegister } from "../../application/auth/useAuth";
 import { AuthCard } from "../components/layout/AuthCard";
 import { CheckboxField } from "../components/ui/CheckboxField";
@@ -18,6 +18,8 @@ export function RegisterPage() {
   const [consent, setConsent] = useState(false);
   const register = useRegister();
   const navigate = useNavigate();
+  // Back to the page that sent people here (like an invitation link), or home
+  const from = (useLocation().state as { from?: string } | null)?.from;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -31,7 +33,7 @@ export function RegisterPage() {
         password,
         consent: consent as true,
       });
-      navigate("/", { replace: true });
+      navigate(from ?? "/", { replace: true });
     } catch {
       // Shown below from register.error
     }
@@ -105,7 +107,11 @@ export function RegisterPage() {
       </form>
       <p className="mt-6 text-sm text-muted">
         Already have an account?{" "}
-        <Link to="/login" className="font-semibold text-brand underline">
+        <Link
+          to="/login"
+          state={from ? { from } : undefined}
+          className="font-semibold text-brand underline"
+        >
           Sign in
         </Link>
       </p>

@@ -38,6 +38,11 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
   - Sessions stored in Postgres, sent as an HTTP-only cookie
 - **Two-step sign-in** (on for new accounts): on a browser Talaan doesn't know yet, the password is followed by a 6-digit code from email. "Remember this browser" skips the code there for 30 days. Turning it off needs the password.
 - **Passkeys**: add one on the Security page, then sign in or unlock with Face ID, a fingerprint, Windows Hello or the phone's PIN. No password, no code. Talaan keeps only the public key.
+- **Family** (one way: the people you invite see your records, not the other way round)
+  - Invite by email with who they are to you (Anak, Nanay, Lolo, …) and what they can do: **Can view** (records and lab comparisons) or **Can manage** (also add records, scan and set reminders). Invitations last 7 days; send again or cancel any time.
+  - The invited person accepts or declines from the email's link. Declining needs no account; accepting needs a Talaan account with that same email (a new account can be made on the way).
+  - Change what someone can do, remove them, or stop seeing someone else's records
+  - **Family without email**: profiles for a child or a lolo without a phone, kept under your account (name, who they are to you, optional birthday)
 - **Forgot password**: a 6-digit code by email (15 minutes, 3 tries, only a keyed hash is stored), then a new password; every device is signed out and a "password changed" email is sent
 - **Lock after idle time**: the website locks after 5, 15, 30 or 60 minutes with nobody using it (15 by default). The password unlocks it; the API enforces the lock too.
 - **Security page**: passkeys (add, remove), two-step sign-in on or off, the lock time, lock now, change the password, remembered browsers (forget one or all), and "Sign out everywhere else"
@@ -140,7 +145,7 @@ talaan/
 ├── apps/
 │   ├── api/                 # Express API
 │   │   ├── .env.example     # copy to apps/api/.env → the API's settings
-│   │   ├── db/migrations/   # SQL migrations (dbmate): users, session, codes, passkeys, remembered browsers
+│   │   ├── db/migrations/   # SQL migrations (dbmate): users, session, codes, passkeys, remembered browsers, family
 │   │   ├── vitest.config.ts # two test projects: unit and integration
 │   │   ├── test/
 │   │   │   ├── fixtures/            # test data: users, a fake clock, fake emails, a fake passkey device
@@ -148,8 +153,8 @@ talaan/
 │   │   │   └── integration/         # real HTTP requests against the test database
 │   │   │       └── support/         # test database setup, seed, logged-in test browsers
 │   │   └── src/
-│   │       ├── domain/              # user/, emailCode/, passkey/, trustedBrowser/: entities, rules, errors, repository interfaces
-│   │       ├── application/         # use cases: user/, passwordReset/, twoStep/, passkey/; ports/ (PasswordHasher, Clock, PasskeyCeremonies, …)
+│   │       ├── domain/              # user/, emailCode/, passkey/, trustedBrowser/, family/: entities, rules, errors, repository interfaces
+│   │       ├── application/         # use cases: user/, passwordReset/, twoStep/, passkey/, family/; ports/ (PasswordHasher, Clock, PasskeyCeremonies, …)
 │   │       ├── infrastructure/      # database/ (Postgres repositories), security/ (bcrypt, HMAC), email/, webauthn/, time/
 │   │       ├── presentation/http/   # routes/, middleware/ (requireAuth, rateLimit), session, errors
 │   │       ├── config/env.ts        # reads and checks the environment variables
@@ -160,11 +165,11 @@ talaan/
 │       ├── vite.config.ts   # dev server: forwards /api to the API on port 4000
 │       └── src/
 │           ├── infrastructure/      # api/ (fetch + ApiError, authApi, accountApi), passkeys/ (the device prompt)
-│           ├── application/         # auth/ hooks (TanStack Query)
+│           ├── application/         # auth/ and family/ hooks (TanStack Query)
 │           ├── presentation/
 │           │   ├── components/      # brand/ (TalaanLogo), layout/, routing/ (RequireAuth, GuestOnly), ui/
-│           │   ├── pages/           # LoginPage (password, code), RegisterPage, SecurityPage, LockScreen, …
-│           │   └── format/          # dates, error messages, passkey names (+ tests)
+│           │   ├── pages/           # LoginPage (password, code), RegisterPage, FamilyPage, InvitationPage, SecurityPage, LockScreen, …
+│           │   └── format/          # dates, ages, error messages, passkey names (+ tests)
 │           ├── App.tsx              # routes
 │           └── index.css            # Tailwind and the theme colors
 └── packages/
@@ -273,7 +278,7 @@ This builds the production image, waits for Postgres, runs the migrations and st
 | `WEBAUTHN_RP_ID`  | no        | Overrides the passkey domain (normally the host of `APP_URL`, like `talaan.netlify.app`)                                       |
 | `WEBAUTHN_ORIGIN` | no        | Overrides the passkey origin (normally `APP_URL` without a path)                                                               |
 
-Without `SMTP_HOST`, everything works except Forgot password, which answers that email isn't set up yet, and two-step sign-in, which is skipped (nobody gets locked out of their account).
+Without `SMTP_HOST`, everything works except Forgot password and family invitations, which answer that email isn't set up yet, and two-step sign-in, which is skipped (nobody gets locked out of their account).
 
 Passkeys only work on the exact address in `APP_URL`. A passkey made on `http://localhost:5173` won't work on the live site, and the other way round. If you change the live address (for example a custom domain), people add their passkeys again.
 
@@ -295,8 +300,9 @@ Use `127.0.0.1` instead of `localhost` in `DATABASE_URL` on Windows if dbmate sa
 4. **Protected API routes** use the `requireAuth(clock)` middleware and read the user's id from the session.
 5. **Idle lock**: the session remembers when this browser last used the API. After the person's chosen minutes (5, 15, 30 or 60) with nothing, protected routes answer **423 Locked** until `POST /api/auth/unlock` gets the right password (or `POST /api/auth/unlock/passkey` one of that person's passkeys). The website also watches for clicks, typing and scrolling: it locks itself after the same time, and while someone is reading it tells the API every 2 minutes (`POST /api/auth/activity`) so the API doesn't lock them out.
 6. **Forgot password** (3 steps): `request` emails a 6-digit code, `check` tests it, `complete` saves the new password. Codes last 15 minutes and 3 wrong tries; asking again replaces the old code. Only an HMAC of the code (keyed with `SESSION_SECRET` and the account id) is stored. A new password signs out every device and sends a "password changed" email.
-7. **Sign out** (`POST /api/auth/logout`) deletes the session row, so the old cookie stops working. It works while locked too.
-8. **Rate limits** (in memory, per 15 minutes, in `buildApp.ts`): 20 sign-in/sign-up tries per visitor, 20 unlock and password-change tries per person, 20 reset steps per visitor, 3 codes per email address, and 3 new sign-in codes per person waiting for one. Each has its own counter, because a family at home shares one IP address.
+7. **Family invitations**: `POST /api/family/invitations` stores the invitation with a SHA-256 of a random 256-bit token and emails the link `APP_URL/invite/<token>`. The website sends the token back in the request **body** (not the address), so it stays out of server logs. Accepting needs the token (it proves the person can read that inbox) **and** a signed-in account whose email is the invited one, because emails aren't verified at sign-up. Access is one row per owner → member in `family_access`; `FamilyMembers.roleFor(viewer, owner)` answers "owner", "manage", "view" or nothing, for the records features to use.
+8. **Sign out** (`POST /api/auth/logout`) deletes the session row, so the old cookie stops working. It works while locked too.
+9. **Rate limits** (in memory, per 15 minutes, in `buildApp.ts`): 20 sign-in/sign-up tries per visitor, 20 unlock and password-change tries per person, 20 reset steps per visitor, 3 codes per email address, 3 new sign-in codes per person waiting for one, and 3 family invitations per email address (and per invitation) a day. Each has its own counter, because a family at home shares one IP address.
 
 On the website, `useSession()` asks `GET /api/auth/me` once and every page shares that answer (`{ user, locked }`). `RequireAuth` protects pages and shows the lock screen when locked. Any 423 answer also switches to the lock screen. `GuestOnly` sends signed-in people away from the sign-in and sign-up pages.
 
@@ -331,35 +337,48 @@ Gmail may put the first emails in spam because they come through Brevo. Marking 
 
 All routes start with `/api`. Errors always look like `{ "message": "…", "errors": { "field": ["…"] } }`.
 
-| Method | Route                               | Login? | What                                                                                                                   |
-| ------ | ----------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/health`                       | no     | `{ ok: true }` when the API can reach the database                                                                     |
-| POST   | `/api/auth/register`                | no     | `{ firstName, middleName, lastName, email, password, consent: true }` → 201 `{ user }`, signed in                      |
-| POST   | `/api/auth/login`                   | no     | `{ email, password }` → `{ twoStep: false, user }`, or 202 `{ twoStep: true, email }`                                  |
-| POST   | `/api/auth/login/code`              | no     | `{ code, rememberBrowser }` → `{ user }`, signed in                                                                    |
-| POST   | `/api/auth/login/resend`            | no     | 204; emails a new sign-in code                                                                                         |
-| POST   | `/api/auth/passkey/options`         | no     | The passkey prompt for the browser                                                                                     |
-| POST   | `/api/auth/passkey/verify`          | no     | `{ response }` → `{ user }`, signed in                                                                                 |
-| GET    | `/api/auth/me`                      | yes    | `{ user, locked }`, or 401                                                                                             |
-| POST   | `/api/auth/activity`                | yes    | 204; keeps the session from locking                                                                                    |
-| POST   | `/api/auth/lock`                    | yes    | 204; "Lock Talaan now"                                                                                                 |
-| POST   | `/api/auth/unlock`                  | yes    | `{ password }` → `{ user }`                                                                                            |
-| POST   | `/api/auth/unlock/passkey/options`  | yes    | The passkey prompt, only this person's passkeys                                                                        |
-| POST   | `/api/auth/unlock/passkey`          | yes    | `{ response }` → `{ user }`                                                                                            |
-| POST   | `/api/auth/logout`                  | no     | 204                                                                                                                    |
-| POST   | `/api/auth/password-reset/request`  | no     | `{ email }` → 202, the same answer for every email                                                                     |
-| POST   | `/api/auth/password-reset/check`    | no     | `{ email, code }` → 204                                                                                                |
-| POST   | `/api/auth/password-reset/complete` | no     | `{ email, code, password }` → 204, every device signed out                                                             |
-| PUT    | `/api/account/password`             | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out                                                     |
-| PUT    | `/api/account/security`             | yes    | `{ lockAfterMinutes?, twoStepEnabled?, currentPassword? }` → `{ user }` (turning two-step off needs `currentPassword`) |
-| GET    | `/api/account/passkeys`             | yes    | `{ passkeys }`: name, dates, synced                                                                                    |
-| POST   | `/api/account/passkeys/options`     | yes    | The prompt to make a new passkey                                                                                       |
-| POST   | `/api/account/passkeys`             | yes    | `{ name, response }` → 201 `{ passkey }`                                                                               |
-| DELETE | `/api/account/passkeys/:id`         | yes    | 204                                                                                                                    |
-| GET    | `/api/account/browsers`             | yes    | `{ browsers }`: remembered browsers, `current` marks this one                                                          |
-| DELETE | `/api/account/browsers/:id`         | yes    | 204; that browser gets the code again                                                                                  |
-| DELETE | `/api/account/browsers`             | yes    | 204; forget them all                                                                                                   |
-| POST   | `/api/account/sign-out-others`      | yes    | 204; every other browser and device is signed out                                                                      |
+| Method | Route                                | Login? | What                                                                                                                   |
+| ------ | ------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/health`                        | no     | `{ ok: true }` when the API can reach the database                                                                     |
+| POST   | `/api/auth/register`                 | no     | `{ firstName, middleName, lastName, email, password, consent: true }` → 201 `{ user }`, signed in                      |
+| POST   | `/api/auth/login`                    | no     | `{ email, password }` → `{ twoStep: false, user }`, or 202 `{ twoStep: true, email }`                                  |
+| POST   | `/api/auth/login/code`               | no     | `{ code, rememberBrowser }` → `{ user }`, signed in                                                                    |
+| POST   | `/api/auth/login/resend`             | no     | 204; emails a new sign-in code                                                                                         |
+| POST   | `/api/auth/passkey/options`          | no     | The passkey prompt for the browser                                                                                     |
+| POST   | `/api/auth/passkey/verify`           | no     | `{ response }` → `{ user }`, signed in                                                                                 |
+| GET    | `/api/auth/me`                       | yes    | `{ user, locked }`, or 401                                                                                             |
+| POST   | `/api/auth/activity`                 | yes    | 204; keeps the session from locking                                                                                    |
+| POST   | `/api/auth/lock`                     | yes    | 204; "Lock Talaan now"                                                                                                 |
+| POST   | `/api/auth/unlock`                   | yes    | `{ password }` → `{ user }`                                                                                            |
+| POST   | `/api/auth/unlock/passkey/options`   | yes    | The passkey prompt, only this person's passkeys                                                                        |
+| POST   | `/api/auth/unlock/passkey`           | yes    | `{ response }` → `{ user }`                                                                                            |
+| POST   | `/api/auth/logout`                   | no     | 204                                                                                                                    |
+| POST   | `/api/auth/password-reset/request`   | no     | `{ email }` → 202, the same answer for every email                                                                     |
+| POST   | `/api/auth/password-reset/check`     | no     | `{ email, code }` → 204                                                                                                |
+| POST   | `/api/auth/password-reset/complete`  | no     | `{ email, code, password }` → 204, every device signed out                                                             |
+| GET    | `/api/family`                        | yes    | `{ members, invitations, profiles, sharedWithMe }`                                                                     |
+| POST   | `/api/family/invitations`            | yes    | `{ email, relationship, access }` → 201; emails the link                                                               |
+| POST   | `/api/family/invitations/:id/resend` | yes    | 204; a new link and 7 more days                                                                                        |
+| DELETE | `/api/family/invitations/:id`        | yes    | 204; cancels a waiting one or clears a declined one                                                                    |
+| POST   | `/api/family/invitations/lookup`     | no     | `{ token }` → who invited, as what, the status, and `forThisAccount`                                                   |
+| POST   | `/api/family/invitations/accept`     | yes    | `{ token }` → 204; needs the invited email's account                                                                   |
+| POST   | `/api/family/invitations/decline`    | no     | `{ token }` → 204                                                                                                      |
+| PUT    | `/api/family/members/:userId`        | yes    | `{ access }` → 204                                                                                                     |
+| DELETE | `/api/family/members/:userId`        | yes    | 204; stop sharing with them                                                                                            |
+| DELETE | `/api/family/shared/:ownerId`        | yes    | 204; stop seeing their records                                                                                         |
+| POST   | `/api/family/profiles`               | yes    | `{ firstName, middleName, lastName, relationship, birthDate }` → 201 `{ profile }`                                     |
+| PUT    | `/api/family/profiles/:id`           | yes    | same fields → `{ profile }`                                                                                            |
+| DELETE | `/api/family/profiles/:id`           | yes    | 204                                                                                                                    |
+| PUT    | `/api/account/password`              | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out                                                     |
+| PUT    | `/api/account/security`              | yes    | `{ lockAfterMinutes?, twoStepEnabled?, currentPassword? }` → `{ user }` (turning two-step off needs `currentPassword`) |
+| GET    | `/api/account/passkeys`              | yes    | `{ passkeys }`: name, dates, synced                                                                                    |
+| POST   | `/api/account/passkeys/options`      | yes    | The prompt to make a new passkey                                                                                       |
+| POST   | `/api/account/passkeys`              | yes    | `{ name, response }` → 201 `{ passkey }`                                                                               |
+| DELETE | `/api/account/passkeys/:id`          | yes    | 204                                                                                                                    |
+| GET    | `/api/account/browsers`              | yes    | `{ browsers }`: remembered browsers, `current` marks this one                                                          |
+| DELETE | `/api/account/browsers/:id`          | yes    | 204; that browser gets the code again                                                                                  |
+| DELETE | `/api/account/browsers`              | yes    | 204; forget them all                                                                                                   |
+| POST   | `/api/account/sign-out-others`       | yes    | 204; every other browser and device is signed out                                                                      |
 
 | Status | When                                                                                                                                              |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -369,7 +388,7 @@ All routes start with `/api`. Errors always look like `{ "message": "…", "erro
 | 404    | Not found                                                                                                                                         |
 | 409    | Email already has an account                                                                                                                      |
 | 429    | Too many tries (`Retry-After` says how many seconds to wait)                                                                                      |
-| 503    | Forgot password, but email isn't set up on the server                                                                                             |
+| 503    | Forgot password or a family invitation, but email isn't set up on the server                                                                      |
 
 ---
 
@@ -407,11 +426,11 @@ docker compose up -d db
 turbo run test
 ```
 
-| Suite           | Where                       | What it checks                                                                                                      |
-| --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| API unit        | `apps/api/test/unit`        | User rules, shared schemas, use cases with fake repositories (no database)                                          |
-| API integration | `apps/api/test/integration` | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), sessions, rate limit, errors |
-| Website unit    | `apps/web/src/**/*.test.ts` | The API client (`ApiError`), error messages, dates                                                                  |
+| Suite           | Where                       | What it checks                                                                                                                                               |
+| --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| API unit        | `apps/api/test/unit`        | User rules, shared schemas, use cases with fake repositories (no database)                                                                                   |
+| API integration | `apps/api/test/integration` | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, sessions, rate limit, errors |
+| Website unit    | `apps/web/src/**/*.test.ts` | The API client (`ApiError`), error messages, dates                                                                                                           |
 
 ### The test database
 
