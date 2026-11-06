@@ -2,18 +2,18 @@ import { Navigate, Route, Routes } from "react-router";
 import { AppHeader } from "./presentation/components/layout/AppHeader";
 import { GuestOnly } from "./presentation/components/routing/GuestOnly";
 import { RequireAuth } from "./presentation/components/routing/RequireAuth";
-import { ActivityPage } from "./presentation/pages/ActivityPage";
-import { FamilyPage } from "./presentation/pages/FamilyPage";
-import { ForgotPasswordPage } from "./presentation/pages/ForgotPasswordPage";
+import { ActivityPage } from "./presentation/pages/records/ActivityPage";
+import { FamilyPage } from "./presentation/pages/family/FamilyPage";
+import { ForgotPasswordPage } from "./presentation/pages/auth/ForgotPasswordPage";
 import { HomePage } from "./presentation/pages/HomePage";
-import { InvitationPage } from "./presentation/pages/InvitationPage";
-import { LoginPage } from "./presentation/pages/LoginPage";
-import { RegisterPage } from "./presentation/pages/RegisterPage";
-import { RecordFormPage } from "./presentation/pages/RecordFormPage";
-import { RecordPage } from "./presentation/pages/RecordPage";
-import { RecordsPage } from "./presentation/pages/RecordsPage";
-import { SecurityPage } from "./presentation/pages/SecurityPage";
-import { TrashPage } from "./presentation/pages/TrashPage";
+import { InvitationPage } from "./presentation/pages/family/InvitationPage";
+import { LoginPage } from "./presentation/pages/auth/LoginPage";
+import { RegisterPage } from "./presentation/pages/auth/RegisterPage";
+import { RecordFormPage } from "./presentation/pages/records/RecordFormPage";
+import { RecordPage } from "./presentation/pages/records/RecordPage";
+import { RecordsPage } from "./presentation/pages/records/RecordsPage";
+import { SecurityPage } from "./presentation/pages/settings/SecurityPage";
+import { TrashPage } from "./presentation/pages/records/TrashPage";
 
 export function App() {
   return (

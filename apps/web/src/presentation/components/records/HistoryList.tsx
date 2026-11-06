@@ -2,6 +2,7 @@ import type { AuditEntryInfo } from "@talaan/shared";
 import { Link } from "react-router";
 import { auditSentence, changeText } from "../../format/auditText";
 import { shortDateTime } from "../../format/dates";
+import { listCard } from "../ui/styles";
 
 // A list of history entries: who did what, when, and exactly what changed
 export function HistoryList({
@@ -13,7 +14,7 @@ export function HistoryList({
   linkRecords?: boolean;
 }) {
   return (
-    <ol className="flex flex-col divide-y divide-edge rounded-xl border border-edge bg-white">
+    <ol className={listCard}>
       {entries.map((entry) => (
         <li key={entry.id} className="flex flex-col gap-1 px-4 py-3">
           <span className="text-sm text-muted">{shortDateTime(entry.at)}</span>

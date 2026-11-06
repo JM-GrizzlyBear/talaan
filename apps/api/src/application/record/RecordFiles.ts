@@ -4,7 +4,7 @@ import type { RecordFileRepository } from "../../domain/file/RecordFileRepositor
 import { FileError, FilesNotSetUpError } from "../../domain/file/errors.js";
 import type { AuditTrail } from "../audit/AuditTrail.js";
 import type { FileStorage } from "../ports/FileStorage.js";
-import type { Records } from "./Records.js";
+import type { RecordAccess } from "./RecordAccess.js";
 
 const VIEW_ONLY =
   "You can view these records, but not change them. Ask the owner for “Can manage”.";
@@ -14,7 +14,7 @@ const GONE = "That file isn't there anymore.";
 // see it sees its files; the owner and "Can manage" family add and remove.
 export class RecordFiles {
   constructor(
-    private readonly records: Records,
+    private readonly access: RecordAccess,
     private readonly files: RecordFileRepository,
     private readonly storage: FileStorage | null,
     private readonly audit: AuditTrail,
@@ -31,7 +31,7 @@ export class RecordFiles {
   }
 
   private async forChange(actorId: string, recordId: string) {
-    const access = await this.records.accessTo(actorId, recordId);
+    const access = await this.access.accessTo(actorId, recordId);
     if (!access.canChange) {
       throw new ForbiddenError(
         access.record.deletedAt
@@ -43,7 +43,7 @@ export class RecordFiles {
   }
 
   async list(viewerId: string, recordId: string) {
-    await this.records.accessTo(viewerId, recordId);
+    await this.access.accessTo(viewerId, recordId);
     return await this.files.listForRecord(recordId);
   }
 
@@ -94,7 +94,7 @@ export class RecordFiles {
     const file = await this.files.findById(fileId);
     if (!file) throw new NotFoundError(GONE);
     // Throws "not found" for anyone the record isn't shared with
-    await this.records.accessTo(viewerId, file.recordId);
+    await this.access.accessTo(viewerId, file.recordId);
     const opened = await storage.open(
       { key: file.storageKey, format: file.format },
       variant,

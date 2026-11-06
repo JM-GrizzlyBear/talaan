@@ -2,17 +2,11 @@ import { FILE_LIMITS, FILE_VARIANTS, attachFileSchema } from "@talaan/shared";
 import express, { Router, type RequestHandler } from "express";
 import { z } from "zod";
 import type { RecordFiles } from "../../../application/record/RecordFiles.js";
-import { NotFoundError } from "../../../domain/errors.js";
 import { safeFileName } from "../../../domain/file/rules.js";
 import type { LocalFileStorage } from "../../../infrastructure/storage/LocalFileStorage.js";
 import { currentUserId } from "../middleware/requireAuth.js";
-import { recordFileJson } from "../toJson.js";
-
-function idParam(value: unknown) {
-  const parsed = z.uuid().safeParse(value);
-  if (!parsed.success) throw new NotFoundError();
-  return parsed.data;
-}
+import { recordFileJson } from "../json/files.js";
+import { idParam } from "../params.js";
 
 const contentQuery = z.object({
   variant: z.enum(FILE_VARIANTS).default("original"),

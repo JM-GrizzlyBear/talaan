@@ -140,6 +140,13 @@ export function checkIdleLock(req: Request, now: number) {
   return false;
 }
 
+// Unlocked again (password or passkey): the idle timer starts over
+export function unlockSession(req: Request, user: SafeUser, now: number) {
+  req.session.locked = false;
+  req.session.lastSeenAt = now;
+  req.session.lockAfterMinutes = user.lockAfterMinutes;
+}
+
 // Counts this request as activity. Saved at most once a minute, so the session
 // row isn't rewritten on every single request.
 export function markActive(req: Request, now: number) {

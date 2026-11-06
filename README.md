@@ -105,7 +105,7 @@ infrastructure ───────┘ (implements the interfaces the inner lay
 | **infrastructure** | The real implementations: Postgres repositories, bcrypt, the clock               | Yes                           |
 | **presentation**   | HTTP: routes, middleware, sessions, the error handler                            | Yes                           |
 
-`apps/api/src/buildApp.ts` is the **composition root**: the one place that creates the real classes and hands them to the use cases. That's why the tests can swap in fakes, such as an in-memory repository or a fast password hasher.
+`apps/api/src/buildApp.ts` and `apps/api/src/composition/` are the **composition root**: the one place that creates the real classes and hands them to the use cases (one file per area: `accountsModule.ts`, `familyModule.ts`, `recordsModule.ts`, plus `repositories.ts` and `rateLimits.ts`). That's why the tests can swap in fakes, such as an in-memory repository or a fast password hasher.
 
 What happens when someone signs in:
 
@@ -133,6 +133,8 @@ New to Clean Architecture? The [pern-template README](https://github.com/JM-Griz
 | Does it **talk to a specific tool** (database, email, files, a library)?            | `infrastructure/`   | Storing tickets in PostgreSQL                                            |
 | Is it about **the internet**: addresses, requests, answers, logins?                 | `presentation/`     | The `/api/...` routes and the live updates                               |
 | Is it a **form rule** both the website and the API need?                            | `packages/shared/`  | "A folder name is required, at most 60 characters"                       |
+
+On the website, a page in `pages/<feature>/` stays short: it loads data and puts components from `components/<feature>/` together. A piece used by more than one feature (a heading, a badge, the "Yes / Keep" confirm, the back link) goes in `components/ui/`.
 
 ---
 
@@ -163,8 +165,9 @@ talaan/
 │   │       ├── domain/              # user/, emailCode/, passkey/, trustedBrowser/, family/, record/, audit/: entities, rules, errors, repository interfaces
 │   │       ├── application/         # use cases: user/, passwordReset/, twoStep/, passkey/, family/, record/, audit/; ports/ (PasswordHasher, Clock, PasskeyCeremonies, …)
 │   │       ├── infrastructure/      # database/ (Postgres repositories), security/ (bcrypt, HMAC), email/, webauthn/, time/
-│   │       ├── presentation/http/   # routes/, middleware/ (requireAuth, rateLimit), session, errors
+│   │       ├── presentation/http/   # routes/ (one file per feature), json/ (what the browser receives), middleware/, session, errors
 │   │       ├── config/env.ts        # reads and checks the environment variables
+│   │       ├── composition/         # wiring per area (accounts, family, records), repositories, rate limits
 │   │       ├── buildApp.ts          # composition root (also used by the tests)
 │   │       └── main.ts              # starts the server
 │   └── web/                 # React website (Vite)
@@ -174,13 +177,13 @@ talaan/
 │           ├── infrastructure/      # api/ (fetch + ApiError, authApi, accountApi), passkeys/ (the device prompt)
 │           ├── application/         # auth/, family/ and records/ hooks (TanStack Query)
 │           ├── presentation/
-│           │   ├── components/      # brand/ (TalaanLogo), layout/, routing/ (RequireAuth, GuestOnly), ui/
-│           │   ├── pages/           # LoginPage (password, code), RegisterPage, RecordsPage, RecordPage, RecordFormPage, TrashPage, ActivityPage, FamilyPage, InvitationPage, SecurityPage, LockScreen, …
+│           │   ├── components/      # per feature: auth/, family/, records/ (form/, view/, files/), security/; plus brand/, layout/, routing/, ui/ (shared pieces)
+│           │   ├── pages/           # auth/, records/, family/, settings/: short pages that put components together
 │           │   └── format/          # dates, ages, history sentences, error messages, passkey names (+ tests)
 │           ├── App.tsx              # routes
 │           └── index.css            # Tailwind and the theme colors
 └── packages/
-    └── shared/              # registerSchema, loginSchema, shared types
+    └── shared/              # form rules and types used by both: auth/, family/, records/, files, audit
 ```
 
 ---
@@ -314,7 +317,7 @@ Use `127.0.0.1` instead of `localhost` in `DATABASE_URL` on Windows if dbmate sa
 7. **Family invitations**: `POST /api/family/invitations` stores the invitation with a SHA-256 of a random 256-bit token and emails the link `APP_URL/invite/<token>`. The website sends the token back in the request **body** (not the address), so it stays out of server logs. Accepting needs the token (it proves the person can read that inbox) **and** a signed-in account whose email is the invited one, because emails aren't verified at sign-up. Access is one row per owner → member in `family_access`; `FamilyMembers.roleFor(viewer, owner)` answers "owner", "manage", "view" or nothing, for the records features to use.
 8. **Records and the audit trail**: every record route checks `FamilyMembers.roleFor` first. Someone a record isn't shared with gets 404 (they don't learn it exists); "Can view" family get 403 for changes. Edits compare old and new fields (`diffRecords` in `domain/record/rules.ts`) and save only real changes. The `audit_log` table keeps the actor's name at the time and isn't tied to the record, so the history outlives a deleted record. A database trigger refuses any `UPDATE` on it.
 9. **Sign out** (`POST /api/auth/logout`) deletes the session row, so the old cookie stops working. It works while locked too.
-10. **Rate limits** (in memory, per 15 minutes, in `buildApp.ts`): 20 sign-in/sign-up tries per visitor, 20 unlock and password-change tries per person, 20 reset steps per visitor, 3 codes per email address, 3 new sign-in codes per person waiting for one, 3 family invitations per email address (and per invitation) a day, and 300 record changes per person. Each has its own counter, because a family at home shares one IP address.
+10. **Rate limits** (in memory, per 15 minutes, in `composition/rateLimits.ts`): 20 sign-in/sign-up tries per visitor, 20 unlock and password-change tries per person, 20 reset steps per visitor, 3 codes per email address, 3 new sign-in codes per person waiting for one, 3 family invitations per email address (and per invitation) a day, and 300 record changes per person. Each has its own counter, because a family at home shares one IP address.
 
 On the website, `useSession()` asks `GET /api/auth/me` once and every page shares that answer (`{ user, locked }`). `RequireAuth` protects pages and shows the lock screen when locked. Any 423 answer also switches to the lock screen. `GuestOnly` sends signed-in people away from the sign-in and sign-up pages.
 
@@ -453,12 +456,12 @@ Each feature goes through the layers in the same order:
 6. **Presentation**:
    - `routes/<feature>Routes.ts`, with `requireAuth` and `schema.parse(req.body)`
    - map new errors in `errorHandler.ts`
-   - add a `…Json` function in `toJson.ts`
-7. **Wire it up**: in `buildApp.ts`, create the repository and use cases and mount the routes.
+   - add a `…Json` function in `json/<feature>.ts`
+7. **Wire it up**: add the repository to `composition/repositories.ts`, and create the use cases and routes in that area's `composition/<area>Module.ts` (or a new module, added in `buildApp.ts`).
 8. **Website**:
    - `infrastructure/api/<feature>Api.ts`
    - `application/<feature>/use….ts`
-   - a page in `presentation/pages/`
+   - components in `presentation/components/<feature>/` and a short page in `presentation/pages/<feature>/`
    - a route in `App.tsx`, inside `<RequireAuth />`
 9. **Tests**:
    - fixtures in `test/fixtures/`
