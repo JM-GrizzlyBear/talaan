@@ -14,6 +14,7 @@ import {
   useRecordHistory,
 } from "../../application/records/useRecords";
 import { HistoryList } from "../components/records/HistoryList";
+import { RecordFilesSection } from "../components/records/RecordFilesSection";
 import { RecordTypeIcon } from "../components/records/RecordTypeIcon";
 import { ErrorAlert } from "../components/ui/ErrorAlert";
 import { buttonDanger, buttonSecondary } from "../components/ui/styles";
@@ -208,6 +209,8 @@ function RecordView({ record }: { record: RecordInfo }) {
           </p>
         </section>
       )}
+
+      <RecordFilesSection recordId={record.id} canChange={canManage} />
 
       <p className="text-sm text-muted">
         Added{record.createdByName ? ` by ${record.createdByName}` : ""} on{" "}

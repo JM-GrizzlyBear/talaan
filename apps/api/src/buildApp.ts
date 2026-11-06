@@ -10,12 +10,14 @@ import { AuditTrail } from "./application/audit/AuditTrail.js";
 import { FamilyInvitations } from "./application/family/FamilyInvitations.js";
 import { FamilyMembers } from "./application/family/FamilyMembers.js";
 import { FamilyProfiles } from "./application/family/FamilyProfiles.js";
+import { RecordFiles } from "./application/record/RecordFiles.js";
 import { Records } from "./application/record/Records.js";
 import { ManagePasskeys } from "./application/passkey/ManagePasskeys.js";
 import { PasskeyRegistration } from "./application/passkey/PasskeyRegistration.js";
 import { PasskeySignIn } from "./application/passkey/PasskeySignIn.js";
 import type { AccountEmails } from "./application/ports/AccountEmails.js";
 import type { Clock } from "./application/ports/Clock.js";
+import type { FileStorage } from "./application/ports/FileStorage.js";
 import type { PasskeyCeremonies } from "./application/ports/PasskeyCeremonies.js";
 import type { PasswordHasher } from "./application/ports/PasswordHasher.js";
 import type { SecretCodes } from "./application/ports/SecretCodes.js";
@@ -35,6 +37,7 @@ import { PostgresFamilyAccessRepository } from "./infrastructure/database/Postgr
 import { PostgresFamilyInvitationRepository } from "./infrastructure/database/PostgresFamilyInvitationRepository.js";
 import { PostgresFamilyProfileRepository } from "./infrastructure/database/PostgresFamilyProfileRepository.js";
 import { PostgresPasskeyRepository } from "./infrastructure/database/PostgresPasskeyRepository.js";
+import { PostgresRecordFileRepository } from "./infrastructure/database/PostgresRecordFileRepository.js";
 import { PostgresRecordRepository } from "./infrastructure/database/PostgresRecordRepository.js";
 import { PostgresSessionStore } from "./infrastructure/database/PostgresSessionStore.js";
 import { PostgresTrustedBrowserRepository } from "./infrastructure/database/PostgresTrustedBrowserRepository.js";
@@ -50,6 +53,8 @@ import { accountRoutes } from "./presentation/http/routes/accountRoutes.js";
 import { authRoutes } from "./presentation/http/routes/authRoutes.js";
 import { familyRoutes } from "./presentation/http/routes/familyRoutes.js";
 import { healthRoutes } from "./presentation/http/routes/healthRoutes.js";
+import { LocalFileStorage } from "./infrastructure/storage/LocalFileStorage.js";
+import { filesRoutes } from "./presentation/http/routes/filesRoutes.js";
 import { recordsRoutes } from "./presentation/http/routes/recordsRoutes.js";
 import { passwordResetRoutes } from "./presentation/http/routes/passwordResetRoutes.js";
 import { createSessionMiddleware } from "./presentation/http/session.js";
@@ -62,6 +67,8 @@ export interface BuildAppOptions {
   // null: no email service set up, so Forgot password can't send codes
   emails: AccountEmails | null;
   passkeyCeremonies: PasskeyCeremonies;
+  // Where photos and PDFs go (Cloudinary, or a folder while developing). null: uploads off.
+  fileStorage: FileStorage | null;
   clock: Clock;
   // HTTPS-only cookies (production)
   secureCookie: boolean;
@@ -189,7 +196,17 @@ export function buildApp(options: BuildAppOptions) {
   if (options.trustProxy > 0) app.set("trust proxy", options.trustProxy);
 
   // Security headers: no framing, no MIME sniffing, a strict content security policy, …
-  app.use(helmet());
+  // The website may also upload straight to Cloudinary, and show photos it's about to upload.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          "connect-src": ["'self'", "https://api.cloudinary.com"],
+          "img-src": ["'self'", "data:", "blob:"],
+        },
+      },
+    }),
+  );
   app.use(express.json({ limit: "100kb" }));
   app.use(
     createSessionMiddleware({
@@ -306,6 +323,15 @@ export function buildApp(options: BuildAppOptions) {
       resendLimit: invitationResendLimit,
     }),
   );
+  const recordFiles = new PostgresRecordFileRepository(options.pool);
+  // Adding a family's old records (and their photos) takes many saves in a row
+  const recordsLimit = rateLimit({
+    windowMs: fifteenMinutes,
+    max: options.recordsLimit ?? 300,
+    clock,
+    key: userKey,
+    message: "That's a lot of changes at once. Please wait a few minutes.",
+  });
   const recordsUseCases = new Records(
     records,
     familyProfiles,
@@ -314,20 +340,32 @@ export function buildApp(options: BuildAppOptions) {
     familyMembers,
     auditTrail,
     clock,
+    recordFiles,
+    options.fileStorage,
   );
   app.use(
     "/api",
     recordsRoutes({
       records: recordsUseCases,
       requireAuth: requireAuth(clock),
-      // Adding a family's old records takes many saves in a row
-      limit: rateLimit({
-        windowMs: fifteenMinutes,
-        max: options.recordsLimit ?? 300,
-        clock,
-        key: userKey,
-        message: "That's a lot of changes at once. Please wait a few minutes.",
-      }),
+      limit: recordsLimit,
+    }),
+  );
+  app.use(
+    "/api",
+    filesRoutes({
+      files: new RecordFiles(
+        recordsUseCases,
+        recordFiles,
+        options.fileStorage,
+        auditTrail,
+      ),
+      localUploads:
+        options.fileStorage instanceof LocalFileStorage
+          ? options.fileStorage
+          : null,
+      requireAuth: requireAuth(clock),
+      limit: recordsLimit,
     }),
   );
   app.use("/api", apiNotFound);

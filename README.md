@@ -44,6 +44,7 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
   - **Who can do what**: the owner does everything; "Can manage" family add, edit and move to the Trash; "Can view" family only look
   - **Trash**: records stay 30 days, then Talaan deletes them for good (hourly, and whenever the Trash is opened). Only the owner restores or deletes sooner.
   - **Audit trail**: every add, edit (with each changed field, before and after), move to the Trash, restore and delete is saved with who did it and when. Sharing changes (invitations, accepting, access changes, profiles) are too. Each record shows its history; the owner's Activity page shows everything. Entries can't be changed, not even directly in the database.
+- **Photos and PDFs on records**: up to 20 per record, 10 MB each (JPG, PNG, WEBP, HEIC, PDF). "Take a photo" opens the phone's camera. Files are private in Cloudinary: the browser only ever gets them through the API, after the same "who can see this record" check. Removing a file, or deleting its record for good, removes it from Cloudinary too.
 - **Family** (one way: the people you invite see your records, not the other way round)
   - Invite by email with who they are to you (Anak, Nanay, Lolo, …) and what they can do: **Can view** (records and lab comparisons) or **Can manage** (also add records, scan and set reminders). Invitations last 7 days; send again or cancel any time.
   - The invited person accepts or declines from the email's link. Declining needs no account; accepting needs a Talaan account with that same email (a new account can be made on the way).
@@ -151,7 +152,7 @@ talaan/
 ├── apps/
 │   ├── api/                 # Express API
 │   │   ├── .env.example     # copy to apps/api/.env → the API's settings
-│   │   ├── db/migrations/   # SQL migrations (dbmate): users, session, codes, passkeys, remembered browsers, family, records and the audit log
+│   │   ├── db/migrations/   # SQL migrations (dbmate): users, session, codes, passkeys, remembered browsers, family, records, the audit log and record files
 │   │   ├── vitest.config.ts # two test projects: unit and integration
 │   │   ├── test/
 │   │   │   ├── fixtures/            # test data: users, a fake clock, fake emails, a fake passkey device
@@ -284,6 +285,10 @@ This builds the production image, waits for Postgres, runs the migrations and st
 | `WEBAUTHN_RP_ID`  | no        | Overrides the passkey domain (normally the host of `APP_URL`, like `talaan.netlify.app`)                                       |
 | `WEBAUTHN_ORIGIN` | no        | Overrides the passkey origin (normally `APP_URL` without a path)                                                               |
 
+| `CLOUDINARY_URL` | live site | Where photos and PDFs go: `cloudinary://<api key>:<api secret>@<cloud name>` (README → "Storing photos and PDFs"). Locally, leave it empty to use `apps/api/.uploads` |
+| `CLOUDINARY_FOLDER` | no | The top folder in Cloudinary: `talaan-dev` on your computer, `talaan` (the default) live |
+| `LOCAL_UPLOADS_DIR` | no | Where uploads go without Cloudinary (default `.uploads`, inside `apps/api`) |
+
 Without `SMTP_HOST`, everything works except Forgot password and family invitations, which answer that email isn't set up yet, and two-step sign-in, which is skipped (nobody gets locked out of their account).
 
 Passkeys only work on the exact address in `APP_URL`. A passkey made on `http://localhost:5173` won't work on the live site, and the other way round. If you change the live address (for example a custom domain), people add their passkeys again.
@@ -340,64 +345,88 @@ Gmail may put the first emails in spam because they come through Brevo. Marking 
 
 ---
 
+## Storing photos and PDFs (Cloudinary)
+
+Talaan keeps photos and PDFs on [Cloudinary](https://cloudinary.com). Without it, your computer keeps them in `apps/api/.uploads`, and the live site has no uploads.
+
+**How it's private:** files are uploaded as **authenticated** assets, which have no public link. The browser uploads straight to Cloudinary with a one-time signature from the API (so big files don't pass through the API), and the API checks Cloudinary's signed answer before attaching the file. To show a file, the API checks who's asking, then fetches it from Cloudinary with a signed address and streams it back. The browser never sees a Cloudinary address.
+
+1. **Get the API environment variable.** Sign in at https://console.cloudinary.com → **Settings** (the gear) → **API Keys**. Click **Generate New API Key** and name it `Talaan`, so it can be switched off on its own later. Copy the **API environment variable** at the top and put that key's id and secret in it: `cloudinary://<api key>:<api secret>@<cloud name>`.
+2. **On your computer:** in `apps/api/.env`, set `CLOUDINARY_URL=` to that value and `CLOUDINARY_FOLDER=talaan-dev`. Restart `turbo dev`. The API prints `Uploads go to Cloudinary (<cloud name>, folder talaan-dev)`.
+3. **On the live site** (Render → Environment): `CLOUDINARY_URL` (the same value), and leave `CLOUDINARY_FOLDER` out (it defaults to `talaan`), so testing and real files stay apart.
+4. **Lock it down** (Settings → **Security**):
+   - Turn on **Strict transformations**. Talaan signs every address, so nobody can ask Cloudinary for other sizes or versions of a file.
+   - Leave **Restricted media types** as they are. Talaan shows a PDF icon instead of a PDF thumbnail; if PDFs won't open at all, turn on delivery of PDF files there.
+   - Don't create an **unsigned upload preset**: it would let anyone upload into your account. Talaan doesn't need one.
+5. **Check it:** add a record, then **Add photos or PDFs**. In Cloudinary → **Media Library**, the file is under `talaan-dev/<account id>/<record id>/`, marked as authenticated.
+
+The API secret is like a password: keep it only in `apps/api/.env` and Render's settings. If it leaks, delete that API key in Cloudinary and generate a new one. Cloudinary's free plan has a monthly allowance; the Dashboard shows how much is used.
+
+---
+
 ## API overview
 
 All routes start with `/api`. Errors always look like `{ "message": "…", "errors": { "field": ["…"] } }`.
 
-| Method | Route                                | Login? | What                                                                                                                   |
-| ------ | ------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/health`                        | no     | `{ ok: true }` when the API can reach the database                                                                     |
-| POST   | `/api/auth/register`                 | no     | `{ firstName, middleName, lastName, email, password, consent: true }` → 201 `{ user }`, signed in                      |
-| POST   | `/api/auth/login`                    | no     | `{ email, password }` → `{ twoStep: false, user }`, or 202 `{ twoStep: true, email }`                                  |
-| POST   | `/api/auth/login/code`               | no     | `{ code, rememberBrowser }` → `{ user }`, signed in                                                                    |
-| POST   | `/api/auth/login/resend`             | no     | 204; emails a new sign-in code                                                                                         |
-| POST   | `/api/auth/passkey/options`          | no     | The passkey prompt for the browser                                                                                     |
-| POST   | `/api/auth/passkey/verify`           | no     | `{ response }` → `{ user }`, signed in                                                                                 |
-| GET    | `/api/auth/me`                       | yes    | `{ user, locked }`, or 401                                                                                             |
-| POST   | `/api/auth/activity`                 | yes    | 204; keeps the session from locking                                                                                    |
-| POST   | `/api/auth/lock`                     | yes    | 204; "Lock Talaan now"                                                                                                 |
-| POST   | `/api/auth/unlock`                   | yes    | `{ password }` → `{ user }`                                                                                            |
-| POST   | `/api/auth/unlock/passkey/options`   | yes    | The passkey prompt, only this person's passkeys                                                                        |
-| POST   | `/api/auth/unlock/passkey`           | yes    | `{ response }` → `{ user }`                                                                                            |
-| POST   | `/api/auth/logout`                   | no     | 204                                                                                                                    |
-| POST   | `/api/auth/password-reset/request`   | no     | `{ email }` → 202, the same answer for every email                                                                     |
-| POST   | `/api/auth/password-reset/check`     | no     | `{ email, code }` → 204                                                                                                |
-| POST   | `/api/auth/password-reset/complete`  | no     | `{ email, code, password }` → 204, every device signed out                                                             |
-| GET    | `/api/family`                        | yes    | `{ members, invitations, profiles, sharedWithMe }`                                                                     |
-| POST   | `/api/family/invitations`            | yes    | `{ email, relationship, access }` → 201; emails the link                                                               |
-| POST   | `/api/family/invitations/:id/resend` | yes    | 204; a new link and 7 more days                                                                                        |
-| DELETE | `/api/family/invitations/:id`        | yes    | 204; cancels a waiting one or clears a declined one                                                                    |
-| POST   | `/api/family/invitations/lookup`     | no     | `{ token }` → who invited, as what, the status, and `forThisAccount`                                                   |
-| POST   | `/api/family/invitations/accept`     | yes    | `{ token }` → 204; needs the invited email's account                                                                   |
-| POST   | `/api/family/invitations/decline`    | no     | `{ token }` → 204                                                                                                      |
-| PUT    | `/api/family/members/:userId`        | yes    | `{ access }` → 204                                                                                                     |
-| DELETE | `/api/family/members/:userId`        | yes    | 204; stop sharing with them                                                                                            |
-| DELETE | `/api/family/shared/:ownerId`        | yes    | 204; stop seeing their records                                                                                         |
-| POST   | `/api/family/profiles`               | yes    | `{ firstName, middleName, lastName, relationship, birthDate }` → 201 `{ profile }`                                     |
-| PUT    | `/api/family/profiles/:id`           | yes    | same fields → `{ profile }`                                                                                            |
-| DELETE | `/api/family/profiles/:id`           | yes    | 204                                                                                                                    |
-| GET    | `/api/records/accounts`              | yes    | Accounts you can open (yours and shared ones), your role in each, and their people                                     |
-| GET    | `/api/records`                       | yes    | `?ownerId=&profileId=self\|<id>&type=` → `{ role, records }`, newest first                                             |
-| POST   | `/api/records`                       | yes    | `{ ownerId, type, profileId, title, recordDate, doctor, facility, notes, details }` → 201 `{ record }`                 |
-| GET    | `/api/records/:id`                   | yes    | `{ record }` with `role`                                                                                               |
-| PUT    | `/api/records/:id`                   | yes    | same fields → `{ record }` (owner or "Can manage")                                                                     |
-| DELETE | `/api/records/:id`                   | yes    | 204; moves it to the Trash (owner or "Can manage")                                                                     |
-| GET    | `/api/records/trash`                 | yes    | Your Trash (owner only), with who moved each and when it's deleted for good                                            |
-| DELETE | `/api/records/trash`                 | yes    | `{ deleted }`; empties your Trash                                                                                      |
-| POST   | `/api/records/:id/restore`           | yes    | 204 (owner only)                                                                                                       |
-| DELETE | `/api/records/:id/forever`           | yes    | 204; only from the Trash (owner only)                                                                                  |
-| GET    | `/api/records/:id/history`           | yes    | `{ entries }`: who did what, with the changed fields                                                                   |
-| GET    | `/api/activity`                      | yes    | `?before=` → `{ entries, next }`: your account's history, 50 at a time                                                 |
-| PUT    | `/api/account/password`              | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out                                                     |
-| PUT    | `/api/account/security`              | yes    | `{ lockAfterMinutes?, twoStepEnabled?, currentPassword? }` → `{ user }` (turning two-step off needs `currentPassword`) |
-| GET    | `/api/account/passkeys`              | yes    | `{ passkeys }`: name, dates, synced                                                                                    |
-| POST   | `/api/account/passkeys/options`      | yes    | The prompt to make a new passkey                                                                                       |
-| POST   | `/api/account/passkeys`              | yes    | `{ name, response }` → 201 `{ passkey }`                                                                               |
-| DELETE | `/api/account/passkeys/:id`          | yes    | 204                                                                                                                    |
-| GET    | `/api/account/browsers`              | yes    | `{ browsers }`: remembered browsers, `current` marks this one                                                          |
-| DELETE | `/api/account/browsers/:id`          | yes    | 204; that browser gets the code again                                                                                  |
-| DELETE | `/api/account/browsers`              | yes    | 204; forget them all                                                                                                   |
-| POST   | `/api/account/sign-out-others`       | yes    | 204; every other browser and device is signed out                                                                      |
+| Method | Route                                  | Login? | What                                                                                                                   |
+| ------ | -------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/health`                          | no     | `{ ok: true }` when the API can reach the database                                                                     |
+| POST   | `/api/auth/register`                   | no     | `{ firstName, middleName, lastName, email, password, consent: true }` → 201 `{ user }`, signed in                      |
+| POST   | `/api/auth/login`                      | no     | `{ email, password }` → `{ twoStep: false, user }`, or 202 `{ twoStep: true, email }`                                  |
+| POST   | `/api/auth/login/code`                 | no     | `{ code, rememberBrowser }` → `{ user }`, signed in                                                                    |
+| POST   | `/api/auth/login/resend`               | no     | 204; emails a new sign-in code                                                                                         |
+| POST   | `/api/auth/passkey/options`            | no     | The passkey prompt for the browser                                                                                     |
+| POST   | `/api/auth/passkey/verify`             | no     | `{ response }` → `{ user }`, signed in                                                                                 |
+| GET    | `/api/auth/me`                         | yes    | `{ user, locked }`, or 401                                                                                             |
+| POST   | `/api/auth/activity`                   | yes    | 204; keeps the session from locking                                                                                    |
+| POST   | `/api/auth/lock`                       | yes    | 204; "Lock Talaan now"                                                                                                 |
+| POST   | `/api/auth/unlock`                     | yes    | `{ password }` → `{ user }`                                                                                            |
+| POST   | `/api/auth/unlock/passkey/options`     | yes    | The passkey prompt, only this person's passkeys                                                                        |
+| POST   | `/api/auth/unlock/passkey`             | yes    | `{ response }` → `{ user }`                                                                                            |
+| POST   | `/api/auth/logout`                     | no     | 204                                                                                                                    |
+| POST   | `/api/auth/password-reset/request`     | no     | `{ email }` → 202, the same answer for every email                                                                     |
+| POST   | `/api/auth/password-reset/check`       | no     | `{ email, code }` → 204                                                                                                |
+| POST   | `/api/auth/password-reset/complete`    | no     | `{ email, code, password }` → 204, every device signed out                                                             |
+| GET    | `/api/family`                          | yes    | `{ members, invitations, profiles, sharedWithMe }`                                                                     |
+| POST   | `/api/family/invitations`              | yes    | `{ email, relationship, access }` → 201; emails the link                                                               |
+| POST   | `/api/family/invitations/:id/resend`   | yes    | 204; a new link and 7 more days                                                                                        |
+| DELETE | `/api/family/invitations/:id`          | yes    | 204; cancels a waiting one or clears a declined one                                                                    |
+| POST   | `/api/family/invitations/lookup`       | no     | `{ token }` → who invited, as what, the status, and `forThisAccount`                                                   |
+| POST   | `/api/family/invitations/accept`       | yes    | `{ token }` → 204; needs the invited email's account                                                                   |
+| POST   | `/api/family/invitations/decline`      | no     | `{ token }` → 204                                                                                                      |
+| PUT    | `/api/family/members/:userId`          | yes    | `{ access }` → 204                                                                                                     |
+| DELETE | `/api/family/members/:userId`          | yes    | 204; stop sharing with them                                                                                            |
+| DELETE | `/api/family/shared/:ownerId`          | yes    | 204; stop seeing their records                                                                                         |
+| POST   | `/api/family/profiles`                 | yes    | `{ firstName, middleName, lastName, relationship, birthDate }` → 201 `{ profile }`                                     |
+| PUT    | `/api/family/profiles/:id`             | yes    | same fields → `{ profile }`                                                                                            |
+| DELETE | `/api/family/profiles/:id`             | yes    | 204                                                                                                                    |
+| GET    | `/api/records/accounts`                | yes    | Accounts you can open (yours and shared ones), your role in each, and their people                                     |
+| GET    | `/api/records`                         | yes    | `?ownerId=&profileId=self\|<id>&type=` → `{ role, records }`, newest first                                             |
+| POST   | `/api/records`                         | yes    | `{ ownerId, type, profileId, title, recordDate, doctor, facility, notes, details }` → 201 `{ record }`                 |
+| GET    | `/api/records/:id`                     | yes    | `{ record }` with `role`                                                                                               |
+| PUT    | `/api/records/:id`                     | yes    | same fields → `{ record }` (owner or "Can manage")                                                                     |
+| DELETE | `/api/records/:id`                     | yes    | 204; moves it to the Trash (owner or "Can manage")                                                                     |
+| GET    | `/api/records/trash`                   | yes    | Your Trash (owner only), with who moved each and when it's deleted for good                                            |
+| DELETE | `/api/records/trash`                   | yes    | `{ deleted }`; empties your Trash                                                                                      |
+| POST   | `/api/records/:id/restore`             | yes    | 204 (owner only)                                                                                                       |
+| DELETE | `/api/records/:id/forever`             | yes    | 204; only from the Trash (owner only)                                                                                  |
+| GET    | `/api/records/:id/history`             | yes    | `{ entries }`: who did what, with the changed fields                                                                   |
+| GET    | `/api/activity`                        | yes    | `?before=` → `{ entries, next }`: your account's history, 50 at a time                                                 |
+| GET    | `/api/records/:id/files`               | yes    | `{ files }`: name, format, size, who added it                                                                          |
+| POST   | `/api/records/:id/files/upload-target` | yes    | Where to send one file (signed; Cloudinary or the local folder)                                                        |
+| POST   | `/api/records/:id/files`               | yes    | `{ upload, name }` → 201 `{ file }`: checks the upload's answer, then attaches it                                      |
+| GET    | `/api/files/:id/content`               | yes    | `?variant=thumb\|preview\|original&download=1`: the file itself, after the access check                                |
+| DELETE | `/api/files/:id`                       | yes    | 204; removes it from the record and from storage                                                                       |
+| PUT    | `/api/account/password`                | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out                                                     |
+| PUT    | `/api/account/security`                | yes    | `{ lockAfterMinutes?, twoStepEnabled?, currentPassword? }` → `{ user }` (turning two-step off needs `currentPassword`) |
+| GET    | `/api/account/passkeys`                | yes    | `{ passkeys }`: name, dates, synced                                                                                    |
+| POST   | `/api/account/passkeys/options`        | yes    | The prompt to make a new passkey                                                                                       |
+| POST   | `/api/account/passkeys`                | yes    | `{ name, response }` → 201 `{ passkey }`                                                                               |
+| DELETE | `/api/account/passkeys/:id`            | yes    | 204                                                                                                                    |
+| GET    | `/api/account/browsers`                | yes    | `{ browsers }`: remembered browsers, `current` marks this one                                                          |
+| DELETE | `/api/account/browsers/:id`            | yes    | 204; that browser gets the code again                                                                                  |
+| DELETE | `/api/account/browsers`                | yes    | 204; forget them all                                                                                                   |
+| POST   | `/api/account/sign-out-others`         | yes    | 204; every other browser and device is signed out                                                                      |
 
 | Status | When                                                                                                                                              |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -408,7 +437,7 @@ All routes start with `/api`. Errors always look like `{ "message": "…", "erro
 | 404    | Not found                                                                                                                                         |
 | 409    | Email already has an account                                                                                                                      |
 | 429    | Too many tries (`Retry-After` says how many seconds to wait)                                                                                      |
-| 503    | Forgot password or a family invitation, but email isn't set up on the server                                                                      |
+| 503    | Email (Forgot password, invitations) or uploads (Cloudinary) aren't set up on the server                                                          |
 
 ---
 
@@ -446,11 +475,11 @@ docker compose up -d db
 turbo run test
 ```
 
-| Suite           | Where                       | What it checks                                                                                                                                                                                       |
-| --------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| API unit        | `apps/api/test/unit`        | User rules, shared schemas, use cases with fake repositories (no database)                                                                                                                           |
-| API integration | `apps/api/test/integration` | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, records, the Trash and the audit trail, sessions, rate limit, errors |
-| Website unit    | `apps/web/src/**/*.test.ts` | The API client (`ApiError`), error messages, dates                                                                                                                                                   |
+| Suite           | Where                       | What it checks                                                                                                                                                                                                                                                 |
+| --------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API unit        | `apps/api/test/unit`        | User rules, shared schemas, use cases with fake repositories (no database)                                                                                                                                                                                     |
+| API integration | `apps/api/test/integration` | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, records, the Trash and the audit trail, uploads (through the local storage) and who can see them, sessions, rate limit, errors |
+| Website unit    | `apps/web/src/**/*.test.ts` | The API client (`ApiError`), error messages, dates                                                                                                                                                                                                             |
 
 ### The test database
 
@@ -520,6 +549,8 @@ git push -u origin feat/something
 | `Bind for 0.0.0.0:5432 failed: port is already allocated` | Another database uses port 5432. Stop it (`docker ps`, then `docker stop <name>`), or set `POSTGRES_PORT=5433` in `.env` and use `:5433` in `DATABASE_URL`, then `docker compose up -d db` again |
 | `Cannot find module '@talaan/shared'`                     | `turbo run build` (the shared package must be built first)                                                                                                                                       |
 | `SESSION_SECRET must be at least 32 characters`           | `openssl rand -hex 32` and paste the result                                                                                                                                                      |
+| Uploads say "isn't set up"                                | The live site needs `CLOUDINARY_URL` (README → "Storing photos and PDFs")                                                                                                                        |
+| Upload fails with "The file couldn't be stored: …"        | Cloudinary refused it: check `CLOUDINARY_URL` (key, secret, cloud name) and that the API key is enabled                                                                                          |
 | "Passkeys don't work on this address"                     | The page's address isn't `APP_URL`. Open the site from that address (locally `http://localhost:5173`, not `127.0.0.1`), or fix `APP_URL`                                                         |
 | No sign-in code arrives locally                           | Start Mailpit (`docker compose up -d mail`) and look at http://localhost:8025                                                                                                                    |
 | A 500 error right after pulling new code                  | A migration hasn't run: `turbo run db:migrate`                                                                                                                                                   |

@@ -9,6 +9,7 @@ import type { FamilyAccessRepository } from "../../domain/family/FamilyAccessRep
 import type { FamilyProfile } from "../../domain/family/FamilyProfile.js";
 import type { FamilyProfileRepository } from "../../domain/family/FamilyProfileRepository.js";
 import { canManage, canView } from "../../domain/family/rules.js";
+import type { RecordFileRepository } from "../../domain/file/RecordFileRepository.js";
 import type { HealthRecord } from "../../domain/record/HealthRecord.js";
 import type { RecordRepository } from "../../domain/record/RecordRepository.js";
 import { diffRecords, purgeCutoff } from "../../domain/record/rules.js";
@@ -16,6 +17,7 @@ import type { UserRepository } from "../../domain/user/UserRepository.js";
 import type { AuditTrail } from "../audit/AuditTrail.js";
 import type { FamilyMembers } from "../family/FamilyMembers.js";
 import type { Clock } from "../ports/Clock.js";
+import type { FileStorage } from "../ports/FileStorage.js";
 
 const NOT_FOUND =
   "That record isn't there anymore, or it isn't shared with you.";
@@ -47,7 +49,38 @@ export class Records {
     private readonly members: FamilyMembers,
     private readonly audit: AuditTrail,
     private readonly clock: Clock,
+    private readonly files: RecordFileRepository,
+    private readonly storage: FileStorage | null,
   ) {}
+
+  // Deletes a record for good, then its photos and PDFs from storage.
+  // A storage hiccup is logged, not shown: the record is already gone.
+  private async removeWithFiles(id: string) {
+    const keys = await this.files.keysForRecord(id);
+    await this.records.remove(id);
+    for (const key of keys) {
+      try {
+        await this.storage?.remove(key);
+      } catch (error) {
+        console.error(`Couldn't remove file ${key} from storage:`, error);
+      }
+    }
+  }
+
+  // For attached files: the record, and what this person may do with it.
+  // A record in the Trash is only reachable by its owner.
+  async accessTo(viewerId: string, id: string) {
+    const record = await this.records.findById(id);
+    if (!record) throw new NotFoundError(NOT_FOUND);
+    const role = await this.roleFor(viewerId, record.ownerId);
+    if (record.deletedAt && role !== "owner")
+      throw new NotFoundError(NOT_FOUND);
+    return {
+      record,
+      role,
+      canChange: canManage(role) && !record.deletedAt,
+    };
+  }
 
   private async household(ownerId: string): Promise<Household> {
     const owner = await this.users.findById(ownerId);
@@ -231,7 +264,7 @@ export class Records {
   // Only the owner, and only from the Trash. The history stays.
   async deleteForever(actorId: string, id: string) {
     const record = await this.findTrashed(actorId, id);
-    await this.records.remove(id);
+    await this.removeWithFiles(id);
     await this.audit.log({
       ownerId: record.ownerId,
       action: "record.deleted",
@@ -253,7 +286,7 @@ export class Records {
       purgeCutoff(this.clock.now()),
     );
     for (const record of due) {
-      await this.records.remove(record.id);
+      await this.removeWithFiles(record.id);
       await this.audit.log({
         ownerId: record.ownerId,
         action: "record.purged",

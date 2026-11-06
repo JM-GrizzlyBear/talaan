@@ -7,6 +7,7 @@ import {
 } from "../../domain/emailCode/errors.js";
 import { ForbiddenError, NotFoundError } from "../../domain/errors.js";
 import { FamilyError } from "../../domain/family/errors.js";
+import { FileError, FilesNotSetUpError } from "../../domain/file/errors.js";
 import { PasskeyError } from "../../domain/passkey/errors.js";
 import { SignInExpiredError } from "../../domain/user/signIn.js";
 import {
@@ -92,6 +93,22 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
       message: error.message,
       errors: error.field ? { [error.field]: [error.message] } : undefined,
     });
+    return;
+  }
+  if (error instanceof FileError) {
+    send(res, 400, { message: error.message });
+    return;
+  }
+  if (error instanceof FilesNotSetUpError) {
+    send(res, 503, { message: error.message });
+    return;
+  }
+  // express.raw(): an upload bigger than allowed
+  if (
+    error?.type === "entity.too.large" &&
+    req.path.startsWith("/api/uploads")
+  ) {
+    send(res, 413, { message: FileError.tooBig().message });
     return;
   }
   if (error instanceof PasskeyError) {

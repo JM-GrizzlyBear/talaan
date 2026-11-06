@@ -5,6 +5,8 @@ import { SmtpAccountEmails } from "./infrastructure/email/SmtpAccountEmails.js";
 import { BcryptPasswordHasher } from "./infrastructure/security/BcryptPasswordHasher.js";
 import { HmacSecretCodes } from "./infrastructure/security/HmacSecretCodes.js";
 import { SystemClock } from "./infrastructure/time/SystemClock.js";
+import { CloudinaryFileStorage } from "./infrastructure/storage/CloudinaryFileStorage.js";
+import { LocalFileStorage } from "./infrastructure/storage/LocalFileStorage.js";
 import { SimpleWebAuthnCeremonies } from "./infrastructure/webauthn/SimpleWebAuthnCeremonies.js";
 
 const env = readEnv();
@@ -16,6 +18,20 @@ if (!env.smtp) {
   );
 }
 
+if (!env.storage) {
+  console.warn(
+    "CLOUDINARY_URL isn't set: uploading photos and PDFs is off. See apps/api/.env.example.",
+  );
+} else if (env.storage.kind === "cloudinary") {
+  console.log(
+    `Uploads go to Cloudinary (${env.storage.settings.cloudName}, folder ${env.storage.settings.folder})`,
+  );
+} else if (env.storage.kind === "local") {
+  console.log(
+    `Uploads go to the folder ${env.storage.dir} (set CLOUDINARY_URL to use Cloudinary)`,
+  );
+}
+
 const app = buildApp({
   pool,
   sessionSecret: env.sessionSecret,
@@ -23,6 +39,12 @@ const app = buildApp({
   secretCodes: new HmacSecretCodes(env.sessionSecret),
   emails: env.smtp ? new SmtpAccountEmails(env.smtp) : null,
   passkeyCeremonies: new SimpleWebAuthnCeremonies(env.webAuthn),
+  fileStorage:
+    env.storage?.kind === "cloudinary"
+      ? new CloudinaryFileStorage(env.storage.settings)
+      : env.storage?.kind === "local"
+        ? new LocalFileStorage(env.storage.dir, env.sessionSecret)
+        : null,
   clock: new SystemClock(),
   secureCookie: env.secureCookie,
   trustProxy: env.trustProxy,

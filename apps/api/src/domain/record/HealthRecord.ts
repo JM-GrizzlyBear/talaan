@@ -15,4 +15,6 @@ export type HealthRecord = RecordFields & {
   deletedAt: Date | null;
   deletedBy: string | null;
   deletedByName: string | null;
+  // Photos and PDFs attached
+  fileCount: number;
 };
