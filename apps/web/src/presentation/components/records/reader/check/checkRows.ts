@@ -1,5 +1,5 @@
 import type { ReadLabRow } from "@talaan/shared";
-import type { LabRow } from "../form/recordFormState";
+import type { LabRow } from "../../form/recordFormState";
 
 // A read row while it's being checked: the form's text boxes, plus whether
 // to add it and why it may be wrong

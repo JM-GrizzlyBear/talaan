@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eraseTableLines } from "./cleanForReading";
+import { eraseTableLines } from "./eraseTableLines";
 
 // A small white picture: 200 × 100
 const W = 200;

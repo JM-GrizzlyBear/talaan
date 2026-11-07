@@ -1,4 +1,4 @@
-import type { ReadProgress } from "../../../../infrastructure/reader/progress";
+import type { ReadProgress } from "../../../../../infrastructure/reader/progress";
 
 // "Getting the reader ready…" (first time only), then "Reading…"
 export function ReadingProgress({

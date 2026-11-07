@@ -1,7 +1,7 @@
 import { FILE_ACCEPT, type RecordFileInfo } from "@talaan/shared";
 import { Camera, FileText, Upload } from "lucide-react";
 import { useRef } from "react";
-import { buttonSecondary } from "../../ui/styles";
+import { buttonSecondary } from "../../../ui/styles";
 
 // Where the lab result comes from: a new photo, a file, or one already attached
 export function ChooseSource({

@@ -176,16 +176,16 @@ talaan/
 │       ├── scripts/         # copy-reader-files.mjs: puts the lab reader's files in public/reader/
 │       ├── vite.config.ts   # dev server: forwards /api to the API on port 4000
 │       └── src/
-│           ├── infrastructure/      # api/ (fetch + ApiError, authApi, accountApi), passkeys/ (the device prompt), reader/ (photo and PDF text)
-│           ├── application/         # auth/, family/ and records/ hooks (TanStack Query)
+│           ├── infrastructure/      # api/ (fetch + ApiError, authApi, accountApi), passkeys/ (the device prompt), reader/ (photo/ and pdf/: text from photos and PDFs)
+│           ├── application/         # auth/, family/ and records/ hooks (TanStack Query); reader/ (reading a lab result step by step)
 │           ├── presentation/
-│           │   ├── components/      # per feature: auth/, family/, records/ (form/, view/, files/, reader/), security/; plus brand/, layout/, routing/, ui/ (shared pieces)
+│           │   ├── components/      # per feature: auth/, family/, records/ (form/, view/, files/, reader/ with steps/ and check/), security/; plus brand/, layout/, routing/, ui/ (shared pieces)
 │           │   ├── pages/           # auth/, records/, family/, settings/: short pages that put components together
 │           │   └── format/          # dates, ages, history sentences, error messages, passkey names (+ tests)
 │           ├── App.tsx              # routes
 │           └── index.css            # Tailwind and the theme colors
 └── packages/
-    └── shared/              # form rules and types used by both: auth/, family/, records/, scan/ (lab line reader), files, audit
+    └── shared/              # form rules and types used by both: auth/, family/, records/, scan/ (lab line reader, one step per file; tests/ lists the known lab tests), files, audit
 ```
 
 ---
@@ -479,7 +479,7 @@ Free and private: the picture never leaves the phone or computer.
 
 - **PDFs with text** (most hospital and lab PDFs): the text is taken straight from the PDF ([pdf.js](https://mozilla.github.io/pdf.js/)), so it's exact.
 - **Photos and scanned PDFs:** [Tesseract.js](https://tesseract.projects.naptha.ai/) reads them in the browser. Before reading, the picture is made bigger, grey, and the table lines are painted out (that's what trips the reader up most). Up to 5 pages.
-- **Finding the results:** `packages/shared/src/scan/readLabLines.ts` turns each line into test, result, unit and normal range. It knows the usual Philippine CBC, chemistry and urinalysis names and their other spellings (SGPT / ALT, FBS, Pus cells…). When a printout has no normal range, the range stays empty; Talaan never makes one up. Rows it's unsure of say why: an unknown test name, a range that looks wrong, a hard-to-read line, or a letter O read as 0. The phone app will use the same file.
+- **Finding the results:** `packages/shared/src/scan/` (one step per file: `tidyLine` → `findTest` → `takeValue` → `takeRange` → `units` → `doubts`, put together in `readLabLines.ts`) turns each line into test, result, unit and normal range. It knows the usual Philippine CBC, chemistry and urinalysis names (`scan/tests/`, one file per panel) and their other spellings (SGPT / ALT, FBS, Pus cells…). When a printout has no normal range, the range stays empty; Talaan never makes one up. Rows it's unsure of say why: an unknown test name, a range that looks wrong, a hard-to-read line, or a letter O read as 0. The phone app will use the same file.
 
 **The reader's files** (about 7 MB the first time, then cached) are served by Talaan itself from `/reader/`, not from another site. `pnpm dev` and `pnpm build` copy them from `node_modules` into `apps/web/public/reader/` (`apps/web/scripts/copy-reader-files.mjs`), so they're not in git. Running WebAssembly needs `'wasm-unsafe-eval'` in the site's security rules (`script-src` in `apps/api/src/buildApp.ts`); that allows WebAssembly only, not `eval`.
 

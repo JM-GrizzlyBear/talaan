@@ -97,3 +97,17 @@ export function fileUrl(id: string, variant: FileVariant, download = false) {
   if (download) query.set("download", "1");
   return `/api/files/${encodeURIComponent(id)}/content?${query}`;
 }
+
+// The file itself (to read lab values from it on this device)
+export async function fetchFileContent(id: string) {
+  const failed = (status: number) =>
+    new ApiError(
+      status,
+      "That file couldn't be opened. Check your connection and try again.",
+    );
+  const response = await fetch(fileUrl(id, "original")).catch(() => {
+    throw failed(0);
+  });
+  if (!response.ok) throw failed(response.status);
+  return await response.blob();
+}

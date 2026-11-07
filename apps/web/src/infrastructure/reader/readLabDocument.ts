@@ -1,6 +1,8 @@
 import { readLabLines, type ReadLabRow, type TextLine } from "@talaan/shared";
-import { photoToCanvas, readImageText } from "./imageText";
-import { readPdf } from "./pdfText";
+import { isPdf, isPhoto } from "./fileKind";
+import { readPdf } from "./pdf/readPdf";
+import { photoToCanvas } from "./photo/photoToCanvas";
+import { readPhotoText } from "./photo/readPhotoText";
 import type { OnProgress } from "./progress";
 import { ReaderError } from "./ReaderError";
 
@@ -14,21 +16,19 @@ export interface ReadLabDocument {
   from: "text" | "photo";
 }
 
-const isPdf = (file: Blob, name: string) =>
-  file.type === "application/pdf" || /\.pdf$/i.test(name);
+// A picture to show beside the rows
+const toPicture = (canvas: HTMLCanvasElement) =>
+  canvas.toDataURL("image/jpeg", 0.85);
 
 // Reads a lab result photo or PDF on this device: nothing is sent anywhere
 export async function readLabDocument(
   file: Blob,
-  // The file's name: some phones send photos with no type
   name: string,
   onProgress: OnProgress,
 ): Promise<ReadLabDocument> {
   if (isPdf(file, name)) {
     const pdf = await readPdf(file);
-    const pictures = pdf.pages.map((page) =>
-      page.toDataURL("image/jpeg", 0.85),
-    );
+    const pictures = pdf.pages.map(toPicture);
     if (pdf.lines) {
       return {
         rows: readLabLines(pdf.lines),
@@ -40,22 +40,19 @@ export async function readLabDocument(
     // A scanned PDF: read its pages like photos
     const lines: TextLine[] = [];
     for (const page of pdf.pages) {
-      lines.push(...(await readImageText(page, onProgress)));
+      lines.push(...(await readPhotoText(page, onProgress)));
     }
     return { rows: readLabLines(lines), lines, pictures, from: "photo" };
   }
-  if (
-    !file.type.startsWith("image/") &&
-    !/\.(jpe?g|png|webp|heic|heif)$/i.test(name)
-  ) {
+  if (!isPhoto(file, name)) {
     throw new ReaderError("Only photos and PDFs can be read.");
   }
   const canvas = await photoToCanvas(file);
-  const lines = await readImageText(canvas, onProgress);
+  const lines = await readPhotoText(canvas, onProgress);
   return {
     rows: readLabLines(lines),
     lines,
-    pictures: [canvas.toDataURL("image/jpeg", 0.85)],
+    pictures: [toPicture(canvas)],
     from: "photo",
   };
 }

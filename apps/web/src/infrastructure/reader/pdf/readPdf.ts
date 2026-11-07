@@ -1,6 +1,7 @@
 import type { TextLine } from "@talaan/shared";
 import { groupIntoLines, type PdfTextItem } from "./pdfLines";
-import { ReaderError } from "./ReaderError";
+import { READER_FILES } from "../readerFiles";
+import { ReaderError } from "../ReaderError";
 
 // Lab results are rarely longer than this
 const MAX_PAGES = 5;
@@ -16,7 +17,7 @@ export interface PdfPages {
 
 export async function readPdf(file: Blob): Promise<PdfPages> {
   const pdfjs = await import("pdfjs-dist");
-  pdfjs.GlobalWorkerOptions.workerSrc = "/reader/pdf.worker.min.mjs";
+  pdfjs.GlobalWorkerOptions.workerSrc = READER_FILES.pdfWorker;
   const loading = pdfjs.getDocument({
     data: await file.arrayBuffer(),
   });
