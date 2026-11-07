@@ -14,6 +14,10 @@
   --color-muted: #5a6672;
   --color-danger: #b42318;
   --color-danger-soft: #fef3f2;
+  /* "Check this": rows the reader isn't sure of */
+  --color-warn: #8a4b07;
+  --color-warn-edge: #e5a33a;
+  --color-warn-soft: #fff8eb;
 }
 
 body {

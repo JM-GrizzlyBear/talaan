@@ -1,5 +1,5 @@
 import { formatBytes, type RecordFileInfo } from "@talaan/shared";
-import { Download, ExternalLink, FileText, X } from "lucide-react";
+import { Download, ExternalLink, FileText, ScanText, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRemoveRecordFile } from "../../../../application/records/useRecordFiles";
 import { fileUrl } from "../../../../infrastructure/api/filesApi";
@@ -13,10 +13,13 @@ export function FileViewer({
   file,
   canChange,
   onClose,
+  onRead,
 }: {
   file: RecordFileInfo;
   canChange: boolean;
   onClose: () => void;
+  // Lab results: read this file's values into the record
+  onRead?: () => void;
 }) {
   const remove = useRemoveRecordFile();
   const [confirming, setConfirming] = useState(false);
@@ -99,6 +102,12 @@ export function FileViewer({
             <Download aria-hidden="true" className="size-4" />
             Download
           </a>
+          {onRead && (
+            <button type="button" onClick={onRead} className={buttonSecondary}>
+              <ScanText aria-hidden="true" className="size-4" />
+              Read lab values from this
+            </button>
+          )}
           {canChange &&
             (confirming ? (
               <span className="flex flex-wrap items-center gap-3 text-sm">

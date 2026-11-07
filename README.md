@@ -13,7 +13,7 @@ _Talaan_ is Filipino for "record" or "list".
 ## What's planned
 
 - **Records:** X-rays, lab results, prescriptions, HMO approvals (LOA) and other papers, for each family member, with a timeline and filters.
-- **Scan and upload:** photos or PDFs go straight to private storage; Talaan reads the date, doctor, hospital and lab numbers so you only check them.
+- **Scan and upload:** photos or PDFs go straight to private storage; Talaan reads the lab numbers (done) and later the date, doctor and hospital, so you only check them.
 - **X-ray with its reading:** the film photos and the radiologist's reading are one record.
 - **Places and QR labels:** folders, boxes, envelopes, drawers and bags, each with its own QR label. Print sheets of labels (including blank ones to name later) and scan a label to see what should be inside.
 - **Lent out:** who has the films, since when, with a reminder until they come back.
@@ -45,6 +45,7 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
   - **Trash**: records stay 30 days, then Talaan deletes them for good (hourly, and whenever the Trash is opened). Only the owner restores or deletes sooner.
   - **Audit trail**: every add, edit (with each changed field, before and after), move to the Trash, restore and delete is saved with who did it and when. Sharing changes (invitations, accepting, access changes, profiles) are too. Each record shows its history; the owner's Activity page shows everything. Entries can't be changed, not even directly in the database.
 - **Photos and PDFs on records**: up to 20 per record, 10 MB each (JPG, PNG, WEBP, HEIC, PDF). "Take a photo" opens the phone's camera. Files are private in Cloudinary: the browser only ever gets them through the API, after the same "who can see this record" check. Removing a file, or deleting its record for good, removes it from Cloudinary too.
+- **Read lab results from a photo or PDF** (free, on the device): on a lab result, **Read from a photo or PDF**, or **Read lab values from this** on a file already attached. Talaan finds each test, result, unit and normal range; you check every row beside the picture (unclear ones are marked in amber) before they go into the form, and nothing is saved until you press Save. See [Reading lab results](#reading-lab-results-from-a-photo-or-pdf).
 - **Family** (one way: the people you invite see your records, not the other way round)
   - Invite by email with who they are to you (Anak, Nanay, Lolo, …) and what they can do: **Can view** (records and lab comparisons) or **Can manage** (also add records, scan and set reminders). Invitations last 7 days; send again or cancel any time.
   - The invited person accepts or declines from the email's link. Declining needs no account; accepting needs a Talaan account with that same email (a new account can be made on the way).
@@ -171,19 +172,20 @@ talaan/
 │   │       ├── buildApp.ts          # composition root (also used by the tests)
 │   │       └── main.ts              # starts the server
 │   └── web/                 # React website (Vite)
-│       ├── public/          # favicon and app icons (the Talaan logo)
+│       ├── public/          # favicon and app icons (the Talaan logo); reader/ is copied there (not in git)
+│       ├── scripts/         # copy-reader-files.mjs: puts the lab reader's files in public/reader/
 │       ├── vite.config.ts   # dev server: forwards /api to the API on port 4000
 │       └── src/
-│           ├── infrastructure/      # api/ (fetch + ApiError, authApi, accountApi), passkeys/ (the device prompt)
+│           ├── infrastructure/      # api/ (fetch + ApiError, authApi, accountApi), passkeys/ (the device prompt), reader/ (photo and PDF text)
 │           ├── application/         # auth/, family/ and records/ hooks (TanStack Query)
 │           ├── presentation/
-│           │   ├── components/      # per feature: auth/, family/, records/ (form/, view/, files/), security/; plus brand/, layout/, routing/, ui/ (shared pieces)
+│           │   ├── components/      # per feature: auth/, family/, records/ (form/, view/, files/, reader/), security/; plus brand/, layout/, routing/, ui/ (shared pieces)
 │           │   ├── pages/           # auth/, records/, family/, settings/: short pages that put components together
 │           │   └── format/          # dates, ages, history sentences, error messages, passkey names (+ tests)
 │           ├── App.tsx              # routes
 │           └── index.css            # Tailwind and the theme colors
 └── packages/
-    └── shared/              # form rules and types used by both: auth/, family/, records/, files, audit
+    └── shared/              # form rules and types used by both: auth/, family/, records/, scan/ (lab line reader), files, audit
 ```
 
 ---
@@ -471,6 +473,20 @@ Each feature goes through the layers in the same order:
 
 ---
 
+## Reading lab results from a photo or PDF
+
+Free and private: the picture never leaves the phone or computer.
+
+- **PDFs with text** (most hospital and lab PDFs): the text is taken straight from the PDF ([pdf.js](https://mozilla.github.io/pdf.js/)), so it's exact.
+- **Photos and scanned PDFs:** [Tesseract.js](https://tesseract.projects.naptha.ai/) reads them in the browser. Before reading, the picture is made bigger, grey, and the table lines are painted out (that's what trips the reader up most). Up to 5 pages.
+- **Finding the results:** `packages/shared/src/scan/readLabLines.ts` turns each line into test, result, unit and normal range. It knows the usual Philippine CBC, chemistry and urinalysis names and their other spellings (SGPT / ALT, FBS, Pus cells…). When a printout has no normal range, the range stays empty; Talaan never makes one up. Rows it's unsure of say why: an unknown test name, a range that looks wrong, a hard-to-read line, or a letter O read as 0. The phone app will use the same file.
+
+**The reader's files** (about 7 MB the first time, then cached) are served by Talaan itself from `/reader/`, not from another site. `pnpm dev` and `pnpm build` copy them from `node_modules` into `apps/web/public/reader/` (`apps/web/scripts/copy-reader-files.mjs`), so they're not in git. Running WebAssembly needs `'wasm-unsafe-eval'` in the site's security rules (`script-src` in `apps/api/src/buildApp.ts`); that allows WebAssembly only, not `eval`.
+
+Works best with a clear, straight photo of a printed result in good light. Handwriting isn't read well.
+
+---
+
 ## Tests
 
 ```bash
@@ -478,11 +494,12 @@ docker compose up -d db
 turbo run test
 ```
 
-| Suite           | Where                       | What it checks                                                                                                                                                                                                                                                 |
-| --------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| API unit        | `apps/api/test/unit`        | User rules, shared schemas, use cases with fake repositories (no database)                                                                                                                                                                                     |
-| API integration | `apps/api/test/integration` | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, records, the Trash and the audit trail, uploads (through the local storage) and who can see them, sessions, rate limit, errors |
-| Website unit    | `apps/web/src/**/*.test.ts` | The API client (`ApiError`), error messages, dates                                                                                                                                                                                                             |
+| Suite           | Where                              | What it checks                                                                                                                                                                                                                                                 |
+| --------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API unit        | `apps/api/test/unit`               | User rules, shared schemas, use cases with fake repositories (no database)                                                                                                                                                                                     |
+| API integration | `apps/api/test/integration`        | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, records, the Trash and the audit trail, uploads (through the local storage) and who can see them, sessions, rate limit, errors |
+| Shared unit     | `packages/shared/src/**/*.test.ts` | Reading lab lines: formats, units, ranges, urinalysis, doubts, no made-up ranges                                                                                                                                                                               |
+| Website unit    | `apps/web/src/**/*.test.ts`        | The API client (`ApiError`), error messages, dates, PDF line grouping, table-line removal, adding read rows to the form                                                                                                                                        |
 
 ### The test database
 

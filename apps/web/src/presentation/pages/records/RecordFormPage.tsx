@@ -1,5 +1,5 @@
 import type { RecordAccountInfo } from "@talaan/shared";
-import { useParams, useSearchParams } from "react-router";
+import { useLocation, useParams, useSearchParams } from "react-router";
 import {
   useRecord,
   useRecordAccounts,
@@ -62,6 +62,9 @@ function EditRecord({
   accounts: RecordAccountInfo[];
 }) {
   const record = useRecord(id);
+  // The record page's "Read lab values from this" sends the file along
+  const readFileId = (useLocation().state as { readFile?: string } | null)
+    ?.readFile;
   if (record.isPending)
     return <Loading className="p-8 text-center text-muted" />;
   if (record.isError) return <Problem message={errorMessage(record.error)} />;
@@ -76,6 +79,7 @@ function EditRecord({
       account={account}
       record={record.data}
       initial={formFromRecord(record.data)}
+      readFileId={readFileId}
     />
   );
 }

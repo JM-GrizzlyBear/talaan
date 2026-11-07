@@ -12,12 +12,14 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit -p tsconfig.check.json",
+    "test": "vitest run"
   },
   "dependencies": {
     "zod": "4.6.5"
   },
   "devDependencies": {
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
   }
 }

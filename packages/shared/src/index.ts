@@ -7,3 +7,4 @@ export * from "./audit.js";
 export * from "./records/index.js";
 export * from "./files.js";
 export * from "./money.js";
+export * from "./scan/index.js";

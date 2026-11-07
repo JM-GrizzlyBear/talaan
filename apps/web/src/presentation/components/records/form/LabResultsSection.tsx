@@ -1,5 +1,10 @@
 import { labFlag, RECORD_LIMITS } from "@talaan/shared";
-import { Plus } from "lucide-react";
+import { Plus, ScanText } from "lucide-react";
+import { useState } from "react";
+import { useRecordFiles } from "../../../../application/records/useRecordFiles";
+import { Notice } from "../../ui/Notice";
+import { ReadLabDialog } from "../reader/ReadLabDialog";
+import { addToForm } from "../reader/checkRows";
 import { TextField } from "../../ui/TextField";
 import { buttonSecondary, linkButton } from "../../ui/styles";
 import { FormSection } from "./FormSection";
@@ -7,18 +12,62 @@ import type { RowPartProps } from "./formParts";
 import { emptyLabRow, parseNumber } from "./recordFormState";
 
 // Lab results: one row per test, with its normal range and a Low/High flag
+// A photo or PDF of the printout can fill the rows (read on this device)
 export function LabResultsSection({
   form,
   set,
   rowError,
   error,
-}: RowPartProps) {
+  recordId,
+  readFileId,
+}: RowPartProps & {
+  // Editing: the record's attached files can be read too
+  recordId?: string;
+  // Open the reader on this attached file straight away
+  readFileId?: string;
+}) {
+  const files = useRecordFiles(recordId);
+  const [reading, setReading] = useState(Boolean(readFileId));
+  const [added, setAdded] = useState<number | null>(null);
+  const startWith = files.data?.find((f) => f.id === readFileId);
+  // Wait for the file list before opening on a chosen file
+  const ready = !readFileId || files.isSuccess;
+
   return (
     <FormSection title="Results">
       <p className="-mt-2 text-sm text-muted">
-        Copy each line from the printout. The normal range is on the same line,
-        like “12.0 – 16.0”.
+        Copy each line from the printout, or let Talaan read a photo or PDF of
+        it. The normal range is on the same line, like “12.0 – 16.0”.
       </p>
+      <button
+        type="button"
+        onClick={() => {
+          setAdded(null);
+          setReading(true);
+        }}
+        className={`${buttonSecondary} self-start`}
+      >
+        <ScanText aria-hidden="true" className="size-4" />
+        Read from a photo or PDF
+      </button>
+      {added !== null && (
+        <Notice>
+          Added {added} {added === 1 ? "result" : "results"} from the printout.
+          Check them below, then save.
+        </Notice>
+      )}
+      {reading && ready && (
+        <ReadLabDialog
+          attached={files.data ?? []}
+          startWith={startWith}
+          onClose={() => setReading(false)}
+          onAdd={(rows) => {
+            set("results", addToForm(form.results, rows));
+            setAdded(rows.length);
+            setReading(false);
+          }}
+        />
+      )}
       {form.results.map((row, index) => {
         const change = (key: keyof typeof row, value: string) =>
           set(
