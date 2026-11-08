@@ -3,5 +3,7 @@ packages:
   - "packages/*"
 allowBuilds:
   esbuild: false
+  # Its install script only prints a donation message
+  tesseract.js: false
 # Exact versions only: pnpm add saves "1.2.3", never "^1.2.3"
 saveExact: true
