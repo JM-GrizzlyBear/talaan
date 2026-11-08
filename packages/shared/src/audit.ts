@@ -19,6 +19,10 @@ export const AUDIT_ACTIONS = [
   "family.access_changed",
   "family.removed",
   "family.left",
+  "place.created",
+  "place.edited",
+  "place.removed",
+  "labels.created",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

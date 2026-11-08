@@ -7,8 +7,13 @@ import { FamilyPage } from "./presentation/pages/family/FamilyPage";
 import { ForgotPasswordPage } from "./presentation/pages/auth/ForgotPasswordPage";
 import { HomePage } from "./presentation/pages/HomePage";
 import { InvitationPage } from "./presentation/pages/family/InvitationPage";
+import { LabelPage } from "./presentation/pages/places/LabelPage";
 import { LoginPage } from "./presentation/pages/auth/LoginPage";
 import { RegisterPage } from "./presentation/pages/auth/RegisterPage";
+import { PlaceFormPage } from "./presentation/pages/places/PlaceFormPage";
+import { PlacePage } from "./presentation/pages/places/PlacePage";
+import { PlacesPage } from "./presentation/pages/places/PlacesPage";
+import { PrintLabelsPage } from "./presentation/pages/places/PrintLabelsPage";
 import { RecordFormPage } from "./presentation/pages/records/RecordFormPage";
 import { RecordPage } from "./presentation/pages/records/RecordPage";
 import { RecordsPage } from "./presentation/pages/records/RecordsPage";
@@ -35,6 +40,13 @@ export function App() {
           <Route path="/records/trash" element={<TrashPage />} />
           <Route path="/records/:id" element={<RecordPage />} />
           <Route path="/records/:id/edit" element={<RecordFormPage />} />
+          <Route path="/places" element={<PlacesPage />} />
+          <Route path="/places/new" element={<PlaceFormPage />} />
+          <Route path="/places/print" element={<PrintLabelsPage />} />
+          <Route path="/places/:id" element={<PlacePage />} />
+          <Route path="/places/:id/edit" element={<PlaceFormPage />} />
+          {/* What a QR label opens (signing in first if needed) */}
+          <Route path="/l/:code" element={<LabelPage />} />
           <Route path="/activity" element={<ActivityPage />} />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/settings/security" element={<SecurityPage />} />

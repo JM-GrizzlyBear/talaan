@@ -122,11 +122,16 @@ const EMPTY_LAB: LabResult[] = [];
 const EMPTY_MEDICINES: Medicine[] = [];
 
 // Exactly what changed in an edit, in words people can read in the history.
-// personName turns a profile id (or null for the owner) into a name.
+// personName turns a profile id (or null for the owner) into a name;
+// placeNames are where it was kept before and after ("Drawer › Blue box").
 export function diffRecords(
   before: RecordFields,
   after: RecordFields,
   personName: (profileId: string | null) => string,
+  placeNames: { before: string | null; after: string | null } = {
+    before: null,
+    after: null,
+  },
 ): AuditChange[] {
   const changes: AuditChange[] = [];
   const compare = (field: string, from: string | null, to: string | null) => {
@@ -144,6 +149,13 @@ export function diffRecords(
   compare("Doctor", shown(before.doctor), shown(after.doctor));
   compare("Clinic or hospital", shown(before.facility), shown(after.facility));
   compare("Notes", shown(before.notes), shown(after.notes));
+  if (before.placeId !== after.placeId) {
+    changes.push({
+      field: "Kept in",
+      from: placeNames.before,
+      to: placeNames.after,
+    });
+  }
 
   // Same-type fields are compared one by one; a new type compares against empty
   const oldDetails = new Map(detailFields(before));

@@ -17,6 +17,7 @@ import { buttonPrimary, buttonSecondary } from "../../ui/styles";
 import { AboutSection } from "./AboutSection";
 import { BillingSection } from "./BillingSection";
 import { ImagingSection } from "./ImagingSection";
+import { KeptInSection } from "./KeptInSection";
 import { LabResultsSection } from "./LabResultsSection";
 import { MedicinesSection } from "./MedicinesSection";
 import { TypePicker } from "./TypePicker";
@@ -158,6 +159,13 @@ export function RecordForm({
             {form.type === "billing" && (
               <BillingSection form={form} set={set} error={error} />
             )}
+
+            <KeptInSection
+              form={form}
+              set={set}
+              error={error}
+              account={account}
+            />
 
             <TextAreaField
               label="Notes (optional)"

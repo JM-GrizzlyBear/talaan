@@ -15,6 +15,8 @@ export interface RecordFilters {
   // "self" or a profile id
   profileId?: string;
   type?: RecordType;
+  // Records kept in this place
+  placeId?: string;
 }
 
 function query(params: Record<string, string | undefined>) {

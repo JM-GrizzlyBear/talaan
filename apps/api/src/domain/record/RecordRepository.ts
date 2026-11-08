@@ -5,6 +5,8 @@ export interface RecordFilters {
   // undefined: everyone; null: the owner themself; a string: that profile
   profileId?: string | null;
   type?: RecordType;
+  // Records kept in this place
+  placeId?: string;
 }
 
 export interface RecordRepository {

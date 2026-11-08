@@ -35,4 +35,6 @@ export interface BuildAppOptions {
   invitationEmailLimit?: number;
   // Record changes per person every 15 minutes
   recordsLimit?: number;
+  // Makes QR label codes (tests pass a predictable one)
+  makeLabelCode?: () => string;
 }

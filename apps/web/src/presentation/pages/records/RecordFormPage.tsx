@@ -41,6 +41,8 @@ function NewRecord({ accounts }: { accounts: RecordAccountInfo[] }) {
   const account =
     accounts.find((a) => a.ownerId === params.get("owner")) ?? accounts[0];
   const person = params.get("person");
+  // "Add a record here" on a place's page
+  const place = params.get("place") ?? "";
   if (account.role === "view") {
     return (
       <Problem message="You can view these records, but not add to them. Ask the owner for “Can manage”." />
@@ -49,7 +51,7 @@ function NewRecord({ accounts }: { accounts: RecordAccountInfo[] }) {
   return (
     <RecordForm
       account={account}
-      initial={emptyForm(person && person !== "self" ? person : "")}
+      initial={emptyForm(person && person !== "self" ? person : "", place)}
     />
   );
 }

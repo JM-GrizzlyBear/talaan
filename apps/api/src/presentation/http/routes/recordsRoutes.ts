@@ -21,6 +21,8 @@ const listQuery = z.object({
   // "self": the account owner; a uuid: one of their profiles; left out: everyone
   profileId: z.union([z.literal("self"), z.uuid()]).optional(),
   type: z.enum(RECORD_TYPES).optional(),
+  // Records kept in this place
+  placeId: z.uuid().optional(),
 });
 
 // Adding, viewing, editing and moving records to the Trash.
@@ -52,6 +54,7 @@ export function recordsRoutes(deps: {
         profileId:
           query.profileId === "self" ? null : (query.profileId ?? undefined),
         type: query.type,
+        placeId: query.placeId,
       },
     );
     res.json({
@@ -69,7 +72,7 @@ export function recordsRoutes(deps: {
     const created = await deps.records.create(viewerId, ownerId, fields);
     const shown = await deps.records.get(viewerId, created.id);
     res.status(201).json({
-      record: recordJson(shown.record, shown.personName, shown.role),
+      record: recordJson(shown),
     });
   });
 
@@ -79,7 +82,7 @@ export function recordsRoutes(deps: {
       idParam(req.params.id),
     );
     res.json({
-      record: recordJson(shown.record, shown.personName, shown.role),
+      record: recordJson(shown),
     });
   });
 
@@ -90,7 +93,7 @@ export function recordsRoutes(deps: {
     await deps.records.update(viewerId, id, fields);
     const shown = await deps.records.get(viewerId, id);
     res.json({
-      record: recordJson(shown.record, shown.personName, shown.role),
+      record: recordJson(shown),
     });
   });
 

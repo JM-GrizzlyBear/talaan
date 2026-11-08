@@ -1,4 +1,5 @@
 import type { AccessLevel, FamilyRelationship } from "../family/index.js";
+import type { RecordPlaceInfo } from "../places/types.js";
 import type { RecordType } from "./constants.js";
 import type { RecordFields } from "./schemas.js";
 
@@ -44,6 +45,8 @@ export type RecordInfo = RecordSummary &
     updatedByName: string | null;
     // What the person looking can do with it
     role: RecordRole;
+    // Where it's kept (null: not in a place)
+    place: RecordPlaceInfo | null;
   };
 
 export interface TrashedRecordInfo {
