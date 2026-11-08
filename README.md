@@ -15,7 +15,7 @@ _Talaan_ is Filipino for "record" or "list".
 - **Records:** X-rays, lab results, prescriptions, HMO approvals (LOA) and other papers, for each family member, with a timeline and filters.
 - **Scan and upload:** photos or PDFs go straight to private storage; Talaan reads the lab numbers (done) and later the date, doctor and hospital, so you only check them.
 - **X-ray with its reading:** the film photos and the radiologist's reading are one record.
-- **Places and QR labels:** folders, boxes, envelopes, drawers and bags, each with its own QR label. Print sheets of labels (including blank ones to name later) and scan a label to see what should be inside.
+- **Places and QR labels** (done): folders, boxes, envelopes, drawers and bags, each with its own QR label. Print sheets of labels (including blank ones to name later) and scan a label to see what should be inside.
 - **Lent out:** who has the films, since when, with a reminder until they come back.
 - **Reminders:** a date and time, alerts before it (30 minutes, 1 hour, 2 hours, 1 day, 1 week, or your own), and repeats.
 - **Compare lab results:** the numbers and normal ranges side by side, newest first.
@@ -46,6 +46,12 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
   - **Audit trail**: every add, edit (with each changed field, before and after), move to the Trash, restore and delete is saved with who did it and when. Sharing changes (invitations, accepting, access changes, profiles) are too. Each record shows its history; the owner's Activity page shows everything. Entries can't be changed, not even directly in the database.
 - **Photos and PDFs on records**: up to 20 per record, 10 MB each (JPG, PNG, WEBP, HEIC, PDF). "Take a photo" opens the phone's camera. Files are private in Cloudinary: the browser only ever gets them through the API, after the same "who can see this record" check. Removing a file, or deleting its record for good, removes it from Cloudinary too.
 - **Read lab results from a photo or PDF** (free, on the device): on a lab result, **Read from a photo or PDF**, or **Read lab values from this** on a file already attached. Talaan finds each test, result, unit and normal range; you check every row beside the picture (unclear ones are marked in amber) before they go into the form, and nothing is saved until you press Save. See [Reading lab results](#reading-lab-results-from-a-photo-or-pdf).
+- **Places and QR labels**: where the papers and films are kept at home
+  - A place is a folder, envelope, box, drawer, cabinet or shelf, bag, or other, with a name, a note and an optional photo of where it is. Places go inside places, up to 3 levels (a folder in a box in a drawer).
+  - A record can be kept in a place ("Where it's kept"); the record shows the way there (Drawer › Blue box › Folder) and the place lists its records and the places inside it.
+  - Each place has a QR label with a random code like `7K4Q-M2XD` (no look-alike letters, so it can be typed too). Scanning it with any phone camera opens the place, after signing in; anyone the account isn't shared with gets "not found".
+  - **Printing**: pick places (and copies), and new **blank labels** to stick on now and name the first time they're scanned. Paper: A4, Short / Letter, Long / Folio, Legal, A5, A3, B5, Half letter, 4 × 6 photo paper or a custom size. Labels: Large 99 × 67, Medium 70 × 37, Small 52 × 30, Tiny 38 × 21 mm (QR and code only) or a custom size; the page says how many fit. Margin for plain paper or none for sticker sheets, skip the spaces already used on a sheet, and cut lines. The QR codes are made in the browser (no outside service).
+  - Owners and "Can manage" family add, edit, move, add photos and name blank labels; only the owner removes a place. Removing one loses nothing: what's inside moves up a level and its label becomes blank. All of it is in the audit trail.
 - **Family** (one way: the people you invite see your records, not the other way round)
   - Invite by email with who they are to you (Anak, Nanay, Lolo, …) and what they can do: **Can view** (records and lab comparisons) or **Can manage** (also add records, scan and set reminders). Invitations last 7 days; send again or cancel any time.
   - The invited person accepts or declines from the email's link. Declining needs no account; accepting needs a Talaan account with that same email (a new account can be made on the way).
@@ -406,7 +412,7 @@ All routes start with `/api`. Errors always look like `{ "message": "…", "erro
 | PUT    | `/api/family/profiles/:id`             | yes    | same fields → `{ profile }`                                                                                            |
 | DELETE | `/api/family/profiles/:id`             | yes    | 204                                                                                                                    |
 | GET    | `/api/records/accounts`                | yes    | Accounts you can open (yours and shared ones), your role in each, and their people                                     |
-| GET    | `/api/records`                         | yes    | `?ownerId=&profileId=self\|<id>&type=` → `{ role, records }`, newest first                                             |
+| GET    | `/api/records`                         | yes    | `?ownerId=&profileId=self\|<id>&type=&placeId=` → `{ role, records }`, newest first                                    |
 | POST   | `/api/records`                         | yes    | `{ ownerId, type, profileId, title, recordDate, doctor, facility, notes, details }` → 201 `{ record }`                 |
 | GET    | `/api/records/:id`                     | yes    | `{ record }` with `role`                                                                                               |
 | PUT    | `/api/records/:id`                     | yes    | same fields → `{ record }` (owner or "Can manage")                                                                     |
@@ -422,6 +428,19 @@ All routes start with `/api`. Errors always look like `{ "message": "…", "erro
 | POST   | `/api/records/:id/files`               | yes    | `{ upload, name }` → 201 `{ file }`: checks the upload's answer, then attaches it                                      |
 | GET    | `/api/files/:id/content`               | yes    | `?variant=thumb\|preview\|original&download=1`: the file itself, after the access check                                |
 | DELETE | `/api/files/:id`                       | yes    | 204; removes it from the record and from storage                                                                       |
+| GET    | `/api/places`                          | yes    | `?ownerId=` → `{ role, places }`: each with its label code and what's inside                                           |
+| POST   | `/api/places`                          | yes    | `{ ownerId, kind, name, note, parentId }` → 201 `{ place }` (owner or "Can manage"; at most 3 levels)                  |
+| GET    | `/api/places/:id`                      | yes    | `{ place }` with the way there (`path`), the places inside it and `role`                                               |
+| PUT    | `/api/places/:id`                      | yes    | same fields → `{ place }` (owner or "Can manage")                                                                      |
+| DELETE | `/api/places/:id`                      | yes    | 204 (owner only); what's inside moves up, its label becomes blank                                                      |
+| POST   | `/api/places/:id/photo/upload-target`  | yes    | Where to send the photo (as for record files)                                                                          |
+| POST   | `/api/places/:id/photo`                | yes    | `{ upload }` → `{ place }`; replaces the old photo (photos only, not PDFs)                                             |
+| GET    | `/api/places/:id/photo`                | yes    | `?variant=thumb\|preview\|original`: the photo, after the access check                                                 |
+| DELETE | `/api/places/:id/photo`                | yes    | 204                                                                                                                    |
+| GET    | `/api/labels/:code`                    | yes    | `{ label }`: the account, your role and the place (`placeId` null: blank). Not shared with you: 404                    |
+| POST   | `/api/labels/:code/place`              | yes    | Names a blank label: place fields → 201 `{ place }`                                                                    |
+| GET    | `/api/labels/blank`                    | yes    | `?ownerId=` → `{ labels }`: blank labels not named yet                                                                 |
+| POST   | `/api/labels/blank`                    | yes    | `{ ownerId, count }` (1–120) → 201 `{ codes }`                                                                         |
 | PUT    | `/api/account/password`                | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out                                                     |
 | PUT    | `/api/account/security`                | yes    | `{ lockAfterMinutes?, twoStepEnabled?, currentPassword? }` → `{ user }` (turning two-step off needs `currentPassword`) |
 | GET    | `/api/account/passkeys`                | yes    | `{ passkeys }`: name, dates, synced                                                                                    |
@@ -494,12 +513,12 @@ docker compose up -d db
 turbo run test
 ```
 
-| Suite           | Where                              | What it checks                                                                                                                                                                                                                                                 |
-| --------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| API unit        | `apps/api/test/unit`               | User rules, shared schemas, use cases with fake repositories (no database)                                                                                                                                                                                     |
-| API integration | `apps/api/test/integration`        | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, records, the Trash and the audit trail, uploads (through the local storage) and who can see them, sessions, rate limit, errors |
-| Shared unit     | `packages/shared/src/**/*.test.ts` | Reading lab lines: formats, units, ranges, urinalysis, doubts, no made-up ranges                                                                                                                                                                               |
-| Website unit    | `apps/web/src/**/*.test.ts`        | The API client (`ApiError`), error messages, dates, PDF line grouping, table-line removal, adding read rows to the form                                                                                                                                        |
+| Suite           | Where                              | What it checks                                                                                                                                                                                                                                                                                     |
+| --------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API unit        | `apps/api/test/unit`               | User rules, place levels, shared schemas, use cases with fake repositories (no database)                                                                                                                                                                                                           |
+| API integration | `apps/api/test/integration`        | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, records, the Trash and the audit trail, uploads (through the local storage) and who can see them, places, QR labels and place photos, sessions, rate limit, errors |
+| Shared unit     | `packages/shared/src/**/*.test.ts` | Reading lab lines: formats, units, ranges, urinalysis, doubts, no made-up ranges                                                                                                                                                                                                                   |
+| Website unit    | `apps/web/src/**/*.test.ts`        | The API client (`ApiError`), error messages, dates, PDF line grouping, table-line removal, adding read rows to the form, the places tree, fitting labels on paper                                                                                                                                  |
 
 ### The test database
 

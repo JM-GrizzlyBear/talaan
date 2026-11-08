@@ -106,6 +106,8 @@ const baseFields = {
   doctor: text(RECORD_LIMITS.person),
   facility: text(RECORD_LIMITS.person),
   notes: text(RECORD_LIMITS.notes),
+  // Where the paper or film is kept (a place in the same account)
+  placeId: z.uuid().nullable().default(null),
 };
 
 function variant<T extends RecordType, D extends z.ZodType>(

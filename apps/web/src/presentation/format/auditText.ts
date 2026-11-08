@@ -41,6 +41,14 @@ export function auditSentence(entry: AuditEntryInfo) {
       return `${who} stopped sharing the records with ${entry.subject}`;
     case "family.left":
       return `${entry.subject} stopped seeing the records`;
+    case "place.created":
+      return `${who} added the place ${what}`;
+    case "place.edited":
+      return `${who} edited the place ${what}`;
+    case "place.removed":
+      return `${who} removed the place ${what}`;
+    case "labels.created":
+      return `${who} made ${entry.subject} to print`;
   }
 }
 

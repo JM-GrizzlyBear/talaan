@@ -1,5 +1,5 @@
 import { fullName } from "@talaan/shared";
-import { FolderHeart, LogOut, ShieldCheck, Users } from "lucide-react";
+import { FolderHeart, LogOut, Package, ShieldCheck, Users } from "lucide-react";
 import { Link } from "react-router";
 import { useLogOut, useSession } from "../../../application/auth/useAuth";
 import { TalaanLogo } from "../brand/TalaanLogo";
@@ -13,7 +13,7 @@ export function AppHeader() {
   const user = session?.user;
 
   return (
-    <header className="border-b border-edge bg-white">
+    <header className="border-b border-edge bg-white print:hidden">
       <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-3">
         <Link to="/" className="flex items-center gap-2 text-lg font-bold">
           <TalaanLogo className="size-8" />
@@ -25,6 +25,10 @@ export function AppHeader() {
             <Link to="/records" className={buttonSecondary}>
               <FolderHeart aria-hidden="true" className="size-4" />
               Records
+            </Link>
+            <Link to="/places" className={buttonSecondary}>
+              <Package aria-hidden="true" className="size-4" />
+              Places
             </Link>
             <Link to="/family" className={buttonSecondary}>
               <Users aria-hidden="true" className="size-4" />

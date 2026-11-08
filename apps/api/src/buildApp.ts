@@ -6,6 +6,7 @@ import { accountsModule } from "./composition/accountsModule.js";
 import { createContext } from "./composition/context.js";
 import { familyModule } from "./composition/familyModule.js";
 import type { BuildAppOptions } from "./composition/options.js";
+import { placesModule } from "./composition/placesModule.js";
 import { recordsModule } from "./composition/recordsModule.js";
 import { apiNotFound, errorHandler } from "./presentation/http/errorHandler.js";
 import { healthRoutes } from "./presentation/http/routes/healthRoutes.js";
@@ -21,6 +22,7 @@ export function buildApp(options: BuildAppOptions) {
   const accounts = accountsModule(context);
   const family = familyModule(context);
   const records = recordsModule(context, family.members);
+  const places = placesModule(context, records.access);
 
   const app = express();
   app.disable("x-powered-by");
@@ -50,7 +52,12 @@ export function buildApp(options: BuildAppOptions) {
   );
 
   app.use("/api", healthRoutes(options.pool));
-  for (const router of [...accounts, ...family.routers, ...records.routers]) {
+  for (const router of [
+    ...accounts,
+    ...family.routers,
+    ...records.routers,
+    ...places.routers,
+  ]) {
     app.use("/api", router);
   }
   app.use("/api", apiNotFound);

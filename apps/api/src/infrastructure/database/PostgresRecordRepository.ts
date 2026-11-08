@@ -11,6 +11,7 @@ interface RecordRow {
   id: string;
   owner_id: string;
   profile_id: string | null;
+  place_id: string | null;
   type: string;
   title: string;
   record_date: string;
@@ -32,7 +33,7 @@ interface RecordRow {
 
 // Every column, the date as plain text, and the names of who added, edited and deleted it
 const SELECT = `
-  select r.id, r.owner_id, r.profile_id, r.type, r.title,
+  select r.id, r.owner_id, r.profile_id, r.place_id, r.type, r.title,
          to_char(r.record_date, 'YYYY-MM-DD') as record_date,
          r.doctor, r.facility, r.notes, r.details,
          r.created_by, ${fullNameSql("cu")} as created_by_name, r.created_at,
@@ -49,6 +50,7 @@ function toRecord(row: RecordRow): HealthRecord {
     id: row.id,
     ownerId: row.owner_id,
     profileId: row.profile_id,
+    placeId: row.place_id,
     type: row.type as RecordType,
     title: row.title,
     recordDate: row.record_date,
@@ -98,6 +100,10 @@ export class PostgresRecordRepository implements RecordRepository {
       values.push(filters.type);
       where.push(`r.type = $${values.length}`);
     }
+    if (filters.placeId) {
+      values.push(filters.placeId);
+      where.push(`r.place_id = $${values.length}`);
+    }
     return await this.many(
       `${SELECT} where ${where.join(" and ")}
         order by r.record_date desc, r.created_at desc
@@ -120,8 +126,8 @@ export class PostgresRecordRepository implements RecordRepository {
     const result = await this.pool.query<{ id: string }>(
       `insert into records
          (owner_id, profile_id, type, title, record_date, doctor, facility, notes, details,
-          created_by, created_at, updated_by, updated_at)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $10, $11)
+          created_by, created_at, updated_by, updated_at, place_id)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $10, $11, $12)
        returning id`,
       [
         ownerId,
@@ -135,6 +141,7 @@ export class PostgresRecordRepository implements RecordRepository {
         JSON.stringify(fields.details),
         actorId,
         at,
+        fields.placeId,
       ],
     );
     return await this.mustFind(result.rows[0].id);
@@ -145,7 +152,7 @@ export class PostgresRecordRepository implements RecordRepository {
       `update records
           set profile_id = $2, type = $3, title = $4, record_date = $5,
               doctor = $6, facility = $7, notes = $8, details = $9,
-              updated_by = $10, updated_at = $11
+              updated_by = $10, updated_at = $11, place_id = $12
         where id = $1`,
       [
         id,
@@ -159,6 +166,7 @@ export class PostgresRecordRepository implements RecordRepository {
         JSON.stringify(fields.details),
         actorId,
         at,
+        fields.placeId,
       ],
     );
     return await this.mustFind(id);

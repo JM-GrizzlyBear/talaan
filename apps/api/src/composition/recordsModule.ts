@@ -1,4 +1,5 @@
 import type { FamilyMembers } from "../application/family/FamilyMembers.js";
+import { PlacePaths } from "../application/place/PlacePaths.js";
 import { RecordAccess } from "../application/record/RecordAccess.js";
 import { RecordFiles } from "../application/record/RecordFiles.js";
 import { RecordTrash } from "../application/record/RecordTrash.js";
@@ -29,6 +30,7 @@ export function recordsModule(
     repos.familyAccess,
     audit,
     clock,
+    new PlacePaths(repos.places),
   );
   const trash = new RecordTrash(
     repos.records,
@@ -52,5 +54,5 @@ export function recordsModule(
       limit: limits.records,
     }),
   ];
-  return { routers, trash };
+  return { routers, trash, access };
 }

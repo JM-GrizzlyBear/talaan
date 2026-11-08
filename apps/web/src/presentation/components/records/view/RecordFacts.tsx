@@ -1,5 +1,6 @@
 import { formatPesos, type RecordInfo } from "@talaan/shared";
 import { shortDate } from "../../../format/dates";
+import { PlacePath } from "../../places/PlacePath";
 
 // Amounts like ₱45,210.50, or a dash when there's none
 const peso = (value: number | null) => formatPesos(value) ?? "—";
@@ -52,6 +53,14 @@ export function RecordFacts({ record }: { record: RecordInfo }) {
       <Fact label="Doctor" value={record.doctor} />
       <Fact label="Clinic or hospital" value={record.facility} />
       <Details record={record} />
+      {record.place && (
+        <div className="flex flex-col sm:col-span-2">
+          <dt className="text-sm text-muted">Kept in</dt>
+          <dd>
+            <PlacePath path={record.place.path} />
+          </dd>
+        </div>
+      )}
     </dl>
   );
 }

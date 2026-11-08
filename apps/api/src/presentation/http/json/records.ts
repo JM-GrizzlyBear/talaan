@@ -2,6 +2,7 @@ import {
   fullName,
   type RecordAccountInfo,
   type RecordInfo,
+  type RecordPlaceInfo,
   type RecordRole,
   type RecordSummary,
   type TrashedRecordInfo,
@@ -32,11 +33,17 @@ export function recordSummaryJson(
   };
 }
 
-export function recordJson(
-  record: HealthRecord,
-  personName: string,
-  role: RecordRole,
-): RecordInfo {
+export function recordJson({
+  record,
+  personName,
+  role,
+  place,
+}: {
+  record: HealthRecord;
+  personName: string;
+  role: RecordRole;
+  place: RecordPlaceInfo | null;
+}): RecordInfo {
   return {
     ...recordSummaryJson(record, personName),
     type: record.type,
@@ -46,6 +53,7 @@ export function recordJson(
     createdByName: record.createdByName,
     updatedByName: record.updatedByName,
     role,
+    place,
   } as RecordInfo;
 }
 

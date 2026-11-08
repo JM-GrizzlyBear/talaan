@@ -22,6 +22,8 @@ export interface RecordFormState {
   doctor: string;
   facility: string;
   notes: string;
+  // "" when it isn't in a place
+  placeId: string;
   bodyPart: string;
   reading: string;
   vaccine: string;
@@ -54,10 +56,11 @@ export function todayLocal(now = new Date()) {
   return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
-export function emptyForm(profileId = ""): RecordFormState {
+export function emptyForm(profileId = "", placeId = ""): RecordFormState {
   return {
     type: "",
     profileId,
+    placeId,
     title: "",
     recordDate: todayLocal(),
     doctor: "",
@@ -81,7 +84,7 @@ const text = (value: number | null) => (value === null ? "" : String(value));
 
 export function formFromRecord(record: RecordInfo): RecordFormState {
   const form = {
-    ...emptyForm(record.profileId ?? ""),
+    ...emptyForm(record.profileId ?? "", record.place?.id ?? ""),
     ...{
       type: record.type,
       title: record.title,
@@ -159,6 +162,7 @@ export function fieldsFromForm(form: RecordFormState): {
     doctor: form.doctor,
     facility: form.facility,
     notes: form.notes,
+    placeId: form.placeId || null,
   };
 
   let fields: RecordFieldsInput;

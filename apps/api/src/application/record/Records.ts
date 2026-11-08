@@ -3,6 +3,7 @@ import type { FamilyAccessRepository } from "../../domain/family/FamilyAccessRep
 import type { RecordRepository } from "../../domain/record/RecordRepository.js";
 import { diffRecords } from "../../domain/record/diff.js";
 import type { AuditTrail } from "../audit/AuditTrail.js";
+import type { PlacePaths } from "../place/PlacePaths.js";
 import type { Clock } from "../ports/Clock.js";
 import { personName, type RecordAccess } from "./RecordAccess.js";
 
@@ -15,6 +16,7 @@ export class Records {
     private readonly sharing: FamilyAccessRepository,
     private readonly audit: AuditTrail,
     private readonly clock: Clock,
+    private readonly places: PlacePaths,
   ) {}
 
   // Every account the viewer can open: their own first, then shared ones
@@ -33,7 +35,7 @@ export class Records {
   async list(
     viewerId: string,
     ownerId: string,
-    filters: { profileId?: string | null; type?: RecordType },
+    filters: { profileId?: string | null; type?: RecordType; placeId?: string },
   ) {
     const role = await this.access.roleFor(viewerId, ownerId);
     const household = await this.access.household(ownerId);
@@ -54,6 +56,7 @@ export class Records {
       record,
       role,
       personName: personName(household, record.profileId),
+      place: await this.places.pathFor(record.ownerId, record.placeId),
     };
   }
 
@@ -61,6 +64,7 @@ export class Records {
     await this.access.requireManage(actorId, ownerId);
     const household = await this.access.household(ownerId);
     this.access.requireOwnProfile(household, fields.profileId);
+    await this.places.requireInAccount(ownerId, fields.placeId);
     const record = await this.records.create(
       ownerId,
       fields,
@@ -82,9 +86,19 @@ export class Records {
     await this.access.requireManage(actorId, record.ownerId);
     const household = await this.access.household(record.ownerId);
     this.access.requireOwnProfile(household, fields.profileId);
+    // Unchanged is fine even if the place was removed meanwhile (it's null then)
+    if (fields.placeId !== record.placeId) {
+      await this.places.requireInAccount(record.ownerId, fields.placeId);
+    }
 
-    const changes = diffRecords(record, fields, (profileId) =>
-      personName(household, profileId),
+    const changes = diffRecords(
+      record,
+      fields,
+      (profileId) => personName(household, profileId),
+      {
+        before: await this.places.nameFor(record.ownerId, record.placeId),
+        after: await this.places.nameFor(record.ownerId, fields.placeId),
+      },
     );
     // Nothing changed: nothing saved, nothing in the history
     if (changes.length === 0) return record;
