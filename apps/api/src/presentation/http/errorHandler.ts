@@ -9,6 +9,10 @@ import { ForbiddenError, NotFoundError } from "../../domain/errors.js";
 import { FamilyError } from "../../domain/family/errors.js";
 import { FileError, FilesNotSetUpError } from "../../domain/file/errors.js";
 import { PasskeyError } from "../../domain/passkey/errors.js";
+import {
+  PushNotSetUpError,
+  ReminderError,
+} from "../../domain/reminder/errors.js";
 import { SignInExpiredError } from "../../domain/user/signIn.js";
 import {
   EmailTakenError,
@@ -93,6 +97,17 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
       message: error.message,
       errors: error.field ? { [error.field]: [error.message] } : undefined,
     });
+    return;
+  }
+  if (error instanceof ReminderError) {
+    send(res, 400, {
+      message: error.message,
+      errors: error.field ? { [error.field]: [error.message] } : undefined,
+    });
+    return;
+  }
+  if (error instanceof PushNotSetUpError) {
+    send(res, 503, { message: error.message });
     return;
   }
   if (error instanceof FileError) {

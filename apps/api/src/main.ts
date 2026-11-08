@@ -4,6 +4,7 @@ import { createPool } from "./infrastructure/database/pool.js";
 import { SmtpAccountEmails } from "./infrastructure/email/SmtpAccountEmails.js";
 import { BcryptPasswordHasher } from "./infrastructure/security/BcryptPasswordHasher.js";
 import { HmacSecretCodes } from "./infrastructure/security/HmacSecretCodes.js";
+import { WebPushSender } from "./infrastructure/push/WebPushSender.js";
 import { SystemClock } from "./infrastructure/time/SystemClock.js";
 import { CloudinaryFileStorage } from "./infrastructure/storage/CloudinaryFileStorage.js";
 import { LocalFileStorage } from "./infrastructure/storage/LocalFileStorage.js";
@@ -45,6 +46,7 @@ const app = buildApp({
       : env.storage?.kind === "local"
         ? new LocalFileStorage(env.storage.dir, env.sessionSecret)
         : null,
+  pushSender: env.webPush ? new WebPushSender(env.webPush) : null,
   clock: new SystemClock(),
   secureCookie: env.secureCookie,
   trustProxy: env.trustProxy,
@@ -70,8 +72,28 @@ void emptyOldTrash();
 const trashTimer = setInterval(emptyOldTrash, 60 * 60 * 1000);
 trashTimer.unref();
 
+// Reminder alerts that are due go out every minute. On Render's free plan the
+// server sleeps after 15 minutes without visits, so something has to visit
+// it (README → "Reminders and alerts"); it catches up on waking.
+let sendingAlerts = false;
+async function sendReminderAlerts() {
+  if (sendingAlerts) return;
+  sendingAlerts = true;
+  try {
+    await app.sendDueReminderAlerts();
+  } catch (error) {
+    console.error("Couldn't send reminder alerts:", error);
+  } finally {
+    sendingAlerts = false;
+  }
+}
+void sendReminderAlerts();
+const alertTimer = setInterval(sendReminderAlerts, 60 * 1000);
+alertTimer.unref();
+
 async function shutDown() {
   clearInterval(trashTimer);
+  clearInterval(alertTimer);
   server.close();
   await pool.end();
   process.exit(0);

@@ -16,7 +16,7 @@ _Talaan_ is Filipino for "record" or "list".
 - **Scan and upload:** photos or PDFs go straight to private storage; Talaan reads the lab numbers (done) and later the date, doctor and hospital, so you only check them.
 - **X-ray with its reading:** the film photos and the radiologist's reading are one record.
 - **Places and QR labels** (done): folders, boxes, envelopes, drawers and bags, each with its own QR label. Print sheets of labels (including blank ones to name later) and scan a label to see what should be inside.
-- **Reminders:** a date and time, alerts before it (30 minutes, 1 hour, 2 hours, 1 day, 1 week, or your own), and repeats.
+- **Reminders** (done): a date and time, alerts before it (30 minutes, 1 hour, 2 hours, 1 day, 1 week, or your own), and repeats.
 - **Compare lab results:** the numbers and normal ranges side by side, newest first.
 - **Family by invitation:** each person accepts or declines by email before you see their records. Medical ID for each person.
 - **Doctor share links:** stop working on the day you pick, with an optional 4-digit code.
@@ -45,6 +45,14 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
   - **Audit trail**: every add, edit (with each changed field, before and after), move to the Trash, restore and delete is saved with who did it and when. Sharing changes (invitations, accepting, access changes, profiles) are too. Each record shows its history; the owner's Activity page shows everything. Entries can't be changed, not even directly in the database.
 - **Photos and PDFs on records**: up to 20 per record, 10 MB each (JPG, PNG, WEBP, HEIC, PDF). "Take a photo" opens the phone's camera. Files are private in Cloudinary: the browser only ever gets them through the API, after the same "who can see this record" check. Removing a file, or deleting its record for good, removes it from Cloudinary too.
 - **Read lab results from a photo or PDF** (free, on the device): on a lab result, **Read from a photo or PDF**, or **Read lab values from this** on a file already attached. Talaan finds each test, result, unit and normal range; you check every row beside the picture (unclear ones are marked in amber) before they go into the form, and nothing is saved until you press Save. See [Reading lab results](#reading-lab-results-from-a-photo-or-pdf).
+- **Reminders**: checkups, lab tests, medicine, refills, vaccinations, HMO renewals and others, for you or a family profile, optionally about a record ("Add a reminder" on a record)
+  - **When**: a date and one or more times a day (medicine: once, twice, 3 or 4 times a day in one tap), in Philippine time
+  - **Repeats**: every N days, weeks (on chosen weekdays), months (on a day, or the 2nd Tuesday, the last Friday…) or years; forever, until a date, a number of times, for a number of days, or (medicine) until it runs out (how many are left ÷ how many each time)
+  - **Alerts**: at the time, 5, 15 or 30 minutes, 1 or 2 hours, 1 day or 1 week before, or your own (up to 30 days), up to 5. Each kind starts with sensible ones (checkups: 1 day and 2 hours before)
+  - **Coming up**: missed times, today, tomorrow and the next days, with **Done**, **Skip**, **Snooze** (10 minutes, 1 hour, tomorrow) and **Undo**; who marked each is saved. **Pause** and **Resume** a whole reminder. The form shows the schedule in words and its next 5 times as you fill it in.
+  - **Who gets alerts**: the owner and everyone the account is shared with, by **email** (Brevo) and **browser notification** (Web Push; on iPhone and iPad after "Add to Home Screen"). Each person turns alerts off for themselves: per reminder, or email / notifications for all on **My alerts** (`/settings/alerts`), which also lists their browsers and sends a test.
+  - Owners and "Can manage" family add, edit, pause and mark times; only the owner removes a reminder; "Can view" family see them and choose their own alerts. Added, edited, paused, resumed and removed are in the audit trail.
+  - See [Reminders and alerts](#reminders-and-alerts) for how alerts are sent, and keeping the free server awake.
 - **Places and QR labels**: where the papers and films are kept at home
   - A place is a folder, envelope, box, drawer, cabinet or shelf, bag, or other, with a name, a note and an optional photo of where it is. Places go inside places, up to 3 levels (a folder in a box in a drawer).
   - A record can be kept in a place ("Where it's kept"); the record shows the way there (Drawer › Blue box › Folder) and the place lists its records and the places inside it.
@@ -295,6 +303,7 @@ This builds the production image, waits for Postgres, runs the migrations and st
 | `WEBAUTHN_RP_ID`  | no        | Overrides the passkey domain (normally the host of `APP_URL`, like `talaan.netlify.app`)                                       |
 | `WEBAUTHN_ORIGIN` | no        | Overrides the passkey origin (normally `APP_URL` without a path)                                                               |
 
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | for notifications | Browser notifications for reminders (README → "Reminders and alerts"). Without them, alerts go by email only |
 | `CLOUDINARY_URL` | live site | Where photos and PDFs go: `cloudinary://<api key>:<api secret>@<cloud name>` (README → "Storing photos and PDFs"). Locally, leave it empty to use `apps/api/.uploads` |
 | `CLOUDINARY_FOLDER` | no | The top folder in Cloudinary: `talaan-dev` on your computer, `talaan` (the default) live |
 | `LOCAL_UPLOADS_DIR` | no | Where uploads go without Cloudinary (default `.uploads`, inside `apps/api`) |
@@ -374,6 +383,31 @@ The API secret is like a password: keep it only in `apps/api/.env` and Render's 
 
 ---
 
+## Reminders and alerts
+
+**How alerts go out.** Every minute, the API checks which alerts are due and sends them by email and browser notification. Each alert is written down before it's sent, so it goes out **once per person and way**, even after a restart. If the server was asleep, it catches up when it wakes: only the latest alert of each time is sent, and nothing older than 3 hours (too late to help). Times marked done or skipped send nothing more; a snooze sends one alert when it ends.
+
+**Keep the free server awake.** Render's free plan puts the API to sleep after 15 minutes without visits, and a sleeping server can't send alerts. Have a free service visit it:
+
+1. Sign up at [cron-job.org](https://cron-job.org) (free).
+2. **Create cronjob**: URL `https://<your-api>.onrender.com/api/health`, schedule **every 14 minutes** (not 15: that's exactly when Render puts it to sleep). Save.
+3. That's all: the visits keep it awake, and the API sends alerts on its own every minute. Render's 750 free hours a month cover one always-on service (a 31-day month is 744 hours), so keep the API the only free service on that Render account.
+
+**Browser notifications (VAPID keys).** Web Push needs a key pair, made once:
+
+```bash
+cd apps/api
+npx web-push generate-vapid-keys
+```
+
+Put them in `apps/api/.env` (your computer) and in **Render → Environment** (the live site): `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`. `VAPID_SUBJECT` is optional (it defaults to `mailto:` and `MAIL_FROM`'s address). Keep the private key secret, and don't change the pair later: browsers signed up with the old public key would stop getting notifications until they turn them on again. Without the keys, alerts go by email only and **My alerts** says notifications aren't set up.
+
+**Email limits.** Brevo's free plan sends up to 300 emails a day across Talaan (sign-in codes, invitations and alerts). A medicine 3 times a day shared with 3 people is 9 alert emails a day; people who mostly use notifications can turn email off on **My alerts**.
+
+**iPhone and iPad.** Safari shows web notifications only for sites added to the Home Screen (iOS 16.4 and later): Share → **Add to Home Screen**, open Talaan from there, then **My alerts → Turn on notifications in this browser**. Private windows can't turn them on.
+
+---
+
 ## API overview
 
 All routes start with `/api`. Errors always look like `{ "message": "…", "errors": { "field": ["…"] } }`.
@@ -440,6 +474,20 @@ All routes start with `/api`. Errors always look like `{ "message": "…", "erro
 | POST   | `/api/labels/:code/place`              | yes    | Names a blank label: place fields → 201 `{ place }`                                                                    |
 | GET    | `/api/labels/blank`                    | yes    | `?ownerId=` → `{ labels }`: blank labels not named yet                                                                 |
 | POST   | `/api/labels/blank`                    | yes    | `{ ownerId, count }` (1–120) → 201 `{ codes }`                                                                         |
+| GET    | `/api/reminders`                       | yes    | `?ownerId=` → `{ role, reminders }`: each with its schedule, alerts, next time and whether you muted it                |
+| GET    | `/api/reminders/agenda`                | yes    | `?ownerId=&from=&to=` (at most 60 days) → `{ role, items }`: every time, with done / skipped / snoozed and by whom     |
+| POST   | `/api/reminders`                       | yes    | `{ ownerId, kind, title, dose, note, profileId, recordId, schedule, alerts }` → 201 `{ reminder }`                     |
+| GET    | `/api/reminders/:id`                   | yes    | `{ reminder }` with the next 5 times and the last 7 days                                                               |
+| PUT    | `/api/reminders/:id`                   | yes    | same fields → `{ reminder }` (owner or "Can manage")                                                                   |
+| DELETE | `/api/reminders/:id`                   | yes    | 204 (owner only)                                                                                                       |
+| POST   | `/api/reminders/:id/pause` / `resume`  | yes    | 204 (owner or "Can manage")                                                                                            |
+| POST   | `/api/reminders/:id/occurrences`       | yes    | `{ at, action: done\|skip\|snooze\|clear, until? }` → 204: one time of it                                              |
+| PUT    | `/api/reminders/:id/my-alerts`         | yes    | `{ muted }` → 204: your own alerts for it (anyone it's shared with)                                                    |
+| GET    | `/api/account/alerts`                  | yes    | `{ email, push, pushKey, devices }`: your alerts for every reminder                                                    |
+| PUT    | `/api/account/alerts`                  | yes    | `{ email, push }` → the same                                                                                           |
+| POST   | `/api/account/alerts/devices`          | yes    | A browser's push subscription `{ endpoint, keys, label }` → 201                                                        |
+| DELETE | `/api/account/alerts/devices/:id`      | yes    | 204                                                                                                                    |
+| POST   | `/api/account/alerts/test`             | yes    | `{ sent }`: a test notification to your browsers                                                                       |
 | PUT    | `/api/account/password`                | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out                                                     |
 | PUT    | `/api/account/security`                | yes    | `{ lockAfterMinutes?, twoStepEnabled?, currentPassword? }` → `{ user }` (turning two-step off needs `currentPassword`) |
 | GET    | `/api/account/passkeys`                | yes    | `{ passkeys }`: name, dates, synced                                                                                    |
@@ -512,12 +560,12 @@ docker compose up -d db
 turbo run test
 ```
 
-| Suite           | Where                              | What it checks                                                                                                                                                                                                                                                                                     |
-| --------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| API unit        | `apps/api/test/unit`               | User rules, place levels, shared schemas, use cases with fake repositories (no database)                                                                                                                                                                                                           |
-| API integration | `apps/api/test/integration`        | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, records, the Trash and the audit trail, uploads (through the local storage) and who can see them, places, QR labels and place photos, sessions, rate limit, errors |
-| Shared unit     | `packages/shared/src/**/*.test.ts` | Reading lab lines: formats, units, ranges, urinalysis, doubts, no made-up ranges                                                                                                                                                                                                                   |
-| Website unit    | `apps/web/src/**/*.test.ts`        | The API client (`ApiError`), error messages, dates, PDF line grouping, table-line removal, adding read rows to the form, the places tree, fitting labels on paper                                                                                                                                  |
+| Suite           | Where                              | What it checks                                                                                                                                                                                                                                                                                                                                                           |
+| --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| API unit        | `apps/api/test/unit`               | User rules, place levels, which reminder alerts are due, shared schemas, use cases with fake repositories (no database)                                                                                                                                                                                                                                                  |
+| API integration | `apps/api/test/integration`        | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, records, the Trash and the audit trail, uploads (through the local storage) and who can see them, places, QR labels and place photos, reminders and their alerts (sent once, muting, snoozes, catching up), sessions, rate limit, errors |
+| Shared unit     | `packages/shared/src/**/*.test.ts` | Reading lab lines: formats, units, ranges, urinalysis, doubts, no made-up ranges; reminder schedules (every kind of repeat, ends, Philippine time) and their wording                                                                                                                                                                                                     |
+| Website unit    | `apps/web/src/**/*.test.ts`        | The API client (`ApiError`), error messages, dates, PDF line grouping, table-line removal, adding read rows to the form, the places tree, fitting labels on paper, the reminder form                                                                                                                                                                                     |
 
 ### The test database
 

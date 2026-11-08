@@ -4,9 +4,11 @@ import { PostgresEmailCodeRepository } from "../infrastructure/database/Postgres
 import { PostgresFamilyAccessRepository } from "../infrastructure/database/PostgresFamilyAccessRepository.js";
 import { PostgresFamilyInvitationRepository } from "../infrastructure/database/PostgresFamilyInvitationRepository.js";
 import { PostgresFamilyProfileRepository } from "../infrastructure/database/PostgresFamilyProfileRepository.js";
+import { PostgresAlertSettingsRepository } from "../infrastructure/database/PostgresAlertSettingsRepository.js";
 import { PostgresLabelRepository } from "../infrastructure/database/PostgresLabelRepository.js";
 import { PostgresPasskeyRepository } from "../infrastructure/database/PostgresPasskeyRepository.js";
 import { PostgresPlaceRepository } from "../infrastructure/database/PostgresPlaceRepository.js";
+import { PostgresReminderRepository } from "../infrastructure/database/PostgresReminderRepository.js";
 import { PostgresRecordFileRepository } from "../infrastructure/database/PostgresRecordFileRepository.js";
 import { PostgresRecordRepository } from "../infrastructure/database/PostgresRecordRepository.js";
 import { PostgresSessionStore } from "../infrastructure/database/PostgresSessionStore.js";
@@ -30,6 +32,8 @@ export function createRepositories(pool: Pool) {
     audit: new PostgresAuditRepository(pool),
     places: new PostgresPlaceRepository(pool),
     labels: new PostgresLabelRepository(pool),
+    reminders: new PostgresReminderRepository(pool),
+    alertSettings: new PostgresAlertSettingsRepository(pool),
   };
 }
 

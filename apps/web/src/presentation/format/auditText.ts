@@ -47,6 +47,16 @@ export function auditSentence(entry: AuditEntryInfo) {
       return `${who} edited the place ${what}`;
     case "place.removed":
       return `${who} removed the place ${what}`;
+    case "reminder.created":
+      return `${who} added the reminder ${what}`;
+    case "reminder.edited":
+      return `${who} edited the reminder ${what}`;
+    case "reminder.paused":
+      return `${who} paused the reminder ${what}`;
+    case "reminder.resumed":
+      return `${who} resumed the reminder ${what}`;
+    case "reminder.removed":
+      return `${who} removed the reminder ${what}`;
     case "labels.created":
       return `${who} made ${entry.subject} to print`;
   }

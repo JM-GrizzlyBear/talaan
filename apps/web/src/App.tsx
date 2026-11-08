@@ -17,6 +17,10 @@ import { PrintLabelsPage } from "./presentation/pages/places/PrintLabelsPage";
 import { RecordFormPage } from "./presentation/pages/records/RecordFormPage";
 import { RecordPage } from "./presentation/pages/records/RecordPage";
 import { RecordsPage } from "./presentation/pages/records/RecordsPage";
+import { ReminderFormPage } from "./presentation/pages/reminders/ReminderFormPage";
+import { ReminderPage } from "./presentation/pages/reminders/ReminderPage";
+import { RemindersPage } from "./presentation/pages/reminders/RemindersPage";
+import { AlertSettingsPage } from "./presentation/pages/settings/AlertSettingsPage";
 import { SecurityPage } from "./presentation/pages/settings/SecurityPage";
 import { TrashPage } from "./presentation/pages/records/TrashPage";
 
@@ -50,6 +54,11 @@ export function App() {
           <Route path="/activity" element={<ActivityPage />} />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/settings/security" element={<SecurityPage />} />
+          <Route path="/settings/alerts" element={<AlertSettingsPage />} />
+          <Route path="/reminders" element={<RemindersPage />} />
+          <Route path="/reminders/new" element={<ReminderFormPage />} />
+          <Route path="/reminders/:id" element={<ReminderPage />} />
+          <Route path="/reminders/:id/edit" element={<ReminderFormPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -1,6 +1,7 @@
 import type { Pool } from "pg";
 import type { AccountEmails } from "../application/ports/AccountEmails.js";
 import type { Clock } from "../application/ports/Clock.js";
+import type { PushSender } from "../application/ports/PushSender.js";
 import type { FileStorage } from "../application/ports/FileStorage.js";
 import type { PasskeyCeremonies } from "../application/ports/PasskeyCeremonies.js";
 import type { PasswordHasher } from "../application/ports/PasswordHasher.js";
@@ -18,6 +19,8 @@ export interface BuildAppOptions {
   passkeyCeremonies: PasskeyCeremonies;
   // Where photos and PDFs go (Cloudinary, or a folder while developing). null: uploads off.
   fileStorage: FileStorage | null;
+  // Browser notifications; null: alerts go by email only
+  pushSender?: PushSender | null;
   clock: Clock;
   // HTTPS-only cookies (production)
   secureCookie: boolean;

@@ -23,6 +23,11 @@ export const AUDIT_ACTIONS = [
   "place.edited",
   "place.removed",
   "labels.created",
+  "reminder.created",
+  "reminder.edited",
+  "reminder.paused",
+  "reminder.resumed",
+  "reminder.removed",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

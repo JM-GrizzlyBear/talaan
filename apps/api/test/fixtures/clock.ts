@@ -8,6 +8,10 @@ export class FakeClock implements Clock {
     return new Date(this.current);
   }
 
+  set(date: Date) {
+    this.current = new Date(date);
+  }
+
   advance(ms: number) {
     this.current = new Date(this.current.getTime() + ms);
   }

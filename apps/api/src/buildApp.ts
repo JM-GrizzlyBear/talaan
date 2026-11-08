@@ -7,6 +7,7 @@ import { createContext } from "./composition/context.js";
 import { familyModule } from "./composition/familyModule.js";
 import type { BuildAppOptions } from "./composition/options.js";
 import { placesModule } from "./composition/placesModule.js";
+import { remindersModule } from "./composition/remindersModule.js";
 import { recordsModule } from "./composition/recordsModule.js";
 import { apiNotFound, errorHandler } from "./presentation/http/errorHandler.js";
 import { healthRoutes } from "./presentation/http/routes/healthRoutes.js";
@@ -23,6 +24,7 @@ export function buildApp(options: BuildAppOptions) {
   const family = familyModule(context);
   const records = recordsModule(context, family.members);
   const places = placesModule(context, records.access);
+  const reminders = remindersModule(context, records.access);
 
   const app = express();
   app.disable("x-powered-by");
@@ -57,6 +59,7 @@ export function buildApp(options: BuildAppOptions) {
     ...family.routers,
     ...records.routers,
     ...places.routers,
+    ...reminders.routers,
   ]) {
     app.use("/api", router);
   }
@@ -77,5 +80,7 @@ export function buildApp(options: BuildAppOptions) {
   // main.ts runs this every hour: records 30 days in the Trash are deleted for good
   return Object.assign(app, {
     purgeExpiredTrash: () => records.trash.purgeExpired(),
+    // Called every minute by main.ts (tests call it themselves)
+    sendDueReminderAlerts: () => reminders.alerts.sendDue(),
   });
 }
