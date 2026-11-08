@@ -2,7 +2,7 @@
 
 Every X-ray, lab result and prescription for your family, and where the paper is.
 
-Scan or upload a record, keep each X-ray film together with its reading, and note which folder, box or bag holds the original. QR labels on the folders tell you what should be inside, and Talaan reminds you when films are lent to a doctor, when a follow-up is due, and how your lab numbers compare over time. It works on the web, iPhone, iPad and Android, all on one account.
+Scan or upload a record, keep each X-ray film together with its reading, and note which folder, box or bag holds the original. QR labels on the folders tell you what should be inside, and Talaan reminds you when a follow-up is due and shows how your lab numbers compare over time. It works on the web, iPhone, iPad and Android, all on one account.
 
 _Talaan_ is Filipino for "record" or "list".
 
@@ -16,7 +16,6 @@ _Talaan_ is Filipino for "record" or "list".
 - **Scan and upload:** photos or PDFs go straight to private storage; Talaan reads the lab numbers (done) and later the date, doctor and hospital, so you only check them.
 - **X-ray with its reading:** the film photos and the radiologist's reading are one record.
 - **Places and QR labels** (done): folders, boxes, envelopes, drawers and bags, each with its own QR label. Print sheets of labels (including blank ones to name later) and scan a label to see what should be inside.
-- **Lent out:** who has the films, since when, with a reminder until they come back.
 - **Reminders:** a date and time, alerts before it (30 minutes, 1 hour, 2 hours, 1 day, 1 week, or your own), and repeats.
 - **Compare lab results:** the numbers and normal ranges side by side, newest first.
 - **Family by invitation:** each person accepts or declines by email before you see their records. Medical ID for each person.
