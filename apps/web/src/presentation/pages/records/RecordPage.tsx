@@ -3,7 +3,7 @@ import {
   RECORD_TYPE_LABELS,
   type RecordInfo,
 } from "@talaan/shared";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import {
   useRecord,
   useRecordHistory,
@@ -45,6 +45,7 @@ export function RecordPage() {
 function RecordView({ record }: { record: RecordInfo }) {
   const canManage = record.role === "owner" || record.role === "manage";
   const history = useRecordHistory(record.id);
+  const navigate = useNavigate();
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-10">
@@ -87,7 +88,18 @@ function RecordView({ record }: { record: RecordInfo }) {
         <TextSection id="notes-heading" title="Notes" text={record.notes} />
       )}
 
-      <RecordFilesSection recordId={record.id} canChange={canManage} />
+      <RecordFilesSection
+        recordId={record.id}
+        canChange={canManage}
+        onReadFile={
+          record.type === "lab" && canManage
+            ? (file) =>
+                void navigate(`/records/${record.id}/edit`, {
+                  state: { readFile: file.id },
+                })
+            : undefined
+        }
+      />
 
       <p className="text-sm text-muted">
         Added{record.createdByName ? ` by ${record.createdByName}` : ""} on{" "}

@@ -13,9 +13,12 @@ import { useFileUploads } from "./useFileUploads";
 export function RecordFilesSection({
   recordId,
   canChange,
+  onReadFile,
 }: {
   recordId: string;
   canChange: boolean;
+  // Lab results: "Read lab values from this" on a file
+  onReadFile?: (file: RecordFileInfo) => void;
 }) {
   const files = useRecordFiles(recordId);
   const [viewing, setViewing] = useState<RecordFileInfo | null>(null);
@@ -76,6 +79,7 @@ export function RecordFilesSection({
           file={viewing}
           canChange={canChange}
           onClose={() => setViewing(null)}
+          onRead={onReadFile ? () => onReadFile(viewing) : undefined}
         />
       )}
     </section>

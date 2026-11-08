@@ -1,0 +1,3 @@
+
+# The text and PDF readers, copied from node_modules (scripts/copy-reader-files.mjs)
+public/reader/

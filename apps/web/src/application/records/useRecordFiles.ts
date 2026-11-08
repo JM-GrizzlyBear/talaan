@@ -5,10 +5,12 @@ import {
   uploadRecordFile,
 } from "../../infrastructure/api/filesApi";
 
-export function useRecordFiles(recordId: string) {
+// recordId undefined (a record not saved yet): no files to ask for
+export function useRecordFiles(recordId: string | undefined) {
   return useQuery({
     queryKey: ["records", "files", recordId],
-    queryFn: async () => await fetchRecordFiles(recordId),
+    queryFn: async () => await fetchRecordFiles(recordId ?? ""),
+    enabled: Boolean(recordId),
   });
 }
 

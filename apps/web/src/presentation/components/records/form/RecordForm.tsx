@@ -33,10 +33,13 @@ export function RecordForm({
   account,
   record,
   initial,
+  readFileId,
 }: {
   account: RecordAccountInfo;
   record?: RecordInfo;
   initial: RecordFormState;
+  // From the record page's "Read lab values from this"
+  readFileId?: string;
 }) {
   const [form, setForm] = useState(initial);
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
@@ -134,6 +137,8 @@ export function RecordForm({
                 set={set}
                 error={error}
                 rowError={rowError}
+                recordId={record?.id}
+                readFileId={readFileId}
               />
             )}
 

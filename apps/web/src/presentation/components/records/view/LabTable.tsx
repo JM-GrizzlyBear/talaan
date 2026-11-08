@@ -1,4 +1,5 @@
 import { formatRange, labFlag, type RecordInfo } from "@talaan/shared";
+import { LabFlagBadge } from "../LabFlagBadge";
 
 // Lab results, with Low and High marked in red
 export function LabTable({ record }: { record: RecordInfo & { type: "lab" } }) {
@@ -35,11 +36,7 @@ export function LabTable({ record }: { record: RecordInfo & { type: "lab" } }) {
                       {row.value}
                     </span>{" "}
                     <span className="text-muted">{row.unit}</span>
-                    {flag && (
-                      <span className="ml-2 rounded-full bg-danger-soft px-2 py-0.5 text-xs font-bold text-danger">
-                        {flag === "low" ? "Low" : "High"}
-                      </span>
-                    )}
+                    <LabFlagBadge flag={flag} className="ml-2" />
                   </td>
                   <td className="px-4 py-2.5 whitespace-nowrap text-muted">
                     {formatRange(row) || "—"}

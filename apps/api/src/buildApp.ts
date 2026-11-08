@@ -32,6 +32,8 @@ export function buildApp(options: BuildAppOptions) {
     helmet({
       contentSecurityPolicy: {
         directives: {
+          // The lab reader runs WebAssembly in a worker (no eval)
+          "script-src": ["'self'", "'wasm-unsafe-eval'"],
           "connect-src": ["'self'", "https://api.cloudinary.com"],
           "img-src": ["'self'", "data:", "blob:"],
         },
@@ -55,7 +57,8 @@ export function buildApp(options: BuildAppOptions) {
 
   // Production: serve the website, and send every other page to index.html (React Router)
   if (options.webDistDir && existsSync(options.webDistDir)) {
-    const indexHtml = path.join(options.webDistDir, "index.html");
+    // sendFile needs an absolute path; WEB_DIST_DIR may be relative
+    const indexHtml = path.resolve(options.webDistDir, "index.html");
     app.use(express.static(options.webDistDir, { index: false }));
     app.use((req, res, next) => {
       if (req.method !== "GET") return next();
