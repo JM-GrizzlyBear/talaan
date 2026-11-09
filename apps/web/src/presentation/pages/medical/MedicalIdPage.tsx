@@ -3,7 +3,7 @@ import {
   type MedicalIdInfo,
   monthsSince,
 } from "@talaan/shared";
-import { CreditCard, FileText, Pencil, Smartphone } from "lucide-react";
+import { CreditCard, FileText, Link2, Pencil, Smartphone } from "lucide-react";
 import { Link } from "react-router";
 import {
   useMarkChecked,
@@ -131,6 +131,15 @@ function MedicalIdBody({
             <FileText aria-hidden="true" className="size-4" />
             One-page summary
           </Link>
+          {canChange && (
+            <Link
+              to={`/shares/new?${query}&medical=1`}
+              className={buttonSecondary}
+            >
+              <Link2 aria-hidden="true" className="size-4" />
+              Share with a doctor
+            </Link>
+          )}
         </div>
       </div>
 

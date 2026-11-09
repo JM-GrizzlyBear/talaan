@@ -27,6 +27,10 @@ import { ReminderFormPage } from "./presentation/pages/reminders/ReminderFormPag
 import { ReminderPage } from "./presentation/pages/reminders/ReminderPage";
 import { RemindersPage } from "./presentation/pages/reminders/RemindersPage";
 import { AlertSettingsPage } from "./presentation/pages/settings/AlertSettingsPage";
+import { SharedPage } from "./presentation/pages/shares/SharedPage";
+import { ShareNewPage } from "./presentation/pages/shares/ShareNewPage";
+import { SharePage } from "./presentation/pages/shares/SharePage";
+import { SharesPage } from "./presentation/pages/shares/SharesPage";
 import { SecurityPage } from "./presentation/pages/settings/SecurityPage";
 import { TrashPage } from "./presentation/pages/records/TrashPage";
 
@@ -45,6 +49,8 @@ export function App() {
         <Route path="/invite/:token" element={<InvitationPage />} />
         {/* What the emergency QR opens: anyone, no sign-in */}
         <Route path="/e/:token" element={<EmergencyPage />} />
+        {/* A doctor's link: no sign-in */}
+        <Route path="/s/:token" element={<SharedPage />} />
         <Route element={<RequireAuth />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/records" element={<RecordsPage />} />
@@ -56,6 +62,9 @@ export function App() {
           <Route path="/medical-id/edit" element={<MedicalIdEditPage />} />
           <Route path="/medical-id/print" element={<MedicalIdPrintPage />} />
           <Route path="/labs" element={<LabsPage />} />
+          <Route path="/shares" element={<SharesPage />} />
+          <Route path="/shares/new" element={<ShareNewPage />} />
+          <Route path="/shares/:id" element={<SharePage />} />
           <Route path="/labs/print" element={<PrintLabsPage />} />
           <Route path="/places" element={<PlacesPage />} />
           <Route path="/places/new" element={<PlaceFormPage />} />

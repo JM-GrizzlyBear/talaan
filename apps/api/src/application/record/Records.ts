@@ -2,6 +2,7 @@ import type { RecordFields, RecordRole, RecordType } from "@talaan/shared";
 import type { FamilyAccessRepository } from "../../domain/family/FamilyAccessRepository.js";
 import type { RecordRepository } from "../../domain/record/RecordRepository.js";
 import { diffRecords } from "../../domain/record/diff.js";
+import { toLabResults } from "../../domain/record/labResults.js";
 import type { AuditTrail } from "../audit/AuditTrail.js";
 import type { PlacePaths } from "../place/PlacePaths.js";
 import type { Clock } from "../ports/Clock.js";
@@ -66,18 +67,7 @@ export class Records {
     return {
       role,
       personName: personName(household, profileId),
-      records: records
-        .map((record) => ({
-          recordId: record.id,
-          title: record.title,
-          date: record.recordDate,
-          facility: record.facility,
-          results:
-            record.type === "lab" && "results" in record.details
-              ? record.details.results
-              : [],
-        }))
-        .sort((a, b) => a.date.localeCompare(b.date)),
+      records: toLabResults(records),
     };
   }
 

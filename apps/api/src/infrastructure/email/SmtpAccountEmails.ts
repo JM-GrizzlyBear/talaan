@@ -4,11 +4,13 @@ import type {
   EmailRecipient,
   FamilyInvitationEmail,
   ReminderAlert,
+  ShareOpened,
 } from "../../application/ports/AccountEmails.js";
 import { familyInvitationEmail } from "./templates/familyInvitationEmail.js";
 import { passwordChangedEmail } from "./templates/passwordChangedEmail.js";
 import { reminderAlertEmail } from "./templates/reminderAlertEmail.js";
 import { passwordResetEmail } from "./templates/passwordResetEmail.js";
+import { shareOpenedEmail } from "./templates/shareOpenedEmail.js";
 import { signInCodeEmail } from "./templates/signInCodeEmail.js";
 
 export interface SmtpSettings {
@@ -88,6 +90,17 @@ export class SmtpAccountEmails implements AccountEmails {
       // The password already changed; a missing heads-up email mustn't turn that into an error
       console.error("Couldn't send the password-changed email:", error);
     }
+  }
+
+  async sendShareOpened(to: EmailRecipient, opened: ShareOpened) {
+    await this.send(
+      to.email,
+      shareOpenedEmail(to, opened, {
+        shareUrl: `${this.settings.appUrl}/shares/${opened.shareId}`,
+        settingsUrl: `${this.settings.appUrl}/settings/alerts`,
+        timeZone: "Asia/Manila",
+      }),
+    );
   }
 
   async sendReminderAlert(to: EmailRecipient, alert: ReminderAlert) {

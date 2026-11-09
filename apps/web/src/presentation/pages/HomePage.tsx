@@ -3,6 +3,7 @@ import {
   ChartLine,
   FolderHeart,
   HeartPulse,
+  Link2,
   type LucideIcon,
   Package,
   Users,
@@ -30,6 +31,12 @@ const PLACES: { to: string; title: string; text: string; icon: LucideIcon }[] =
       title: "Lab results",
       text: "Every test over time: tables, charts, and what needs attention",
       icon: ChartLine,
+    },
+    {
+      to: "/shares",
+      title: "Share with a doctor",
+      text: "A link with only the records you choose, until a date you set",
+      icon: Link2,
     },
     {
       to: "/reminders",

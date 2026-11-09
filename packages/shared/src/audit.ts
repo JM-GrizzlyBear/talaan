@@ -30,6 +30,10 @@ export const AUDIT_ACTIONS = [
   "reminder.removed",
   "medicalid.edited",
   "medicalid.emergency",
+  "share.created",
+  "share.changed",
+  "share.stopped",
+  "share.opened",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

@@ -61,6 +61,14 @@ export function auditSentence(entry: AuditEntryInfo) {
       return `${who} edited the Medical ID of ${entry.subject}`;
     case "medicalid.emergency":
       return `${who} changed the emergency QR of ${entry.subject}`;
+    case "share.created":
+      return `${who} made a link for ${entry.subject}`;
+    case "share.changed":
+      return `${who} changed the link for ${entry.subject}`;
+    case "share.stopped":
+      return `${who} stopped the link for ${entry.subject}`;
+    case "share.opened":
+      return `The link for ${entry.subject} was opened`;
     case "labels.created":
       return `${who} made ${entry.subject} to print`;
   }

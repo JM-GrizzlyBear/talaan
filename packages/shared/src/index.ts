@@ -12,3 +12,4 @@ export * from "./places/index.js";
 export * from "./reminders/index.js";
 export * from "./labs/index.js";
 export * from "./medical/index.js";
+export * from "./shares/index.js";

@@ -1,5 +1,5 @@
 import type { RecordInfo } from "@talaan/shared";
-import { BellPlus, ChartLine, Pencil, Trash } from "lucide-react";
+import { BellPlus, ChartLine, Link2, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useMoveToTrash } from "../../../../application/records/useRecords";
@@ -55,6 +55,13 @@ export function RecordActions({ record }: { record: RecordInfo }) {
             Add a reminder
           </Link>
           {compare}
+          <Link
+            to={`/shares/new?owner=${record.ownerId}&person=${record.profileId ?? "self"}&record=${record.id}`}
+            className={buttonSecondary}
+          >
+            <Link2 aria-hidden="true" className="size-4" />
+            Share with a doctor
+          </Link>
           {!confirming && (
             <button
               type="button"

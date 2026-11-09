@@ -3,8 +3,9 @@ import {
   type LabRecordResults,
   type LabSeries,
 } from "@talaan/shared";
-import { Link } from "react-router";
 import { dateLabel } from "./chartScale";
+import { RecordDateLink } from "./RecordDateLink";
+import type { RecordLink } from "./recordLink";
 import { ResultCell } from "./ResultCell";
 import { TrendArrow } from "./TrendArrow";
 
@@ -16,6 +17,7 @@ export function LabTable({
   highlight,
   onTest,
   print = false,
+  recordLink,
 }: {
   series: LabSeries[];
   columns: LabRecordResults[];
@@ -23,6 +25,8 @@ export function LabTable({
   highlight?: string;
   onTest?: (key: string) => void;
   print?: boolean;
+  // Where each date leads (the record's page by default)
+  recordLink?: RecordLink;
 }) {
   return (
     <div
@@ -56,12 +60,11 @@ export function LabTable({
                 {print ? (
                   <span className="font-semibold">{dateLabel(c.date)}</span>
                 ) : (
-                  <Link
-                    to={`/records/${c.recordId}`}
-                    className="font-semibold text-brand underline-offset-2 hover:underline"
-                  >
-                    {dateLabel(c.date)}
-                  </Link>
+                  <RecordDateLink
+                    recordId={c.recordId}
+                    date={c.date}
+                    link={recordLink}
+                  />
                 )}
                 {c.facility && (
                   <span className="block max-w-36 truncate text-xs font-normal text-muted">

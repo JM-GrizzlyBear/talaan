@@ -34,6 +34,18 @@ export interface ReminderAlert {
   minutesBefore: number | null;
 }
 
+// A doctor's link was opened
+export interface ShareOpened {
+  shareId: string;
+  // Who the link is for ("Dr. Reyes")
+  recipient: string;
+  // Whose records
+  personName: string;
+  // "Chrome on Android"
+  device: string;
+  openedAt: Date;
+}
+
 // The emails about someone's account. The use cases don't know how email is sent.
 export interface AccountEmails {
   sendPasswordResetCode(to: EmailRecipient, code: string): Promise<void>;
@@ -49,4 +61,5 @@ export interface AccountEmails {
   // problem can't undo a password change that already happened.
   sendPasswordChanged(to: EmailRecipient, changedAt: Date): Promise<void>;
   sendReminderAlert(to: EmailRecipient, alert: ReminderAlert): Promise<void>;
+  sendShareOpened(to: EmailRecipient, opened: ShareOpened): Promise<void>;
 }
