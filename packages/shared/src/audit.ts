@@ -28,6 +28,8 @@ export const AUDIT_ACTIONS = [
   "reminder.paused",
   "reminder.resumed",
   "reminder.removed",
+  "medicalid.edited",
+  "medicalid.emergency",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
