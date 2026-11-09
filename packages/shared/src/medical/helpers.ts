@@ -55,6 +55,7 @@ export function isEmptyMedicalId(f: MedicalIdFields) {
     !f.doctor.phone &&
     !f.philhealth &&
     !f.organDonor &&
+    !f.address &&
     !f.notes
   );
 }

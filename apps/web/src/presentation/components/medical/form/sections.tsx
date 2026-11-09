@@ -273,6 +273,15 @@ export function OtherSection({ form, set, error }: PartProps) {
         />
       </div>
       <TextAreaField
+        label="Home address (optional)"
+        rows={2}
+        value={form.address}
+        onChange={(v) => set("address", v)}
+        placeholder="12 Mabini St., Brgy. San Roque, Marikina City"
+        maxLength={MEDICAL_LIMITS.address}
+        error={error("address")}
+      />
+      <TextAreaField
         label="Notes for doctors (optional)"
         value={form.notes}
         onChange={(v) => set("notes", v)}

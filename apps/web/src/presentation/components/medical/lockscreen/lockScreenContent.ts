@@ -21,6 +21,7 @@ export interface LockScreenOptions {
   conditions: boolean;
   medicines: boolean;
   contacts: boolean;
+  address: boolean;
   philhealth: boolean;
   // Only when the emergency QR is on
   qr: boolean;
@@ -35,6 +36,7 @@ export const DEFAULT_LOCK_SCREEN: LockScreenOptions = {
   conditions: true,
   medicines: false,
   contacts: true,
+  address: false,
   philhealth: false,
   qr: true,
 };
@@ -90,6 +92,9 @@ export function lockScreenSections(
         strong: true,
       })),
     });
+  }
+  if (options.address && fields.address) {
+    sections.push({ title: "Home address", lines: [{ text: fields.address }] });
   }
   if (options.philhealth && fields.philhealth) {
     sections.push({

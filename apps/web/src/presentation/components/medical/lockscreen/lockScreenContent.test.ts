@@ -11,6 +11,7 @@ const fields = {
   medicines: [{ name: "Losartan", dose: "50 mg" }],
   contacts: [{ name: "Ana", relationship: "Anak", phone: "0917 123 4567" }],
   philhealth: "12-345678901-2",
+  address: "12 Mabini St., Marikina City",
 };
 
 describe("the lock screen picture", () => {
@@ -33,8 +34,12 @@ describe("the lock screen picture", () => {
       ...DEFAULT_LOCK_SCREEN,
       medicines: true,
       philhealth: true,
+      address: true,
     });
     expect(sections.map((s) => s.title)).toContain("PhilHealth ID");
+    expect(
+      sections.find((s) => s.title === "Home address")?.lines[0].text,
+    ).toBe("12 Mabini St., Marikina City");
     expect(sections.find((s) => s.title === "Medicines")?.lines[0].text).toBe(
       "Losartan, 50 mg",
     );

@@ -6,7 +6,11 @@ import {
   isEmptyMedicalId,
   telLink,
 } from "./helpers.js";
-import { EMPTY_MEDICAL_ID, medicalIdSchema } from "./schema.js";
+import {
+  DEFAULT_EMERGENCY_EXTRAS,
+  EMPTY_MEDICAL_ID,
+  medicalIdSchema,
+} from "./schema.js";
 
 describe("the Medical ID form", () => {
   it("can be empty", () => {
@@ -83,6 +87,15 @@ describe("Medical ID helpers", () => {
 
   it("starts empty", () => {
     expect(EMPTY_MEDICAL_ID.contacts).toEqual([]);
+    expect(EMPTY_MEDICAL_ID.address).toBe("");
+    expect(isEmptyMedicalId({ ...EMPTY_MEDICAL_ID, address: "Marikina" })).toBe(
+      false,
+    );
+    expect(DEFAULT_EMERGENCY_EXTRAS).toEqual([
+      "fullName",
+      "address",
+      "bloodType",
+    ]);
     expect(EMPTY_MEDICAL_ID.doctor.phone).toBe("");
   });
 });

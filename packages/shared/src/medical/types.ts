@@ -23,8 +23,9 @@ export interface MedicalIdInfo {
 
 // What the emergency QR shows to anyone who scans it, without signing in
 export interface EmergencyInfo {
-  // First name and the last name's first letter: "Maria S."
+  // "Maria S.", or the full name when chosen
   name: string;
+  address?: string;
   contacts: MedicalIdFields["contacts"];
   bloodType?: MedicalIdFields["bloodType"];
   allergies?: MedicalIdFields["allergies"];

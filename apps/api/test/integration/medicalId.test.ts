@@ -26,6 +26,7 @@ const filled = {
     phone: "",
   },
   philhealth: "123456789012",
+  address: "12 Mabini St., Marikina City",
   notes: "Hard to find a vein: use the left arm",
 };
 
@@ -58,6 +59,7 @@ describe("Medical ID", () => {
     expect(saved.body.medicalId.fields).toMatchObject({
       bloodType: "O+",
       philhealth: "12-345678901-2",
+      address: "12 Mabini St., Marikina City",
       conditions: [{ name: "Hypertension", since: "2019" }],
     });
     expect(saved.body.medicalId.updatedByName).toBe("Maria Lopez Santos");
@@ -174,6 +176,16 @@ describe("the emergency QR", () => {
       "Shrimp",
     ]);
     expect(more.conditions).toBeUndefined();
+    expect(more.name).toBe("Maria S.");
+    expect(more.address).toBeUndefined();
+
+    await maria
+      .put("/api/medical-id/emergency")
+      .send({ on: true, extras: ["fullName", "address", "bloodType"] });
+    const named = (await guest.get(`/api/emergency/${token}`)).body.emergency;
+    expect(named.name).toBe("Maria Lopez Santos");
+    expect(named.address).toBe("12 Mabini St., Marikina City");
+    expect(named.bloodType).toBe("O+");
     expect(JSON.stringify(more)).not.toContain("12-345678901-2");
   });
 

@@ -37,6 +37,7 @@ export const MEDICAL_LIMITS = {
   contacts: 5,
   short: 120,
   notes: 1000,
+  address: 200,
 };
 
 const text = (max: number) =>
@@ -163,6 +164,8 @@ export const medicalIdSchema = z.object({
       const d = v.replace(/\D/g, "");
       return d ? `${d.slice(0, 2)}-${d.slice(2, 11)}-${d.slice(11)}` : "";
     }),
+  // Where to bring them, or where family can be found
+  address: text(MEDICAL_LIMITS.address),
   organDonor: z.enum(["", "yes", "no"]).default(""),
   notes: text(MEDICAL_LIMITS.notes),
 });
@@ -173,6 +176,8 @@ export const EMPTY_MEDICAL_ID: MedicalIdFields = medicalIdSchema.parse({});
 
 // What the emergency QR shows besides the contacts (each one opt-in)
 export const EMERGENCY_EXTRAS = [
+  "fullName",
+  "address",
   "bloodType",
   "allergies",
   "conditions",
@@ -181,11 +186,20 @@ export const EMERGENCY_EXTRAS = [
 export type EmergencyExtra = (typeof EMERGENCY_EXTRAS)[number];
 
 export const EMERGENCY_EXTRA_LABELS: Record<EmergencyExtra, string> = {
+  fullName: "Full name",
+  address: "Home address",
   bloodType: "Blood type",
   allergies: "Allergies",
   conditions: "Conditions",
   medicines: "Medicines",
 };
+
+// Ticked the first time the QR is turned on (each can be unticked)
+export const DEFAULT_EMERGENCY_EXTRAS: EmergencyExtra[] = [
+  "fullName",
+  "address",
+  "bloodType",
+];
 
 export const emergencySettingsSchema = z.object({
   on: z.boolean(),

@@ -123,9 +123,13 @@ export class PostgresMedicalIdRepository implements MedicalIdRepository {
 
   async findByEmergencyToken(token: string) {
     const result = await this.pool.query<
-      Row & { person_first: string; person_last: string }
+      Row & {
+        person_first: string;
+        person_middle: string | null;
+        person_last: string;
+      }
     >(
-      `${SELECT.replace("select m.*,", "select m.*, coalesce(p.first_name, o.first_name) as person_first, coalesce(p.last_name, o.last_name) as person_last,")}
+      `${SELECT.replace("select m.*,", "select m.*, coalesce(p.first_name, o.first_name) as person_first, case when p.id is null then o.middle_name else p.middle_name end as person_middle, coalesce(p.last_name, o.last_name) as person_last,")}
          join users o on o.id = m.owner_id
          left join family_profiles p on p.id = m.profile_id
         where m.emergency_token = $1 and m.emergency_on`,
@@ -136,6 +140,7 @@ export class PostgresMedicalIdRepository implements MedicalIdRepository {
     return {
       medicalId: toMedicalId(row),
       firstName: row.person_first,
+      middleName: row.person_middle,
       lastName: row.person_last,
     };
   }

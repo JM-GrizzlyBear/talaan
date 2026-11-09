@@ -79,6 +79,7 @@ export function diffMedicalId(
       to: after.philhealth ? (before.philhealth ? "Changed" : "Set") : null,
     });
   }
+  compare("Address", shown(before.address), shown(after.address));
   compare("Organ donor", shown(before.organDonor), shown(after.organDonor));
   compare("Notes", shown(before.notes), shown(after.notes));
   return changes;

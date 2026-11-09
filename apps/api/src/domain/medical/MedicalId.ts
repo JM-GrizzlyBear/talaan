@@ -38,6 +38,7 @@ export interface MedicalIdRepository {
   findByEmergencyToken(token: string): Promise<{
     medicalId: MedicalId;
     firstName: string;
+    middleName: string | null;
     lastName: string;
   } | null>;
 }

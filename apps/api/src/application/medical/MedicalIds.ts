@@ -5,6 +5,7 @@ import {
   type EmergencyInfo,
   type EmergencySettings,
   emergencyName,
+  fullName,
   type MedicalIdFields,
 } from "@talaan/shared";
 import { NotFoundError } from "../../domain/errors.js";
@@ -141,8 +142,12 @@ export class MedicalIds {
     const { fields } = found.medicalId;
     const extras = new Set(found.medicalId.emergencyExtras);
     return {
-      name: emergencyName(found.firstName, found.lastName),
+      name: extras.has("fullName")
+        ? fullName(found)
+        : emergencyName(found.firstName, found.lastName),
       contacts: fields.contacts,
+      ...(extras.has("address") &&
+        fields.address && { address: fields.address }),
       ...(extras.has("bloodType") && { bloodType: fields.bloodType }),
       ...(extras.has("allergies") && {
         allergies: allergiesBySeverity(fields.allergies),

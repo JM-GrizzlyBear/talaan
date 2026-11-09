@@ -56,6 +56,7 @@ export function MedicalIdView({
       fields.organDonor === "yes" ? "Yes" : "No",
     ],
     fields.philhealth && ["PhilHealth ID", fields.philhealth],
+    fields.address && ["Address", fields.address],
   ].filter(Boolean) as [string, string][];
 
   return (

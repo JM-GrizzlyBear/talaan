@@ -1,4 +1,5 @@
 import {
+  DEFAULT_EMERGENCY_EXTRAS,
   EMERGENCY_EXTRA_LABELS,
   EMERGENCY_EXTRAS,
   type EmergencyExtra,
@@ -64,7 +65,13 @@ export function EmergencyQrPanel({ medicalId }: { medicalId: MedicalIdInfo }) {
       {!on ? (
         <button
           type="button"
-          onClick={() => save.mutate({ on: true, extras })}
+          // The first time: name, address and blood type start ticked
+          onClick={() =>
+            save.mutate({
+              on: true,
+              extras: token ? extras : DEFAULT_EMERGENCY_EXTRAS,
+            })
+          }
           disabled={save.isPending}
           className={`${buttonPrimary} self-start`}
         >
@@ -83,9 +90,22 @@ export function EmergencyQrPanel({ medicalId }: { medicalId: MedicalIdInfo }) {
                 onChange={(checked) => toggleExtra(extra, checked)}
               >
                 {EMERGENCY_EXTRA_LABELS[extra]}
+                {extra === "fullName" && (
+                  <span className="text-muted">
+                    {" "}
+                    (otherwise the first name and an initial)
+                  </span>
+                )}
               </CheckboxField>
             ))}
           </fieldset>
+          {extras.includes("address") && (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              Anyone who finds the card or phone can read the address. It helps
+              rescuers bring {medicalId.personName.split(" ")[0]} home, but
+              untick it if that worries you.
+            </p>
+          )}
           {token && (
             <div className="flex flex-wrap items-center gap-4">
               <QrCode

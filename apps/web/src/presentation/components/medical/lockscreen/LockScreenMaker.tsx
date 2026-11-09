@@ -20,6 +20,7 @@ const INCLUDE: [keyof LockScreenOptions, string][] = [
   ["conditions", "Conditions"],
   ["medicines", "Medicines"],
   ["contacts", "Emergency contacts"],
+  ["address", "Home address"],
   ["philhealth", "PhilHealth ID"],
   ["fullName", "Full name (otherwise first name only)"],
 ];

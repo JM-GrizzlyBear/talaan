@@ -40,7 +40,8 @@ export function EmergencyPage() {
       <header className="rounded-xl bg-red-700 p-4 text-white">
         <p className="text-sm font-bold tracking-wide uppercase">✚ Emergency</p>
         <h1 className="text-2xl font-bold">{e.name}</h1>
-        <p className="text-sm">
+        {e.address && <p className="mt-1 text-sm">Lives at {e.address}</p>}
+        <p className="mt-2 text-sm">
           Please call one of these people. In an emergency, also call 911.
         </p>
       </header>
