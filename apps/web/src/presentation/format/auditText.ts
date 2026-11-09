@@ -57,6 +57,10 @@ export function auditSentence(entry: AuditEntryInfo) {
       return `${who} resumed the reminder ${what}`;
     case "reminder.removed":
       return `${who} removed the reminder ${what}`;
+    case "medicalid.edited":
+      return `${who} edited the Medical ID of ${entry.subject}`;
+    case "medicalid.emergency":
+      return `${who} changed the emergency QR of ${entry.subject}`;
     case "labels.created":
       return `${who} made ${entry.subject} to print`;
   }

@@ -7,6 +7,10 @@ import { FamilyPage } from "./presentation/pages/family/FamilyPage";
 import { ForgotPasswordPage } from "./presentation/pages/auth/ForgotPasswordPage";
 import { HomePage } from "./presentation/pages/HomePage";
 import { InvitationPage } from "./presentation/pages/family/InvitationPage";
+import { EmergencyPage } from "./presentation/pages/medical/EmergencyPage";
+import { MedicalIdEditPage } from "./presentation/pages/medical/MedicalIdEditPage";
+import { MedicalIdPage } from "./presentation/pages/medical/MedicalIdPage";
+import { MedicalIdPrintPage } from "./presentation/pages/medical/MedicalIdPrintPage";
 import { LabsPage } from "./presentation/pages/labs/LabsPage";
 import { PrintLabsPage } from "./presentation/pages/labs/PrintLabsPage";
 import { LabelPage } from "./presentation/pages/places/LabelPage";
@@ -39,6 +43,8 @@ export function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         {/* The link in a family invitation email: open before signing in */}
         <Route path="/invite/:token" element={<InvitationPage />} />
+        {/* What the emergency QR opens: anyone, no sign-in */}
+        <Route path="/e/:token" element={<EmergencyPage />} />
         <Route element={<RequireAuth />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/records" element={<RecordsPage />} />
@@ -46,6 +52,9 @@ export function App() {
           <Route path="/records/trash" element={<TrashPage />} />
           <Route path="/records/:id" element={<RecordPage />} />
           <Route path="/records/:id/edit" element={<RecordFormPage />} />
+          <Route path="/medical-id" element={<MedicalIdPage />} />
+          <Route path="/medical-id/edit" element={<MedicalIdEditPage />} />
+          <Route path="/medical-id/print" element={<MedicalIdPrintPage />} />
           <Route path="/labs" element={<LabsPage />} />
           <Route path="/labs/print" element={<PrintLabsPage />} />
           <Route path="/places" element={<PlacesPage />} />

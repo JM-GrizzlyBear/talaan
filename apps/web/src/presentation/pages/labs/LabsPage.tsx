@@ -14,7 +14,7 @@ import {
 } from "../../components/labs/labParams";
 import { LabTable } from "../../components/labs/LabTable";
 import { NeedsAttention } from "../../components/labs/NeedsAttention";
-import { PersonPicker } from "../../components/labs/PersonPicker";
+import { PersonPicker } from "../../components/people/PersonPicker";
 import { TestDetail } from "../../components/labs/TestDetail";
 import { BackLink } from "../../components/ui/BackLink";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";

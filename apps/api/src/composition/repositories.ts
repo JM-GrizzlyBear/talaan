@@ -6,6 +6,7 @@ import { PostgresFamilyInvitationRepository } from "../infrastructure/database/P
 import { PostgresFamilyProfileRepository } from "../infrastructure/database/PostgresFamilyProfileRepository.js";
 import { PostgresAlertSettingsRepository } from "../infrastructure/database/PostgresAlertSettingsRepository.js";
 import { PostgresLabelRepository } from "../infrastructure/database/PostgresLabelRepository.js";
+import { PostgresMedicalIdRepository } from "../infrastructure/database/PostgresMedicalIdRepository.js";
 import { PostgresPasskeyRepository } from "../infrastructure/database/PostgresPasskeyRepository.js";
 import { PostgresPlaceRepository } from "../infrastructure/database/PostgresPlaceRepository.js";
 import { PostgresReminderRepository } from "../infrastructure/database/PostgresReminderRepository.js";
@@ -34,6 +35,7 @@ export function createRepositories(pool: Pool) {
     labels: new PostgresLabelRepository(pool),
     reminders: new PostgresReminderRepository(pool),
     alertSettings: new PostgresAlertSettingsRepository(pool),
+    medicalIds: new PostgresMedicalIdRepository(pool),
   };
 }
 

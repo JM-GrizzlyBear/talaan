@@ -6,6 +6,7 @@ import { accountsModule } from "./composition/accountsModule.js";
 import { createContext } from "./composition/context.js";
 import { familyModule } from "./composition/familyModule.js";
 import type { BuildAppOptions } from "./composition/options.js";
+import { medicalModule } from "./composition/medicalModule.js";
 import { placesModule } from "./composition/placesModule.js";
 import { remindersModule } from "./composition/remindersModule.js";
 import { recordsModule } from "./composition/recordsModule.js";
@@ -25,6 +26,7 @@ export function buildApp(options: BuildAppOptions) {
   const records = recordsModule(context, family.members);
   const places = placesModule(context, records.access);
   const reminders = remindersModule(context, records.access);
+  const medical = medicalModule(context, records.access);
 
   const app = express();
   app.disable("x-powered-by");
@@ -60,6 +62,7 @@ export function buildApp(options: BuildAppOptions) {
     ...records.routers,
     ...places.routers,
     ...reminders.routers,
+    ...medical.routers,
   ]) {
     app.use("/api", router);
   }
