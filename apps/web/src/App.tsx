@@ -7,6 +7,8 @@ import { FamilyPage } from "./presentation/pages/family/FamilyPage";
 import { ForgotPasswordPage } from "./presentation/pages/auth/ForgotPasswordPage";
 import { HomePage } from "./presentation/pages/HomePage";
 import { InvitationPage } from "./presentation/pages/family/InvitationPage";
+import { LabsPage } from "./presentation/pages/labs/LabsPage";
+import { PrintLabsPage } from "./presentation/pages/labs/PrintLabsPage";
 import { LabelPage } from "./presentation/pages/places/LabelPage";
 import { LoginPage } from "./presentation/pages/auth/LoginPage";
 import { RegisterPage } from "./presentation/pages/auth/RegisterPage";
@@ -44,6 +46,8 @@ export function App() {
           <Route path="/records/trash" element={<TrashPage />} />
           <Route path="/records/:id" element={<RecordPage />} />
           <Route path="/records/:id/edit" element={<RecordFormPage />} />
+          <Route path="/labs" element={<LabsPage />} />
+          <Route path="/labs/print" element={<PrintLabsPage />} />
           <Route path="/places" element={<PlacesPage />} />
           <Route path="/places/new" element={<PlaceFormPage />} />
           <Route path="/places/print" element={<PrintLabelsPage />} />

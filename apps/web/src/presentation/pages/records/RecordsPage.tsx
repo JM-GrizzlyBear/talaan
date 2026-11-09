@@ -1,5 +1,5 @@
 import type { RecordType } from "@talaan/shared";
-import { ClipboardList, Plus, Trash } from "lucide-react";
+import { ChartLine, ClipboardList, Plus, Trash } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 import {
   useRecordAccounts,
@@ -49,6 +49,15 @@ export function RecordsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="text-3xl font-bold">Records</h1>
         <div className="flex flex-wrap gap-2">
+          {account && (
+            <Link
+              to={`/labs?owner=${account.ownerId}`}
+              className={buttonSecondary}
+            >
+              <ChartLine aria-hidden="true" className="size-4" />
+              Lab results
+            </Link>
+          )}
           {account?.role === "owner" && (
             <>
               <Link to="/activity" className={buttonSecondary}>
