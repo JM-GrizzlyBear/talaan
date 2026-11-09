@@ -17,7 +17,7 @@ _Talaan_ is Filipino for "record" or "list".
 - **X-ray with its reading:** the film photos and the radiologist's reading are one record.
 - **Places and QR labels** (done): folders, boxes, envelopes, drawers and bags, each with its own QR label. Print sheets of labels (including blank ones to name later) and scan a label to see what should be inside.
 - **Reminders** (done): a date and time, alerts before it (30 minutes, 1 hour, 2 hours, 1 day, 1 week, or your own), and repeats.
-- **Compare lab results:** the numbers and normal ranges side by side, newest first.
+- **Compare lab results** (done): the numbers and normal ranges side by side, newest first.
 - **Family by invitation:** each person accepts or declines by email before you see their records. Medical ID for each person.
 - **Doctor share links:** stop working on the day you pick, with an optional 4-digit code.
 - **Search everything:** records, lab values, places and QR codes, family and reminders, in English or Filipino.
@@ -45,6 +45,12 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
   - **Audit trail**: every add, edit (with each changed field, before and after), move to the Trash, restore and delete is saved with who did it and when. Sharing changes (invitations, accepting, access changes, profiles) are too. Each record shows its history; the owner's Activity page shows everything. Entries can't be changed, not even directly in the database.
 - **Photos and PDFs on records**: up to 20 per record, 10 MB each (JPG, PNG, WEBP, HEIC, PDF). "Take a photo" opens the phone's camera. Files are private in Cloudinary: the browser only ever gets them through the API, after the same "who can see this record" check. Removing a file, or deleting its record for good, removes it from Cloudinary too.
 - **Read lab results from a photo or PDF** (free, on the device): on a lab result, **Read from a photo or PDF**, or **Read lab values from this** on a file already attached. Talaan finds each test, result, unit and normal range; you check every row beside the picture (unclear ones are marked in amber) before they go into the form, and nothing is saved until you press Save. See [Reading lab results](#reading-lab-results-from-a-photo-or-pdf).
+- **Lab results** (`/labs`, or "Compare with earlier results" on a lab record): every test across one person's lab records, lined up
+  - **Names line up**: "SGPT" and "ALT", "FBS" and "Fasting blood sugar", "Hgb" and "Hemoglobin" are one test (the lab reader's list of names). Different tests that look alike stay apart (ionized calcium, urine tests).
+  - **Units convert** to the unit used most for that test, marked *: blood sugar, cholesterol (total, HDL, LDL, VLDL), triglycerides, creatinine, uric acid, BUN, calcium, hemoglobin (g/L ↔ g/dL), hematocrit (% ↔ L/L), WBC and platelets (×10⁹/L ↔ /µL), vitamin D (ng/mL ↔ nmol/L). The normal range converts too. A unit with no fixed conversion is shown as written and left out of charts.
+  - **Views**: **Table** (tests by date, newest first, Low/High in red, ↑↓ since last time), **Charts** (a small chart per test, normal range shaded), **one test** (a big chart; latest, change, lowest, highest, average, times out of range; every result), **Needs attention** (latest results outside the range, furthest out first, "out of range 3 times in a row"), **Compare two dates** (before, after, change, "Now high" / "Back to normal"). Filter by name, group (blood count, chemistry, urinalysis, other), years, or only out of range.
+  - **Print**: paper (A4, Short / Letter, Long / Folio, Legal, A5, A3, B5, Half letter, 4 × 6), **portrait or landscape**, what to include (needs attention, table, charts) and how many dates; remembered on that device.
+  - The logic is in `packages/shared/src/labs` (for the phone app too). Talaan compares each result with the range printed on it; it doesn't say what a result means.
 - **Reminders**: checkups, lab tests, medicine, refills, vaccinations, HMO renewals and others, for you or a family profile, optionally about a record ("Add a reminder" on a record)
   - **When**: a date and one or more times a day (medicine: once, twice, 3 or 4 times a day in one tap), in Philippine time
   - **Repeats**: every N days, weeks (on chosen weekdays), months (on a day, or the 2nd Tuesday, the last Friday…) or years; forever, until a date, a number of times, for a number of days, or (medicine) until it runs out (how many are left ÷ how many each time)
@@ -412,92 +418,93 @@ Put them in `apps/api/.env` (your computer) and in **Render → Environment** (t
 
 All routes start with `/api`. Errors always look like `{ "message": "…", "errors": { "field": ["…"] } }`.
 
-| Method | Route                                  | Login? | What                                                                                                                   |
-| ------ | -------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/health`                          | no     | `{ ok: true }` when the API can reach the database                                                                     |
-| POST   | `/api/auth/register`                   | no     | `{ firstName, middleName, lastName, email, password, consent: true }` → 201 `{ user }`, signed in                      |
-| POST   | `/api/auth/login`                      | no     | `{ email, password }` → `{ twoStep: false, user }`, or 202 `{ twoStep: true, email }`                                  |
-| POST   | `/api/auth/login/code`                 | no     | `{ code, rememberBrowser }` → `{ user }`, signed in                                                                    |
-| POST   | `/api/auth/login/resend`               | no     | 204; emails a new sign-in code                                                                                         |
-| POST   | `/api/auth/passkey/options`            | no     | The passkey prompt for the browser                                                                                     |
-| POST   | `/api/auth/passkey/verify`             | no     | `{ response }` → `{ user }`, signed in                                                                                 |
-| GET    | `/api/auth/me`                         | yes    | `{ user, locked }`, or 401                                                                                             |
-| POST   | `/api/auth/activity`                   | yes    | 204; keeps the session from locking                                                                                    |
-| POST   | `/api/auth/lock`                       | yes    | 204; "Lock Talaan now"                                                                                                 |
-| POST   | `/api/auth/unlock`                     | yes    | `{ password }` → `{ user }`                                                                                            |
-| POST   | `/api/auth/unlock/passkey/options`     | yes    | The passkey prompt, only this person's passkeys                                                                        |
-| POST   | `/api/auth/unlock/passkey`             | yes    | `{ response }` → `{ user }`                                                                                            |
-| POST   | `/api/auth/logout`                     | no     | 204                                                                                                                    |
-| POST   | `/api/auth/password-reset/request`     | no     | `{ email }` → 202, the same answer for every email                                                                     |
-| POST   | `/api/auth/password-reset/check`       | no     | `{ email, code }` → 204                                                                                                |
-| POST   | `/api/auth/password-reset/complete`    | no     | `{ email, code, password }` → 204, every device signed out                                                             |
-| GET    | `/api/family`                          | yes    | `{ members, invitations, profiles, sharedWithMe }`                                                                     |
-| POST   | `/api/family/invitations`              | yes    | `{ email, relationship, access }` → 201; emails the link                                                               |
-| POST   | `/api/family/invitations/:id/resend`   | yes    | 204; a new link and 7 more days                                                                                        |
-| DELETE | `/api/family/invitations/:id`          | yes    | 204; cancels a waiting one or clears a declined one                                                                    |
-| POST   | `/api/family/invitations/lookup`       | no     | `{ token }` → who invited, as what, the status, and `forThisAccount`                                                   |
-| POST   | `/api/family/invitations/accept`       | yes    | `{ token }` → 204; needs the invited email's account                                                                   |
-| POST   | `/api/family/invitations/decline`      | no     | `{ token }` → 204                                                                                                      |
-| PUT    | `/api/family/members/:userId`          | yes    | `{ access }` → 204                                                                                                     |
-| DELETE | `/api/family/members/:userId`          | yes    | 204; stop sharing with them                                                                                            |
-| DELETE | `/api/family/shared/:ownerId`          | yes    | 204; stop seeing their records                                                                                         |
-| POST   | `/api/family/profiles`                 | yes    | `{ firstName, middleName, lastName, relationship, birthDate }` → 201 `{ profile }`                                     |
-| PUT    | `/api/family/profiles/:id`             | yes    | same fields → `{ profile }`                                                                                            |
-| DELETE | `/api/family/profiles/:id`             | yes    | 204                                                                                                                    |
-| GET    | `/api/records/accounts`                | yes    | Accounts you can open (yours and shared ones), your role in each, and their people                                     |
-| GET    | `/api/records`                         | yes    | `?ownerId=&profileId=self\|<id>&type=&placeId=` → `{ role, records }`, newest first                                    |
-| POST   | `/api/records`                         | yes    | `{ ownerId, type, profileId, title, recordDate, doctor, facility, notes, details }` → 201 `{ record }`                 |
-| GET    | `/api/records/:id`                     | yes    | `{ record }` with `role`                                                                                               |
-| PUT    | `/api/records/:id`                     | yes    | same fields → `{ record }` (owner or "Can manage")                                                                     |
-| DELETE | `/api/records/:id`                     | yes    | 204; moves it to the Trash (owner or "Can manage")                                                                     |
-| GET    | `/api/records/trash`                   | yes    | Your Trash (owner only), with who moved each and when it's deleted for good                                            |
-| DELETE | `/api/records/trash`                   | yes    | `{ deleted }`; empties your Trash                                                                                      |
-| POST   | `/api/records/:id/restore`             | yes    | 204 (owner only)                                                                                                       |
-| DELETE | `/api/records/:id/forever`             | yes    | 204; only from the Trash (owner only)                                                                                  |
-| GET    | `/api/records/:id/history`             | yes    | `{ entries }`: who did what, with the changed fields                                                                   |
-| GET    | `/api/activity`                        | yes    | `?before=` → `{ entries, next }`: your account's history, 50 at a time                                                 |
-| GET    | `/api/records/:id/files`               | yes    | `{ files }`: name, format, size, who added it                                                                          |
-| POST   | `/api/records/:id/files/upload-target` | yes    | Where to send one file (signed; Cloudinary or the local folder)                                                        |
-| POST   | `/api/records/:id/files`               | yes    | `{ upload, name }` → 201 `{ file }`: checks the upload's answer, then attaches it                                      |
-| GET    | `/api/files/:id/content`               | yes    | `?variant=thumb\|preview\|original&download=1`: the file itself, after the access check                                |
-| DELETE | `/api/files/:id`                       | yes    | 204; removes it from the record and from storage                                                                       |
-| GET    | `/api/places`                          | yes    | `?ownerId=` → `{ role, places }`: each with its label code and what's inside                                           |
-| POST   | `/api/places`                          | yes    | `{ ownerId, kind, name, note, parentId }` → 201 `{ place }` (owner or "Can manage"; at most 3 levels)                  |
-| GET    | `/api/places/:id`                      | yes    | `{ place }` with the way there (`path`), the places inside it and `role`                                               |
-| PUT    | `/api/places/:id`                      | yes    | same fields → `{ place }` (owner or "Can manage")                                                                      |
-| DELETE | `/api/places/:id`                      | yes    | 204 (owner only); what's inside moves up, its label becomes blank                                                      |
-| POST   | `/api/places/:id/photo/upload-target`  | yes    | Where to send the photo (as for record files)                                                                          |
-| POST   | `/api/places/:id/photo`                | yes    | `{ upload }` → `{ place }`; replaces the old photo (photos only, not PDFs)                                             |
-| GET    | `/api/places/:id/photo`                | yes    | `?variant=thumb\|preview\|original`: the photo, after the access check                                                 |
-| DELETE | `/api/places/:id/photo`                | yes    | 204                                                                                                                    |
-| GET    | `/api/labels/:code`                    | yes    | `{ label }`: the account, your role and the place (`placeId` null: blank). Not shared with you: 404                    |
-| POST   | `/api/labels/:code/place`              | yes    | Names a blank label: place fields → 201 `{ place }`                                                                    |
-| GET    | `/api/labels/blank`                    | yes    | `?ownerId=` → `{ labels }`: blank labels not named yet                                                                 |
-| POST   | `/api/labels/blank`                    | yes    | `{ ownerId, count }` (1–120) → 201 `{ codes }`                                                                         |
-| GET    | `/api/reminders`                       | yes    | `?ownerId=` → `{ role, reminders }`: each with its schedule, alerts, next time and whether you muted it                |
-| GET    | `/api/reminders/agenda`                | yes    | `?ownerId=&from=&to=` (at most 60 days) → `{ role, items }`: every time, with done / skipped / snoozed and by whom     |
-| POST   | `/api/reminders`                       | yes    | `{ ownerId, kind, title, dose, note, profileId, recordId, schedule, alerts }` → 201 `{ reminder }`                     |
-| GET    | `/api/reminders/:id`                   | yes    | `{ reminder }` with the next 5 times and the last 7 days                                                               |
-| PUT    | `/api/reminders/:id`                   | yes    | same fields → `{ reminder }` (owner or "Can manage")                                                                   |
-| DELETE | `/api/reminders/:id`                   | yes    | 204 (owner only)                                                                                                       |
-| POST   | `/api/reminders/:id/pause` / `resume`  | yes    | 204 (owner or "Can manage")                                                                                            |
-| POST   | `/api/reminders/:id/occurrences`       | yes    | `{ at, action: done\|skip\|snooze\|clear, until? }` → 204: one time of it                                              |
-| PUT    | `/api/reminders/:id/my-alerts`         | yes    | `{ muted }` → 204: your own alerts for it (anyone it's shared with)                                                    |
-| GET    | `/api/account/alerts`                  | yes    | `{ email, push, pushKey, devices }`: your alerts for every reminder                                                    |
-| PUT    | `/api/account/alerts`                  | yes    | `{ email, push }` → the same                                                                                           |
-| POST   | `/api/account/alerts/devices`          | yes    | A browser's push subscription `{ endpoint, keys, label }` → 201                                                        |
-| DELETE | `/api/account/alerts/devices/:id`      | yes    | 204                                                                                                                    |
-| POST   | `/api/account/alerts/test`             | yes    | `{ sent }`: a test notification to your browsers                                                                       |
-| PUT    | `/api/account/password`                | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out                                                     |
-| PUT    | `/api/account/security`                | yes    | `{ lockAfterMinutes?, twoStepEnabled?, currentPassword? }` → `{ user }` (turning two-step off needs `currentPassword`) |
-| GET    | `/api/account/passkeys`                | yes    | `{ passkeys }`: name, dates, synced                                                                                    |
-| POST   | `/api/account/passkeys/options`        | yes    | The prompt to make a new passkey                                                                                       |
-| POST   | `/api/account/passkeys`                | yes    | `{ name, response }` → 201 `{ passkey }`                                                                               |
-| DELETE | `/api/account/passkeys/:id`            | yes    | 204                                                                                                                    |
-| GET    | `/api/account/browsers`                | yes    | `{ browsers }`: remembered browsers, `current` marks this one                                                          |
-| DELETE | `/api/account/browsers/:id`            | yes    | 204; that browser gets the code again                                                                                  |
-| DELETE | `/api/account/browsers`                | yes    | 204; forget them all                                                                                                   |
-| POST   | `/api/account/sign-out-others`         | yes    | 204; every other browser and device is signed out                                                                      |
+| Method | Route                                  | Login? | What                                                                                                                           |
+| ------ | -------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/health`                          | no     | `{ ok: true }` when the API can reach the database                                                                             |
+| POST   | `/api/auth/register`                   | no     | `{ firstName, middleName, lastName, email, password, consent: true }` → 201 `{ user }`, signed in                              |
+| POST   | `/api/auth/login`                      | no     | `{ email, password }` → `{ twoStep: false, user }`, or 202 `{ twoStep: true, email }`                                          |
+| POST   | `/api/auth/login/code`                 | no     | `{ code, rememberBrowser }` → `{ user }`, signed in                                                                            |
+| POST   | `/api/auth/login/resend`               | no     | 204; emails a new sign-in code                                                                                                 |
+| POST   | `/api/auth/passkey/options`            | no     | The passkey prompt for the browser                                                                                             |
+| POST   | `/api/auth/passkey/verify`             | no     | `{ response }` → `{ user }`, signed in                                                                                         |
+| GET    | `/api/auth/me`                         | yes    | `{ user, locked }`, or 401                                                                                                     |
+| POST   | `/api/auth/activity`                   | yes    | 204; keeps the session from locking                                                                                            |
+| POST   | `/api/auth/lock`                       | yes    | 204; "Lock Talaan now"                                                                                                         |
+| POST   | `/api/auth/unlock`                     | yes    | `{ password }` → `{ user }`                                                                                                    |
+| POST   | `/api/auth/unlock/passkey/options`     | yes    | The passkey prompt, only this person's passkeys                                                                                |
+| POST   | `/api/auth/unlock/passkey`             | yes    | `{ response }` → `{ user }`                                                                                                    |
+| POST   | `/api/auth/logout`                     | no     | 204                                                                                                                            |
+| POST   | `/api/auth/password-reset/request`     | no     | `{ email }` → 202, the same answer for every email                                                                             |
+| POST   | `/api/auth/password-reset/check`       | no     | `{ email, code }` → 204                                                                                                        |
+| POST   | `/api/auth/password-reset/complete`    | no     | `{ email, code, password }` → 204, every device signed out                                                                     |
+| GET    | `/api/family`                          | yes    | `{ members, invitations, profiles, sharedWithMe }`                                                                             |
+| POST   | `/api/family/invitations`              | yes    | `{ email, relationship, access }` → 201; emails the link                                                                       |
+| POST   | `/api/family/invitations/:id/resend`   | yes    | 204; a new link and 7 more days                                                                                                |
+| DELETE | `/api/family/invitations/:id`          | yes    | 204; cancels a waiting one or clears a declined one                                                                            |
+| POST   | `/api/family/invitations/lookup`       | no     | `{ token }` → who invited, as what, the status, and `forThisAccount`                                                           |
+| POST   | `/api/family/invitations/accept`       | yes    | `{ token }` → 204; needs the invited email's account                                                                           |
+| POST   | `/api/family/invitations/decline`      | no     | `{ token }` → 204                                                                                                              |
+| PUT    | `/api/family/members/:userId`          | yes    | `{ access }` → 204                                                                                                             |
+| DELETE | `/api/family/members/:userId`          | yes    | 204; stop sharing with them                                                                                                    |
+| DELETE | `/api/family/shared/:ownerId`          | yes    | 204; stop seeing their records                                                                                                 |
+| POST   | `/api/family/profiles`                 | yes    | `{ firstName, middleName, lastName, relationship, birthDate }` → 201 `{ profile }`                                             |
+| PUT    | `/api/family/profiles/:id`             | yes    | same fields → `{ profile }`                                                                                                    |
+| DELETE | `/api/family/profiles/:id`             | yes    | 204                                                                                                                            |
+| GET    | `/api/records/accounts`                | yes    | Accounts you can open (yours and shared ones), your role in each, and their people                                             |
+| GET    | `/api/records`                         | yes    | `?ownerId=&profileId=self\|<id>&type=&placeId=` → `{ role, records }`, newest first                                            |
+| POST   | `/api/records`                         | yes    | `{ ownerId, type, profileId, title, recordDate, doctor, facility, notes, details }` → 201 `{ record }`                         |
+| GET    | `/api/records/:id`                     | yes    | `{ record }` with `role`                                                                                                       |
+| PUT    | `/api/records/:id`                     | yes    | same fields → `{ record }` (owner or "Can manage")                                                                             |
+| DELETE | `/api/records/:id`                     | yes    | 204; moves it to the Trash (owner or "Can manage")                                                                             |
+| GET    | `/api/records/trash`                   | yes    | Your Trash (owner only), with who moved each and when it's deleted for good                                                    |
+| DELETE | `/api/records/trash`                   | yes    | `{ deleted }`; empties your Trash                                                                                              |
+| POST   | `/api/records/:id/restore`             | yes    | 204 (owner only)                                                                                                               |
+| DELETE | `/api/records/:id/forever`             | yes    | 204; only from the Trash (owner only)                                                                                          |
+| GET    | `/api/records/:id/history`             | yes    | `{ entries }`: who did what, with the changed fields                                                                           |
+| GET    | `/api/activity`                        | yes    | `?before=` → `{ entries, next }`: your account's history, 50 at a time                                                         |
+| GET    | `/api/records/:id/files`               | yes    | `{ files }`: name, format, size, who added it                                                                                  |
+| POST   | `/api/records/:id/files/upload-target` | yes    | Where to send one file (signed; Cloudinary or the local folder)                                                                |
+| POST   | `/api/records/:id/files`               | yes    | `{ upload, name }` → 201 `{ file }`: checks the upload's answer, then attaches it                                              |
+| GET    | `/api/files/:id/content`               | yes    | `?variant=thumb\|preview\|original&download=1`: the file itself, after the access check                                        |
+| DELETE | `/api/files/:id`                       | yes    | 204; removes it from the record and from storage                                                                               |
+| GET    | `/api/places`                          | yes    | `?ownerId=` → `{ role, places }`: each with its label code and what's inside                                                   |
+| POST   | `/api/places`                          | yes    | `{ ownerId, kind, name, note, parentId }` → 201 `{ place }` (owner or "Can manage"; at most 3 levels)                          |
+| GET    | `/api/places/:id`                      | yes    | `{ place }` with the way there (`path`), the places inside it and `role`                                                       |
+| PUT    | `/api/places/:id`                      | yes    | same fields → `{ place }` (owner or "Can manage")                                                                              |
+| DELETE | `/api/places/:id`                      | yes    | 204 (owner only); what's inside moves up, its label becomes blank                                                              |
+| POST   | `/api/places/:id/photo/upload-target`  | yes    | Where to send the photo (as for record files)                                                                                  |
+| POST   | `/api/places/:id/photo`                | yes    | `{ upload }` → `{ place }`; replaces the old photo (photos only, not PDFs)                                                     |
+| GET    | `/api/places/:id/photo`                | yes    | `?variant=thumb\|preview\|original`: the photo, after the access check                                                         |
+| DELETE | `/api/places/:id/photo`                | yes    | 204                                                                                                                            |
+| GET    | `/api/labels/:code`                    | yes    | `{ label }`: the account, your role and the place (`placeId` null: blank). Not shared with you: 404                            |
+| POST   | `/api/labels/:code/place`              | yes    | Names a blank label: place fields → 201 `{ place }`                                                                            |
+| GET    | `/api/labels/blank`                    | yes    | `?ownerId=` → `{ labels }`: blank labels not named yet                                                                         |
+| POST   | `/api/labels/blank`                    | yes    | `{ ownerId, count }` (1–120) → 201 `{ codes }`                                                                                 |
+| GET    | `/api/labs`                            | yes    | `?ownerId=&profileId=self\|<id>` → `{ role, personName, records }`: that person's lab records with their results, oldest first |
+| GET    | `/api/reminders`                       | yes    | `?ownerId=` → `{ role, reminders }`: each with its schedule, alerts, next time and whether you muted it                        |
+| GET    | `/api/reminders/agenda`                | yes    | `?ownerId=&from=&to=` (at most 60 days) → `{ role, items }`: every time, with done / skipped / snoozed and by whom             |
+| POST   | `/api/reminders`                       | yes    | `{ ownerId, kind, title, dose, note, profileId, recordId, schedule, alerts }` → 201 `{ reminder }`                             |
+| GET    | `/api/reminders/:id`                   | yes    | `{ reminder }` with the next 5 times and the last 7 days                                                                       |
+| PUT    | `/api/reminders/:id`                   | yes    | same fields → `{ reminder }` (owner or "Can manage")                                                                           |
+| DELETE | `/api/reminders/:id`                   | yes    | 204 (owner only)                                                                                                               |
+| POST   | `/api/reminders/:id/pause` / `resume`  | yes    | 204 (owner or "Can manage")                                                                                                    |
+| POST   | `/api/reminders/:id/occurrences`       | yes    | `{ at, action: done\|skip\|snooze\|clear, until? }` → 204: one time of it                                                      |
+| PUT    | `/api/reminders/:id/my-alerts`         | yes    | `{ muted }` → 204: your own alerts for it (anyone it's shared with)                                                            |
+| GET    | `/api/account/alerts`                  | yes    | `{ email, push, pushKey, devices }`: your alerts for every reminder                                                            |
+| PUT    | `/api/account/alerts`                  | yes    | `{ email, push }` → the same                                                                                                   |
+| POST   | `/api/account/alerts/devices`          | yes    | A browser's push subscription `{ endpoint, keys, label }` → 201                                                                |
+| DELETE | `/api/account/alerts/devices/:id`      | yes    | 204                                                                                                                            |
+| POST   | `/api/account/alerts/test`             | yes    | `{ sent }`: a test notification to your browsers                                                                               |
+| PUT    | `/api/account/password`                | yes    | `{ currentPassword, newPassword }` → 204, other devices signed out                                                             |
+| PUT    | `/api/account/security`                | yes    | `{ lockAfterMinutes?, twoStepEnabled?, currentPassword? }` → `{ user }` (turning two-step off needs `currentPassword`)         |
+| GET    | `/api/account/passkeys`                | yes    | `{ passkeys }`: name, dates, synced                                                                                            |
+| POST   | `/api/account/passkeys/options`        | yes    | The prompt to make a new passkey                                                                                               |
+| POST   | `/api/account/passkeys`                | yes    | `{ name, response }` → 201 `{ passkey }`                                                                                       |
+| DELETE | `/api/account/passkeys/:id`            | yes    | 204                                                                                                                            |
+| GET    | `/api/account/browsers`                | yes    | `{ browsers }`: remembered browsers, `current` marks this one                                                                  |
+| DELETE | `/api/account/browsers/:id`            | yes    | 204; that browser gets the code again                                                                                          |
+| DELETE | `/api/account/browsers`                | yes    | 204; forget them all                                                                                                           |
+| POST   | `/api/account/sign-out-others`         | yes    | 204; every other browser and device is signed out                                                                              |
 
 | Status | When                                                                                                                                              |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -564,8 +571,8 @@ turbo run test
 | --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | API unit        | `apps/api/test/unit`               | User rules, place levels, which reminder alerts are due, shared schemas, use cases with fake repositories (no database)                                                                                                                                                                                                                                                  |
 | API integration | `apps/api/test/integration`        | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, records, the Trash and the audit trail, uploads (through the local storage) and who can see them, places, QR labels and place photos, reminders and their alerts (sent once, muting, snoozes, catching up), sessions, rate limit, errors |
-| Shared unit     | `packages/shared/src/**/*.test.ts` | Reading lab lines: formats, units, ranges, urinalysis, doubts, no made-up ranges; reminder schedules (every kind of repeat, ends, Philippine time) and their wording                                                                                                                                                                                                     |
-| Website unit    | `apps/web/src/**/*.test.ts`        | The API client (`ApiError`), error messages, dates, PDF line grouping, table-line removal, adding read rows to the form, the places tree, fitting labels on paper, the reminder form                                                                                                                                                                                     |
+| Shared unit     | `packages/shared/src/**/*.test.ts` | Reading lab lines: formats, units, ranges, urinalysis, doubts, no made-up ranges; reminder schedules (every kind of repeat, ends, Philippine time) and their wording; lab comparison (matching names, units, ranges, stats)                                                                                                                                              |
+| Website unit    | `apps/web/src/**/*.test.ts`        | The API client (`ApiError`), error messages, dates, PDF line grouping, table-line removal, adding read rows to the form, the places tree, fitting labels on paper, the reminder form, lab filters                                                                                                                                                                        |
 
 ### The test database
 

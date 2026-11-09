@@ -69,4 +69,14 @@ export const CHEMISTRY_TESTS: KnownLabTest[] = [
   { name: "Magnesium", aliases: ["magnesium", "mg"] },
   { name: "TSH", aliases: ["tsh"] },
   { name: "FT4", aliases: ["free t4", "ft4"] },
+  {
+    name: "Vitamin D",
+    aliases: [
+      "25-hydroxy vitamin d",
+      "25-oh vitamin d",
+      "vitamin d, 25-oh",
+      "vitamin d 25-oh",
+      "vitamin d",
+    ],
+  },
 ];

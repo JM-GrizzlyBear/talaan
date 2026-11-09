@@ -49,6 +49,38 @@ export class Records {
     };
   }
 
+  // One person's lab results across all their lab records, oldest first,
+  // for comparing (the website lines them up with the shared rules)
+  async labResults(
+    viewerId: string,
+    ownerId: string,
+    profileId: string | null,
+  ) {
+    const role = await this.access.roleFor(viewerId, ownerId);
+    const household = await this.access.household(ownerId);
+    this.access.requireOwnProfile(household, profileId);
+    const records = await this.records.listForOwner(ownerId, {
+      profileId,
+      type: "lab",
+    });
+    return {
+      role,
+      personName: personName(household, profileId),
+      records: records
+        .map((record) => ({
+          recordId: record.id,
+          title: record.title,
+          date: record.recordDate,
+          facility: record.facility,
+          results:
+            record.type === "lab" && "results" in record.details
+              ? record.details.results
+              : [],
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date)),
+    };
+  }
+
   async get(viewerId: string, id: string) {
     const { record, role } = await this.access.findVisible(viewerId, id);
     const household = await this.access.household(record.ownerId);

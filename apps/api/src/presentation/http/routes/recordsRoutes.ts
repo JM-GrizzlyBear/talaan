@@ -15,6 +15,12 @@ import {
 import { currentUserId } from "../middleware/requireAuth.js";
 import { idParam } from "../params.js";
 
+const labsQuery = z.object({
+  ownerId: z.uuid().optional(),
+  // "self": the account owner; a uuid: one of their profiles
+  profileId: z.union([z.literal("self"), z.uuid()]).default("self"),
+});
+
 const listQuery = z.object({
   // Whose records; yours when left out
   ownerId: z.uuid().optional(),
@@ -35,6 +41,7 @@ export function recordsRoutes(deps: {
 }) {
   const router = Router();
   router.use("/records", deps.requireAuth);
+  router.use("/labs", deps.requireAuth);
 
   // Accounts you can open (yours, and those shared with you) and the people in each
   router.get("/records/accounts", async (req, res) => {
@@ -74,6 +81,19 @@ export function recordsRoutes(deps: {
     res.status(201).json({
       record: recordJson(shown),
     });
+  });
+
+  // One person's lab results, to compare (README → "Compare lab results")
+  router.get("/labs", async (req, res) => {
+    const query = labsQuery.parse(req.query);
+    const viewerId = currentUserId(req);
+    res.json(
+      await deps.records.labResults(
+        viewerId,
+        query.ownerId ?? viewerId,
+        query.profileId === "self" ? null : query.profileId,
+      ),
+    );
   });
 
   router.get("/records/:id", async (req, res) => {

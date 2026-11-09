@@ -1,5 +1,5 @@
 import type { RecordInfo } from "@talaan/shared";
-import { BellPlus, Pencil, Trash } from "lucide-react";
+import { BellPlus, ChartLine, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useMoveToTrash } from "../../../../application/records/useRecords";
@@ -27,8 +27,20 @@ export function RecordActions({ record }: { record: RecordInfo }) {
     }
   }
 
+  // Everyone who sees a lab result can compare it with earlier ones
+  const compare = record.type === "lab" && (
+    <Link
+      to={`/labs?owner=${record.ownerId}&person=${record.profileId ?? "self"}&record=${record.id}`}
+      className={`${buttonSecondary} self-start`}
+    >
+      <ChartLine aria-hidden="true" className="size-4" />
+      Compare with earlier results
+    </Link>
+  );
+
   return (
     <>
+      {!canManage && compare}
       {canManage && (
         <div className="flex flex-wrap gap-2">
           <Link to={`/records/${record.id}/edit`} className={buttonSecondary}>
@@ -42,6 +54,7 @@ export function RecordActions({ record }: { record: RecordInfo }) {
             <BellPlus aria-hidden="true" className="size-4" />
             Add a reminder
           </Link>
+          {compare}
           {!confirming && (
             <button
               type="button"
