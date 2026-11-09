@@ -9,7 +9,11 @@ import { createPool } from "../../../src/infrastructure/database/pool.js";
 import { LocalFileStorage } from "../../../src/infrastructure/storage/LocalFileStorage.js";
 import { BcryptPasswordHasher } from "../../../src/infrastructure/security/BcryptPasswordHasher.js";
 import { FakeClock } from "../../fixtures/clock.js";
-import { FakeEmails, FixedSecretCodes } from "../../fixtures/fakes.js";
+import {
+  FakeEmails,
+  FakePush,
+  FixedSecretCodes,
+} from "../../fixtures/fakes.js";
 import { FakePasskeyCeremonies } from "../../fixtures/passkeys.js";
 import { PASSWORD, USERS, type SeededUser } from "../../fixtures/users.js";
 import { resetDatabase } from "./seed.js";
@@ -21,6 +25,8 @@ export interface TestContext {
   clock: FakeClock;
   // Every email the app "sent"
   emails: FakeEmails;
+  // Every browser notification the app "sent"
+  push: FakePush;
   passkeys: FakePasskeyCeremonies;
   // Where uploaded files land (a fresh temporary folder)
   uploadsDir: string;
@@ -49,6 +55,7 @@ export function useTestApp(
     context.pool = createPool(testDatabaseUrl());
     context.clock = new FakeClock();
     context.emails = new FakeEmails();
+    context.push = new FakePush();
     context.passkeys = new FakePasskeyCeremonies();
     context.uploadsDir = mkdtempSync(path.join(os.tmpdir(), "talaan-uploads-"));
     context.app = buildApp({
@@ -58,6 +65,7 @@ export function useTestApp(
       secretCodes: new FixedSecretCodes(),
       emails: options.withoutEmail ? null : context.emails,
       passkeyCeremonies: context.passkeys,
+      pushSender: context.push,
       fileStorage: options.withoutStorage
         ? null
         : new LocalFileStorage(
@@ -91,6 +99,7 @@ export function useTestApp(
     rmSync(context.uploadsDir, { recursive: true, force: true });
     mkdirSync(context.uploadsDir, { recursive: true });
     context.emails.clear();
+    context.push.clear();
   });
 
   afterAll(async () => {

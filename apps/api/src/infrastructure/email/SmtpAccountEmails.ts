@@ -3,9 +3,11 @@ import type {
   AccountEmails,
   EmailRecipient,
   FamilyInvitationEmail,
+  ReminderAlert,
 } from "../../application/ports/AccountEmails.js";
 import { familyInvitationEmail } from "./templates/familyInvitationEmail.js";
 import { passwordChangedEmail } from "./templates/passwordChangedEmail.js";
+import { reminderAlertEmail } from "./templates/reminderAlertEmail.js";
 import { passwordResetEmail } from "./templates/passwordResetEmail.js";
 import { signInCodeEmail } from "./templates/signInCodeEmail.js";
 
@@ -86,5 +88,16 @@ export class SmtpAccountEmails implements AccountEmails {
       // The password already changed; a missing heads-up email mustn't turn that into an error
       console.error("Couldn't send the password-changed email:", error);
     }
+  }
+
+  async sendReminderAlert(to: EmailRecipient, alert: ReminderAlert) {
+    await this.send(
+      to.email,
+      reminderAlertEmail(to, alert, {
+        reminderUrl: `${this.settings.appUrl}/reminders/${alert.reminderId}`,
+        settingsUrl: `${this.settings.appUrl}/settings/alerts`,
+        timeZone: "Asia/Manila",
+      }),
+    );
   }
 }

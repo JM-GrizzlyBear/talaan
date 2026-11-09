@@ -4,6 +4,7 @@ import {
   parseCloudinaryUrl,
   type CloudinarySettings,
 } from "../infrastructure/storage/CloudinaryFileStorage.js";
+import type { WebPushSettings } from "../infrastructure/push/WebPushSender.js";
 import { readWebAuthn } from "./webauthn.js";
 
 function required(name: string) {
@@ -39,6 +40,27 @@ function readSmtp(appUrl: string): SmtpSettings | null {
     from: required("MAIL_FROM"),
     appUrl,
   };
+}
+
+// Browser notifications are on when both VAPID keys are set
+// (npx web-push generate-vapid-keys). Without them, alerts go by email only.
+function readWebPush(from: string | undefined): WebPushSettings | null {
+  const publicKey = optional("VAPID_PUBLIC_KEY");
+  const privateKey = optional("VAPID_PRIVATE_KEY");
+  if (!publicKey && !privateKey) return null;
+  if (!publicKey || !privateKey) {
+    throw new Error(
+      "Set both VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY, or neither. See apps/api/.env.example.",
+    );
+  }
+  // The push services contact this address if something's wrong
+  const email = /<([^>]+)>/.exec(from ?? "")?.[1] ?? from;
+  const subject =
+    optional("VAPID_SUBJECT") ?? (email ? `mailto:${email}` : undefined);
+  if (!subject) {
+    throw new Error("Set VAPID_SUBJECT, like mailto:you@example.com");
+  }
+  return { publicKey, privateKey, subject };
 }
 
 // Where photos and PDFs go. CLOUDINARY_URL: Cloudinary. Without it, a local
@@ -91,6 +113,7 @@ export function readEnv() {
     // so rate limits see each visitor's real IP address
     trustProxy,
     smtp: readSmtp(appUrl),
+    webPush: readWebPush(optional("MAIL_FROM")),
     storage: readStorage(isProduction),
     webAuthn: readWebAuthn({
       appUrl,

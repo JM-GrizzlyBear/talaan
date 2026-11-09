@@ -1,5 +1,5 @@
 import type { RecordInfo } from "@talaan/shared";
-import { Pencil, Trash } from "lucide-react";
+import { BellPlus, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useMoveToTrash } from "../../../../application/records/useRecords";
@@ -34,6 +34,13 @@ export function RecordActions({ record }: { record: RecordInfo }) {
           <Link to={`/records/${record.id}/edit`} className={buttonSecondary}>
             <Pencil aria-hidden="true" className="size-4" />
             Edit
+          </Link>
+          <Link
+            to={`/reminders/new?owner=${record.ownerId}&record=${record.id}`}
+            className={buttonSecondary}
+          >
+            <BellPlus aria-hidden="true" className="size-4" />
+            Add a reminder
           </Link>
           {!confirming && (
             <button

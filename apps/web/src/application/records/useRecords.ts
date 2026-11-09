@@ -43,6 +43,8 @@ export function useRecord(id: string) {
     queryKey: [...RECORDS_KEY, "one", id],
     queryFn: async () => await fetchRecord(id),
     retry: false,
+    // "": no record (a reminder not about one)
+    enabled: id !== "",
   });
 }
 

@@ -4,7 +4,11 @@ export interface EmailRecipient {
   firstName: string;
 }
 
-import type { AccessLevel, FamilyRelationship } from "@talaan/shared";
+import type {
+  AccessLevel,
+  FamilyRelationship,
+  ReminderKind,
+} from "@talaan/shared";
 
 export interface FamilyInvitationEmail {
   inviterName: string;
@@ -14,6 +18,20 @@ export interface FamilyInvitationEmail {
   // The secret for the link (the email builds the full address)
   token: string;
   expiresAt: Date;
+}
+
+// One alert of a reminder
+export interface ReminderAlert {
+  reminderId: string;
+  kind: ReminderKind;
+  title: string;
+  dose: string;
+  note: string;
+  // Who it's for (the owner or a family member)
+  personName: string;
+  occursAt: Date;
+  // How long before it this alert is (0: now; null: a snooze ending)
+  minutesBefore: number | null;
 }
 
 // The emails about someone's account. The use cases don't know how email is sent.
@@ -30,4 +48,5 @@ export interface AccountEmails {
   // A heads-up after a password change. Best effort: never throws, so a mail
   // problem can't undo a password change that already happened.
   sendPasswordChanged(to: EmailRecipient, changedAt: Date): Promise<void>;
+  sendReminderAlert(to: EmailRecipient, alert: ReminderAlert): Promise<void>;
 }

@@ -9,3 +9,4 @@ export * from "./files.js";
 export * from "./money.js";
 export * from "./scan/index.js";
 export * from "./places/index.js";
+export * from "./reminders/index.js";
