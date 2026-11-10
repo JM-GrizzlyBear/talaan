@@ -287,3 +287,11 @@ export function needsAttention(series: LabSeries[]) {
     .filter((s) => s.points.at(-1)?.flag)
     .sort((a, b) => far(b.points.at(-1)!) - far(a.points.at(-1)!));
 }
+
+// Other names for a test, for searching ("Hemoglobin" → "hgb", "hb")
+export function labTestAliases(name: string): string[] {
+  return (
+    KNOWN_LAB_TESTS.find((t) => t.name.toLowerCase() === name.toLowerCase())
+      ?.aliases ?? []
+  );
+}

@@ -64,6 +64,14 @@ export class PostgresMedicalIdRepository implements MedicalIdRepository {
     return result.rows[0] ? toMedicalId(result.rows[0]) : null;
   }
 
+  async listForOwner(ownerId: string) {
+    const result = await this.pool.query<Row>(
+      `${SELECT} where m.owner_id = $1`,
+      [ownerId],
+    );
+    return result.rows.map(toMedicalId);
+  }
+
   async save(
     ownerId: string,
     profileId: string | null,
