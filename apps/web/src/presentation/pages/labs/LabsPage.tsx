@@ -1,5 +1,5 @@
 import { todayText } from "@talaan/shared";
-import { Printer } from "lucide-react";
+import { Link2, Printer } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useLabs } from "../../../application/labs/useLabs";
@@ -77,10 +77,22 @@ export function LabsPage() {
           </p>
         </div>
         {labs.data && labs.data.records.length > 0 && (
-          <Link to={`/labs/print?${printQuery}`} className={buttonSecondary}>
-            <Printer aria-hidden="true" className="size-4" />
-            Print
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            {(labs.data.role === "owner" || labs.data.role === "manage") &&
+              account && (
+                <Link
+                  to={`/shares/new?${new URLSearchParams({ owner: account.ownerId, person, labs: "1" })}`}
+                  className={buttonSecondary}
+                >
+                  <Link2 aria-hidden="true" className="size-4" />
+                  Share with a doctor
+                </Link>
+              )}
+            <Link to={`/labs/print?${printQuery}`} className={buttonSecondary}>
+              <Printer aria-hidden="true" className="size-4" />
+              Print
+            </Link>
+          </div>
         )}
       </div>
 

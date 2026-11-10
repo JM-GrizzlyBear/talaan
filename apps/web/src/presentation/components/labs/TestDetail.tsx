@@ -1,6 +1,6 @@
 import { formatRange, labStats, type LabSeries } from "@talaan/shared";
-import { Link } from "react-router";
-import { dateLabel } from "./chartScale";
+import { RecordDateLink } from "./RecordDateLink";
+import type { RecordLink } from "./recordLink";
 import { LabChart } from "./LabChart";
 import { ResultCell } from "./ResultCell";
 import { TrendArrow } from "./TrendArrow";
@@ -11,9 +11,11 @@ const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
 export function TestDetail({
   series,
   highlight,
+  recordLink,
 }: {
   series: LabSeries;
   highlight?: string;
+  recordLink?: RecordLink;
 }) {
   const stats = labStats(series);
   const unit = series.unit ? ` ${series.unit}` : "";
@@ -67,12 +69,11 @@ export function TestDetail({
             }`}
           >
             <span className="flex flex-col">
-              <Link
-                to={`/records/${point.recordId}`}
-                className="font-semibold text-brand underline-offset-2 hover:underline"
-              >
-                {dateLabel(point.date)}
-              </Link>
+              <RecordDateLink
+                recordId={point.recordId}
+                date={point.date}
+                link={recordLink}
+              />
               {point.facility && (
                 <span className="text-xs text-muted">{point.facility}</span>
               )}

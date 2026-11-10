@@ -1,11 +1,13 @@
 import { formatRange, labFlag, type RecordInfo } from "@talaan/shared";
+import { useId } from "react";
 import { LabFlagBadge } from "../LabFlagBadge";
 
 // Lab results, with Low and High marked in red
 export function LabTable({ record }: { record: RecordInfo & { type: "lab" } }) {
+  const headingId = useId();
   return (
-    <section aria-labelledby="results-heading" className="flex flex-col gap-2">
-      <h2 id="results-heading" className="text-lg font-bold">
+    <section aria-labelledby={headingId} className="flex flex-col gap-2">
+      <h2 id={headingId} className="text-lg font-bold">
         Results
       </h2>
       <div className="overflow-x-auto rounded-xl border border-edge bg-white">

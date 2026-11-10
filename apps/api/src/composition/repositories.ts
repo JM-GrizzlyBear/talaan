@@ -12,6 +12,7 @@ import { PostgresPlaceRepository } from "../infrastructure/database/PostgresPlac
 import { PostgresReminderRepository } from "../infrastructure/database/PostgresReminderRepository.js";
 import { PostgresRecordFileRepository } from "../infrastructure/database/PostgresRecordFileRepository.js";
 import { PostgresRecordRepository } from "../infrastructure/database/PostgresRecordRepository.js";
+import { PostgresShareLinkRepository } from "../infrastructure/database/PostgresShareLinkRepository.js";
 import { PostgresSessionStore } from "../infrastructure/database/PostgresSessionStore.js";
 import { PostgresTrustedBrowserRepository } from "../infrastructure/database/PostgresTrustedBrowserRepository.js";
 import { PostgresUserRepository } from "../infrastructure/database/PostgresUserRepository.js";
@@ -36,6 +37,7 @@ export function createRepositories(pool: Pool) {
     reminders: new PostgresReminderRepository(pool),
     alertSettings: new PostgresAlertSettingsRepository(pool),
     medicalIds: new PostgresMedicalIdRepository(pool),
+    shareLinks: new PostgresShareLinkRepository(pool),
   };
 }
 

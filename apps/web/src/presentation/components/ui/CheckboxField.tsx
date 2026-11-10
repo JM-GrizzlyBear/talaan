@@ -6,8 +6,10 @@ export function CheckboxField({
   onChange,
   children,
   error,
+  disabled = false,
 }: {
   checked: boolean;
+  disabled?: boolean;
   onChange: (checked: boolean) => void;
   children: ReactNode;
   error?: string;
@@ -21,10 +23,11 @@ export function CheckboxField({
           id={id}
           type="checkbox"
           checked={checked}
+          disabled={disabled}
           onChange={(event) => onChange(event.target.checked)}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          className="mt-0.5 size-5 shrink-0 cursor-pointer accent-brand"
+          className="mt-0.5 size-5 shrink-0 cursor-pointer accent-brand disabled:cursor-default"
         />
         <label htmlFor={id} className="cursor-pointer text-sm leading-relaxed">
           {children}

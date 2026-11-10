@@ -8,6 +8,7 @@ import { familyModule } from "./composition/familyModule.js";
 import type { BuildAppOptions } from "./composition/options.js";
 import { medicalModule } from "./composition/medicalModule.js";
 import { placesModule } from "./composition/placesModule.js";
+import { sharesModule } from "./composition/sharesModule.js";
 import { remindersModule } from "./composition/remindersModule.js";
 import { recordsModule } from "./composition/recordsModule.js";
 import { apiNotFound, errorHandler } from "./presentation/http/errorHandler.js";
@@ -27,6 +28,7 @@ export function buildApp(options: BuildAppOptions) {
   const places = placesModule(context, records.access);
   const reminders = remindersModule(context, records.access);
   const medical = medicalModule(context, records.access);
+  const shares = sharesModule(context, records.access);
 
   const app = express();
   app.disable("x-powered-by");
@@ -63,6 +65,7 @@ export function buildApp(options: BuildAppOptions) {
     ...places.routers,
     ...reminders.routers,
     ...medical.routers,
+    ...shares.routers,
   ]) {
     app.use("/api", router);
   }

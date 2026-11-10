@@ -1,10 +1,10 @@
 import { allergiesBySeverity, SEVERITY_LABELS } from "@talaan/shared";
 import { TriangleAlert } from "lucide-react";
-import { useEffect } from "react";
 import { useParams } from "react-router";
 import { useEmergency } from "../../../application/medical/useMedicalId";
 import { ContactList } from "../../components/medical/MedicalIdView";
 import { Loading } from "../../components/ui/Loading";
+import { useNoIndex } from "../../components/ui/useNoIndex";
 
 // What the emergency QR opens, for anyone: no sign-in. Shows the contacts
 // and only what the person chose to share.
@@ -12,14 +12,7 @@ export function EmergencyPage() {
   const { token = "" } = useParams();
   const emergency = useEmergency(token);
 
-  // Not for search engines
-  useEffect(() => {
-    const meta = document.createElement("meta");
-    meta.name = "robots";
-    meta.content = "noindex, nofollow";
-    document.head.appendChild(meta);
-    return () => meta.remove();
-  }, []);
+  useNoIndex();
 
   if (emergency.isPending)
     return <Loading className="p-8 text-center text-muted" />;

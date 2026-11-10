@@ -13,6 +13,7 @@ import {
   PushNotSetUpError,
   ReminderError,
 } from "../../domain/reminder/errors.js";
+import { ShareError, ShareFormError } from "../../domain/share/errors.js";
 import { SignInExpiredError } from "../../domain/user/signIn.js";
 import {
   EmailTakenError,
@@ -103,6 +104,22 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     send(res, 400, {
       message: error.message,
       errors: error.field ? { [error.field]: [error.message] } : undefined,
+    });
+    return;
+  }
+  if (error instanceof ShareFormError) {
+    send(res, 400, {
+      message: error.message,
+      errors: error.field ? { [error.field]: [error.message] } : undefined,
+    });
+    return;
+  }
+  // The doctor's page: a wrong PIN (400), too many (429), opened enough (410)
+  if (error instanceof ShareError) {
+    const status = { pin: 400, wait: 429, used: 410 }[error.kind];
+    send(res, status, {
+      message: error.message,
+      errors: error.kind === "pin" ? { pin: [error.message] } : undefined,
     });
     return;
   }

@@ -1,14 +1,13 @@
 import type { Medicine } from "@talaan/shared";
+import { useId } from "react";
 import { listCard } from "../../ui/styles";
 
 // A prescription's medicines, one per row
 export function MedicinesList({ medicines }: { medicines: Medicine[] }) {
+  const headingId = useId();
   return (
-    <section
-      aria-labelledby="medicines-heading"
-      className="flex flex-col gap-2"
-    >
-      <h2 id="medicines-heading" className="text-lg font-bold">
+    <section aria-labelledby={headingId} className="flex flex-col gap-2">
+      <h2 id={headingId} className="text-lg font-bold">
         Medicines
       </h2>
       <ul className={listCard}>
