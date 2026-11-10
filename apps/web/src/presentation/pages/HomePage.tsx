@@ -6,11 +6,13 @@ import {
   Link2,
   type LucideIcon,
   Package,
+  Search,
   Users,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useCurrentUser } from "../../application/auth/useAuth";
 import { TalaanLogo } from "../components/brand/TalaanLogo";
+import { inputBase } from "../components/ui/styles";
 
 const PLACES: { to: string; title: string; text: string; icon: LucideIcon }[] =
   [
@@ -61,6 +63,7 @@ const PLACES: { to: string; title: string; text: string; icon: LucideIcon }[] =
 // The first page after signing in: everything Talaan keeps, one tap away
 export function HomePage() {
   const { data: user } = useCurrentUser();
+  const navigate = useNavigate();
 
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-10">
@@ -76,6 +79,33 @@ export function HomePage() {
           </p>
         </div>
       </div>
+      <form
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const q = new FormData(e.currentTarget).get("q")?.toString().trim();
+          void navigate(
+            q ? `/search?${new URLSearchParams({ q })}` : "/search",
+          );
+        }}
+        className="relative"
+      >
+        <label htmlFor="home-search" className="sr-only">
+          Search everything
+        </label>
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute top-3.5 left-3.5 size-5 text-muted"
+        />
+        <input
+          id="home-search"
+          name="q"
+          type="search"
+          enterKeyHint="search"
+          placeholder="Search records, lab tests, places…"
+          className={`${inputBase} h-12 border-edge pl-11`}
+        />
+      </form>
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {PLACES.map(({ to, title, text, icon: Icon }) => (
           <li key={to}>

@@ -14,6 +14,8 @@ export interface MedicalId {
 
 export interface MedicalIdRepository {
   find(ownerId: string, profileId: string | null): Promise<MedicalId | null>;
+  // Everyone's in one account (for searching)
+  listForOwner(ownerId: string): Promise<MedicalId[]>;
   // Creates it the first time
   save(
     ownerId: string,

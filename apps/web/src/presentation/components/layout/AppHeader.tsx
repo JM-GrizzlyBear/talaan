@@ -5,6 +5,7 @@ import {
   LogOut,
   type LucideIcon,
   Package,
+  Search,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -39,8 +40,21 @@ export function AppHeader() {
           Talaan
         </Link>
         {user && (
-          <span className="text-sm text-muted sm:order-last sm:w-full sm:text-right lg:order-none lg:w-auto">
-            {fullName(user)}
+          <span className="flex items-center gap-3 sm:order-last sm:w-full sm:justify-end lg:order-none lg:w-auto">
+            <NavLink
+              to="/search"
+              className={({ isActive }) =>
+                `flex min-h-10 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold ${
+                  isActive
+                    ? "border-brand bg-brand-soft text-deep"
+                    : "border-edge text-gray-700 hover:bg-gray-50"
+                }`
+              }
+            >
+              <Search aria-hidden="true" className="size-4" />
+              Search
+            </NavLink>
+            <span className="text-sm text-muted">{fullName(user)}</span>
           </span>
         )}
         {user && (

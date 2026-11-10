@@ -8,6 +8,7 @@ import { familyModule } from "./composition/familyModule.js";
 import type { BuildAppOptions } from "./composition/options.js";
 import { medicalModule } from "./composition/medicalModule.js";
 import { placesModule } from "./composition/placesModule.js";
+import { searchModule } from "./composition/searchModule.js";
 import { sharesModule } from "./composition/sharesModule.js";
 import { remindersModule } from "./composition/remindersModule.js";
 import { recordsModule } from "./composition/recordsModule.js";
@@ -29,6 +30,7 @@ export function buildApp(options: BuildAppOptions) {
   const reminders = remindersModule(context, records.access);
   const medical = medicalModule(context, records.access);
   const shares = sharesModule(context, records.access);
+  const search = searchModule(context, records.access);
 
   const app = express();
   app.disable("x-powered-by");
@@ -66,6 +68,7 @@ export function buildApp(options: BuildAppOptions) {
     ...reminders.routers,
     ...medical.routers,
     ...shares.routers,
+    ...search.routers,
   ]) {
     app.use("/api", router);
   }

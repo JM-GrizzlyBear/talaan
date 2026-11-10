@@ -27,6 +27,7 @@ import { ReminderFormPage } from "./presentation/pages/reminders/ReminderFormPag
 import { ReminderPage } from "./presentation/pages/reminders/ReminderPage";
 import { RemindersPage } from "./presentation/pages/reminders/RemindersPage";
 import { AlertSettingsPage } from "./presentation/pages/settings/AlertSettingsPage";
+import { SearchPage } from "./presentation/pages/search/SearchPage";
 import { SharedPage } from "./presentation/pages/shares/SharedPage";
 import { ShareNewPage } from "./presentation/pages/shares/ShareNewPage";
 import { SharePage } from "./presentation/pages/shares/SharePage";
@@ -62,6 +63,7 @@ export function App() {
           <Route path="/medical-id/edit" element={<MedicalIdEditPage />} />
           <Route path="/medical-id/print" element={<MedicalIdPrintPage />} />
           <Route path="/labs" element={<LabsPage />} />
+          <Route path="/search" element={<SearchPage />} />
           <Route path="/shares" element={<SharesPage />} />
           <Route path="/shares/new" element={<ShareNewPage />} />
           <Route path="/shares/:id" element={<SharePage />} />
