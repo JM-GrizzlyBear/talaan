@@ -16,7 +16,14 @@ export interface PublicUser {
 
 // POST /api/auth/login: signed in, or (two-step) a code was emailed first
 export type LoginResult =
-  { twoStep: false; user: PublicUser } | { twoStep: true; email: string };
+  | { twoStep: false; user: PublicUser; welcomeBack?: boolean }
+  | { twoStep: true; email: string };
+
+// Signed in; welcomeBack: the account was suspended and is active again
+export interface SignedIn {
+  user: PublicUser;
+  welcomeBack?: boolean;
+}
 
 export interface PasskeyInfo {
   id: string;
@@ -43,4 +50,6 @@ export interface TrustedBrowserInfo {
 export interface SessionInfo {
   user: PublicUser;
   locked: boolean;
+  // Only on this browser, right after signing in brought the account back
+  welcomeBack?: boolean;
 }

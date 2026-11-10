@@ -1,3 +1,4 @@
+import type { AccountDeletion } from "../application/account/AccountDeletion.js";
 import { ManagePasskeys } from "../application/passkey/ManagePasskeys.js";
 import { PasskeyRegistration } from "../application/passkey/PasskeyRegistration.js";
 import { PasskeySignIn } from "../application/passkey/PasskeySignIn.js";
@@ -23,12 +24,12 @@ import type { AppContext } from "./context.js";
 
 // Accounts: signing up and in (password, emailed code, passkeys), the idle
 // lock, Forgot password, and the Security page
-export function accountsModule({
-  options,
-  repos,
-  limits,
-  requireAuth,
-}: AppContext) {
+export function accountsModule(
+  { options, repos, limits, requireAuth }: AppContext,
+  // Signing in brings a suspended account back
+  deletion: AccountDeletion,
+) {
+  const welcomeBack = (userId: string) => deletion.welcomeBack(userId);
   const { clock, passwordHasher, emails, secretCodes } = options;
   const { users, sessions } = repos;
   const trustedBrowsers = new TrustedBrowsers(
@@ -58,6 +59,7 @@ export function accountsModule({
         sendSignInCode,
       ),
       getCurrentUser,
+      welcomeBack,
       unlockSession: new UnlockSession(users, passwordHasher),
       clock,
       limit: limits.tries(),
@@ -72,6 +74,7 @@ export function accountsModule({
       ),
       sendSignInCode,
       getCurrentUser,
+      welcomeBack,
       trustedBrowsers,
       clock,
       secureCookie: options.secureCookie,
@@ -85,6 +88,7 @@ export function accountsModule({
         options.passkeyCeremonies,
         clock,
       ),
+      welcomeBack,
       clock,
       limit: limits.tries(),
       unlockLimit: limits.tries(limits.userKey),

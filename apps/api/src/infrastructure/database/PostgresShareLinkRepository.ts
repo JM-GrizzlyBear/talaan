@@ -116,8 +116,13 @@ export class PostgresShareLinkRepository implements ShareLinkRepository {
     return await this.one("s.id = $1", id);
   }
 
+  // Not while its account is suspended
   async findByToken(token: string) {
-    return await this.one("s.token = $1", token);
+    return await this.one(
+      `s.token = $1 and not exists (
+         select 1 from users o where o.id = s.owner_id and o.suspended_at is not null)`,
+      token,
+    );
   }
 
   async countOpen(ownerId: string, now: Date) {

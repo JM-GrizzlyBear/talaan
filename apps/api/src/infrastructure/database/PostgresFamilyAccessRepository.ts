@@ -57,8 +57,11 @@ export class PostgresFamilyAccessRepository implements FamilyAccessRepository {
 
   async find(ownerId: string, memberId: string) {
     const result = await this.pool.query<AccessRow>(
-      `select owner_id, member_id, relationship, access, created_at
-         from family_access where owner_id = $1 and member_id = $2`,
+      // A suspended owner's records aren't shared with anyone
+      `select a.owner_id, a.member_id, a.relationship, a.access, a.created_at
+         from family_access a
+         join users o on o.id = a.owner_id
+        where a.owner_id = $1 and a.member_id = $2 and o.suspended_at is null`,
       [ownerId, memberId],
     );
     return result.rows[0] ? toAccess(result.rows[0]) : null;
@@ -86,7 +89,8 @@ export class PostgresFamilyAccessRepository implements FamilyAccessRepository {
 
   async listOwners(memberId: string) {
     const result = await this.pool.query<AccessWithPersonRow>(
-      `${WITH_PERSON("owner_id")} where a.member_id = $1 order by a.created_at`,
+      `${WITH_PERSON("owner_id")} where a.member_id = $1 and u.suspended_at is null
+        order by a.created_at`,
       [memberId],
     );
     return result.rows.map(toAccessWithPerson);

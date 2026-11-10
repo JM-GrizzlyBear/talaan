@@ -4,6 +4,7 @@ import type {
   PublicUser,
   RegisterInput,
   SessionInfo,
+  SignedIn,
   SignInCodeInput,
 } from "@talaan/shared";
 import { signWithPasskeyOnDevice } from "../passkeys/devicePasskeys";
@@ -34,12 +35,7 @@ export async function logIn(input: LoginInput) {
 }
 
 export async function submitSignInCode(input: SignInCodeInput) {
-  const data = await request<{ user: PublicUser }>(
-    "/api/auth/login/code",
-    "POST",
-    input,
-  );
-  return data.user;
+  return await request<SignedIn>("/api/auth/login/code", "POST", input);
 }
 
 export async function resendSignInCode() {
@@ -50,12 +46,9 @@ export async function resendSignInCode() {
 export async function signInWithPasskey() {
   const options = await request<unknown>("/api/auth/passkey/options", "POST");
   const response = await signWithPasskeyOnDevice(options);
-  const data = await request<{ user: PublicUser }>(
-    "/api/auth/passkey/verify",
-    "POST",
-    { response },
-  );
-  return data.user;
+  return await request<SignedIn>("/api/auth/passkey/verify", "POST", {
+    response,
+  });
 }
 
 export async function unlockWithPasskey() {

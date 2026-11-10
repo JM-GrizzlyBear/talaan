@@ -18,6 +18,8 @@ export function signInCodeRoutes(deps: {
   // null when the server can't send email
   sendSignInCode: SendSignInCode | null;
   getCurrentUser: GetCurrentUser;
+  // A suspended account comes back when its owner signs in
+  welcomeBack: (userId: string) => Promise<boolean>;
   trustedBrowsers: TrustedBrowsers;
   clock: Clock;
   secureCookie: boolean;
@@ -33,6 +35,7 @@ export function signInCodeRoutes(deps: {
     const userId = pendingSignIn(req, now());
     const user = await deps.verifySignInCode.execute(userId, input.code);
     await startSession(req, user, now());
+    const welcomeBack = await deps.welcomeBack(user.id);
     if (input.rememberBrowser) {
       const trust = await deps.trustedBrowsers.remember(
         user.id,
@@ -40,7 +43,7 @@ export function signInCodeRoutes(deps: {
       );
       setTrustCookie(res, trust.cookie, trust.expiresAt, deps.secureCookie);
     }
-    res.json({ user: userJson(user) });
+    res.json({ user: userJson(user), welcomeBack });
   });
 
   router.post("/auth/login/resend", deps.resendLimit, async (req, res) => {

@@ -258,6 +258,8 @@ export class PostgresReminderRepository implements ReminderRepository {
       `${SELECT}
         where not r.paused and r.next_alert_at is not null
           and r.next_alert_at <= $1
+          and not exists (select 1 from users o
+                           where o.id = r.owner_id and o.suspended_at is not null)
         order by r.next_alert_at
         limit $2`,
       [now, limit],
@@ -277,6 +279,7 @@ export class PostgresReminderRepository implements ReminderRepository {
          from users u
         where (u.id = $2
                or u.id in (select member_id from family_access where owner_id = $2))
+          and u.suspended_at is null
           and not exists (
             select 1 from reminder_mutes m
              where m.reminder_id = $1 and m.user_id = u.id)`,

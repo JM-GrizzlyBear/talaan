@@ -4,6 +4,7 @@ import type {
   FamilyInvitationEmail,
   ReminderAlert,
   ShareOpened,
+  AccountNotice,
 } from "../../src/application/ports/AccountEmails.js";
 import type {
   PushMessage,
@@ -32,6 +33,7 @@ export class FakeEmails implements AccountEmails {
   readonly changed: { to: EmailRecipient; at: Date }[] = [];
   readonly reminders: { to: EmailRecipient; alert: ReminderAlert }[] = [];
   readonly shareOpened: { to: EmailRecipient; opened: ShareOpened }[] = [];
+  readonly notices: { to: EmailRecipient; notice: AccountNotice }[] = [];
 
   async sendPasswordResetCode(to: EmailRecipient, code: string) {
     this.codes.push({ to, code });
@@ -57,7 +59,12 @@ export class FakeEmails implements AccountEmails {
     this.shareOpened.push({ to, opened });
   }
 
+  async sendAccountNotice(to: EmailRecipient, notice: AccountNotice) {
+    this.notices.push({ to, notice });
+  }
+
   clear() {
+    this.notices.length = 0;
     this.shareOpened.length = 0;
     this.reminders.length = 0;
     this.codes.length = 0;

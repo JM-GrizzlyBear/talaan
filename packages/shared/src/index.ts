@@ -14,3 +14,4 @@ export * from "./labs/index.js";
 export * from "./medical/index.js";
 export * from "./shares/index.js";
 export * from "./search/index.js";
+export * from "./account/index.js";

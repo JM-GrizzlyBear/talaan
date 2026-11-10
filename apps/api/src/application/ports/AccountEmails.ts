@@ -46,6 +46,24 @@ export interface ShareOpened {
   openedAt: Date;
 }
 
+// About the account itself: deleting, coming back, downloading, and family
+// whose sharing ended because of it
+export type AccountNotice =
+  // Deleting suspended it; deleted on this date unless they sign in
+  | { kind: "suspended"; deleteAfter: Date }
+  // About 6 months later
+  | { kind: "stillSuspended"; deleteAfter: Date }
+  // A week before
+  | { kind: "deletingSoon"; deleteAfter: Date }
+  | { kind: "deleted" }
+  // Signed in while suspended
+  | { kind: "reactivated" }
+  | { kind: "exported"; at: Date; device: string }
+  // To family: this person's records are no longer shared with you
+  | { kind: "sharingEnded"; ownerName: string; forGood: boolean }
+  // To someone who shared with this person: they deleted their account
+  | { kind: "memberLeft"; memberName: string };
+
 // The emails about someone's account. The use cases don't know how email is sent.
 export interface AccountEmails {
   sendPasswordResetCode(to: EmailRecipient, code: string): Promise<void>;
@@ -62,4 +80,5 @@ export interface AccountEmails {
   sendPasswordChanged(to: EmailRecipient, changedAt: Date): Promise<void>;
   sendReminderAlert(to: EmailRecipient, alert: ReminderAlert): Promise<void>;
   sendShareOpened(to: EmailRecipient, opened: ShareOpened): Promise<void>;
+  sendAccountNotice(to: EmailRecipient, notice: AccountNotice): Promise<void>;
 }

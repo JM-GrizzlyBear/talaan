@@ -30,6 +30,8 @@ export function authRoutes(deps: {
   registerUser: RegisterUser;
   logInUser: LogInUser;
   getCurrentUser: GetCurrentUser;
+  // A suspended account comes back when its owner signs in
+  welcomeBack: (userId: string) => Promise<boolean>;
   unlockSession: UnlockSession;
   clock: Clock;
   // Slows down password guessing (per visitor)
@@ -58,7 +60,8 @@ export function authRoutes(deps: {
     });
     if (result.kind === "signedIn") {
       await startSession(req, result.user, now());
-      res.json({ twoStep: false, user: userJson(result.user) });
+      const welcomeBack = await deps.welcomeBack(result.user.id);
+      res.json({ twoStep: false, user: userJson(result.user), welcomeBack });
       return;
     }
     await startPendingSignIn(req, result.user.id, now());

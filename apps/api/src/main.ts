@@ -72,6 +72,20 @@ void emptyOldTrash();
 const trashTimer = setInterval(emptyOldTrash, 60 * 60 * 1000);
 trashTimer.unref();
 
+// Suspended accounts: the 6-month and week-before emails, and deleting those
+// suspended for a year. At start, then every hour.
+async function deleteOldAccounts() {
+  try {
+    const deleted = await app.runAccountDeletions();
+    if (deleted > 0) console.log(`Deleted ${deleted} suspended accounts`);
+  } catch (error) {
+    console.error("Couldn't check suspended accounts:", error);
+  }
+}
+void deleteOldAccounts();
+const accountTimer = setInterval(deleteOldAccounts, 60 * 60 * 1000);
+accountTimer.unref();
+
 // Reminder alerts that are due go out every minute. On Render's free plan the
 // server sleeps after 15 minutes without visits, so something has to visit
 // it (README → "Reminders and alerts"); it catches up on waking.
@@ -93,6 +107,7 @@ alertTimer.unref();
 
 async function shutDown() {
   clearInterval(trashTimer);
+  clearInterval(accountTimer);
   clearInterval(alertTimer);
   server.close();
   await pool.end();
