@@ -9,6 +9,7 @@ import {
   useCreateRecord,
   useUpdateRecord,
 } from "../../../../application/records/useRecords";
+import { uploadRecordFile } from "../../../../infrastructure/api/filesApi";
 import { errorMessage, fieldError } from "../../../format/errorMessage";
 import { BackLink } from "../../ui/BackLink";
 import { ErrorAlert } from "../../ui/ErrorAlert";
@@ -18,6 +19,7 @@ import { AboutSection } from "./AboutSection";
 import { BillingSection } from "./BillingSection";
 import { ImagingSection } from "./ImagingSection";
 import { KeptInSection } from "./KeptInSection";
+import { StartFromPhoto } from "./StartFromPhoto";
 import { LabResultsSection } from "./LabResultsSection";
 import { MedicinesSection } from "./MedicinesSection";
 import { TypePicker } from "./TypePicker";
@@ -44,6 +46,9 @@ export function RecordForm({
 }) {
   const [form, setForm] = useState(initial);
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
+  // Photos read into the form: added to the record once it's saved
+  const [pending, setPending] = useState<File[]>([]);
+  const [adding, setAdding] = useState(false);
   const create = useCreateRecord();
   const update = useUpdateRecord();
   const save = record ? update : create;
@@ -79,7 +84,22 @@ export function RecordForm({
       const saved = record
         ? await update.mutateAsync({ id: record.id, fields })
         : await create.mutateAsync({ ownerId: account.ownerId, fields });
-      navigate(`/records/${saved.id}`, { replace: Boolean(record) });
+      let fileProblem: string | null = null;
+      if (pending.length > 0) {
+        setAdding(true);
+        for (const file of pending) {
+          try {
+            await uploadRecordFile(saved.id, file, () => {});
+          } catch (problem) {
+            fileProblem = errorMessage(problem);
+          }
+        }
+        setAdding(false);
+      }
+      navigate(`/records/${saved.id}`, {
+        replace: Boolean(record),
+        state: fileProblem ? { fileProblem } : undefined,
+      });
     } catch {
       // Shown from save.error
     }
@@ -116,6 +136,17 @@ export function RecordForm({
             }
           />
         )}
+
+        <StartFromPhoto
+          form={form}
+          onForm={(next) => {
+            setForm(next);
+            setLocalErrors({});
+          }}
+          recordId={record?.id}
+          pending={pending}
+          onPending={setPending}
+        />
 
         <TypePicker form={form} set={set} error={error} />
 
@@ -180,14 +211,16 @@ export function RecordForm({
         <div className="flex flex-wrap gap-2">
           <button
             type="submit"
-            disabled={save.isPending}
+            disabled={save.isPending || adding}
             className={buttonPrimary}
           >
-            {save.isPending
-              ? "Saving…"
-              : record
-                ? "Save changes"
-                : "Save record"}
+            {adding
+              ? "Adding the photo…"
+              : save.isPending
+                ? "Saving…"
+                : record
+                  ? "Save changes"
+                  : "Save record"}
           </button>
           <Link to={backTo} className={buttonSecondary}>
             Cancel

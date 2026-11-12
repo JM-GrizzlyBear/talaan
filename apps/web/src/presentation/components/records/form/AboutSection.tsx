@@ -25,7 +25,7 @@ export function AboutSection({
         error={error("profileId")}
       />
       <TextField
-        label="Title"
+        label="Title (optional)"
         value={form.title}
         onChange={(value) => set("title", value)}
         maxLength={RECORD_LIMITS.title}

@@ -3,7 +3,7 @@ import {
   RECORD_TYPE_LABELS,
   type RecordInfo,
 } from "@talaan/shared";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import {
   useRecord,
   useRecordHistory,
@@ -46,6 +46,9 @@ function RecordView({ record }: { record: RecordInfo }) {
   const canManage = record.role === "owner" || record.role === "manage";
   const history = useRecordHistory(record.id);
   const navigate = useNavigate();
+  // A photo read into the new record that couldn't be added when saving
+  const fileProblem = (useLocation().state as { fileProblem?: string } | null)
+    ?.fileProblem;
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-10">
@@ -88,6 +91,11 @@ function RecordView({ record }: { record: RecordInfo }) {
         <TextSection id="notes-heading" title="Notes" text={record.notes} />
       )}
 
+      {fileProblem && (
+        <ErrorAlert
+          message={`The record was saved, but the photo couldn't be added (${fileProblem}). Add it again below.`}
+        />
+      )}
       <RecordFilesSection
         recordId={record.id}
         canChange={canManage}
