@@ -28,6 +28,8 @@ declare module "express-session" {
     passkeyChallenge: string;
     passkeyPurpose: PasskeyPurpose;
     passkeyChallengeAt: number;
+    // The phone app's Face ID / fingerprint key (its hash)
+    deviceKeyHash: string;
   }
 }
 

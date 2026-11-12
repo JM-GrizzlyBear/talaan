@@ -23,7 +23,7 @@ _Talaan_ is Filipino for "record" or "list".
 - **Search everything** (done): records, lab values, places and QR codes, family and reminders, in English or Filipino.
 - **Security:** passwords and passkeys on the web; Face ID, fingerprint and PIN in the phone app; locking after being away; download or delete all data (Data Privacy Act of 2012, done).
 - **Theme colors** (done): pick a set of 2 to 4 colors (ready-made, or any Color Hunt palette), light or dark, and a bigger text size.
-- **Phone and tablet app:** Expo (iOS and Android), on the same API, with offline use.
+- **Phone and tablet app:** Expo (iOS and Android), on the same API, with offline use. Part 1 is in (records, Medical ID, settings, Face ID / fingerprint unlock, offline viewing); adding records with the camera, reminders as notifications and places come next.
 
 Talaan keeps records. It doesn't diagnose or give medical advice.
 
@@ -108,19 +108,24 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
 - **Lock after idle time**: the website locks after 5, 15, 30 or 60 minutes with nobody using it (15 by default). The password unlocks it; the API enforces the lock too.
 - **Security page**: passkeys (add, remove), two-step sign-in on or off, the lock time, lock now, change the password, remembered browsers (forget one or all), and "Sign out everywhere else"
 - **Protection**: separate rate limits for sign-in, unlock, password reset and codes per email; security headers (helmet); the same answers whether or not an email has an account
+- **Phone app, part 1** (`apps/mobile`, Expo for iPhone and Android; README → "The phone app")
+  - Sign in (with the email code), records per person with search and type filters, each record with its lab table, medicines, reading and photos, the Medical ID with call buttons and the emergency QR, and Settings (light or dark, text size, colors, saved to the account like on the website)
+  - **Locks** after the same time away as the website; unlocks with **Face ID, fingerprint or the phone's PIN**, or the password
+  - **Offline**: what you opened is kept on the phone, encrypted, and shown without internet with a note saying when it was saved. Signing out wipes it
 - **Protected pages**: signed-out visitors are sent to `/login` and come back after signing in
 - **One source of truth for forms**: the same zod rules check the form in the browser and the request in the API
 - **Tests**:
   - API unit tests
   - API integration tests on a separate `_test` database that's reset before every test
   - Website unit tests
+  - Phone app unit tests
 - **Docker**:
   - `docker compose up -d db` gives you Postgres while you code
   - `docker compose up --build` runs the whole app
 - **GitHub Actions**:
   - CI on every PR: types, lint, build, formatting, tests, Docker image
   - A manual **Clear database** workflow
-- Exact dependency versions only, ESLint, Prettier
+- Exact dependency versions only, each out for at least 2 weeks (`minimumReleaseAge` in `pnpm-workspace.yaml`), ESLint, Prettier
 
 ---
 
@@ -224,6 +229,17 @@ talaan/
 │   │       ├── composition/         # wiring per area (accounts, family, records), repositories, rate limits
 │   │       ├── buildApp.ts          # composition root (also used by the tests)
 │   │       └── main.ts              # starts the server
+│   ├── mobile/              # Expo phone app (iPhone and Android)
+│   │   ├── .env.example     # copy to apps/mobile/.env → EXPO_PUBLIC_API_URL
+│   │   ├── app/             # screens (expo-router): sign-in, home, records/, medical-id, settings
+│   │   └── src/
+│   │       ├── api/         # the API client (bearer token, ApiError), endpoints
+│   │       ├── auth/        # session, lock rules, lock screen, Face ID / fingerprint
+│   │       ├── storage/     # secure storage, encrypted offline copies (AES-GCM)
+│   │       ├── offline/     # useSavedQuery: online → save a copy; offline → show it
+│   │       ├── theme/       # the same colors as the website (from shared)
+│   │       ├── records/     # lab table, medicines, photos
+│   │       └── ui/          # shared pieces: Screen, Card, Button, Field, PersonPicker, QR
 │   └── web/                 # React website (Vite)
 │       ├── public/          # favicon and app icons (the Talaan logo); reader/ is copied there (not in git)
 │       ├── scripts/         # copy-reader-files.mjs: puts the lab reader's files in public/reader/
@@ -467,6 +483,8 @@ All routes start with `/api`. Errors always look like `{ "message": "…", "erro
 | POST   | `/api/auth/unlock`                     | yes    | `{ password }` → `{ user }`                                                                                                                              |
 | POST   | `/api/auth/unlock/passkey/options`     | yes    | The passkey prompt, only this person's passkeys                                                                                                          |
 | POST   | `/api/auth/unlock/passkey`             | yes    | `{ response }` → `{ user }`                                                                                                                              |
+| POST   | `/api/auth/device-key`                 | yes    | Phone app: 201 `{ deviceKey }`, kept on the phone; only its hash is stored in the session                                                                |
+| POST   | `/api/auth/unlock/device`              | yes    | Phone app: `{ deviceKey }` → `{ user }`, after Face ID / fingerprint on the phone                                                                        |
 | POST   | `/api/auth/logout`                     | no     | 204                                                                                                                                                      |
 | POST   | `/api/auth/password-reset/request`     | no     | `{ email }` → 202, the same answer for every email                                                                                                       |
 | POST   | `/api/auth/password-reset/check`       | no     | `{ email, code }` → 204                                                                                                                                  |
@@ -598,6 +616,43 @@ Each feature goes through the layers in the same order:
 
 ---
 
+## The phone app
+
+`apps/mobile` is an Expo app (SDK 58) for iPhone and Android, on the same API as the website.
+
+**Try it on your phone:** [docs/test-server.md](docs/test-server.md) sets up a free test server (Render + Neon) and opens the app in **Expo Go**.
+
+```bash
+cp apps/mobile/.env.example apps/mobile/.env   # EXPO_PUBLIC_API_URL=…
+pnpm --filter @talaan/mobile start             # scan the QR code with Expo Go
+```
+
+To use your own computer's API instead, put its Wi-Fi address in `EXPO_PUBLIC_API_URL` (like `http://192.168.1.20:4000`; `localhost` on the phone is the phone).
+
+### How the app signs in
+
+- The website uses a cookie. The app sends **`X-Talaan-App: 1`**, and the API answers with the session in an **`X-Session-Token`** header. The app keeps it in the phone's secure storage (Keychain / Keystore, this device only) and sends it back as `Authorization: Bearer …`. It's the same signed session as the cookie, so locking, signing out and "sign out everywhere" work the same.
+- **Face ID / fingerprint**: after signing in, the app asks for a **device key** (`POST /api/auth/device-key`) and keeps it in secure storage. When the app is locked, the phone checks your face or finger, then the app sends the key (`POST /api/auth/unlock/device`). The API keeps only a hash of the key, in that one session; signing out ends it. The face or fingerprint itself never leaves the phone.
+- Two-step sign-in asks for the email code every time on the app (no "remember this browser").
+- Passkeys and opening the app from links need a development build; they come with the app-store step.
+
+### Offline
+
+- Lists and records you open are saved on the phone, **encrypted** (AES-GCM, with a key in secure storage), and shown without internet with "No internet: showing what was saved on this phone (date)".
+- Unlocking without internet works with Face ID / fingerprint (the phone checks it), and the app stays read-only until it's back online.
+- Signing out deletes the saved copies, the key and the session.
+- Adding and editing offline come in a later step.
+
+### Checks
+
+```bash
+pnpm --filter @talaan/mobile check-types
+pnpm --filter @talaan/mobile test
+pnpm --filter @talaan/mobile bundle   # makes the iPhone and Android bundles, to see that they build
+```
+
+---
+
 ## Reading lab results from a photo or PDF
 
 Free and private: the picture never leaves the phone or computer.
@@ -625,6 +680,7 @@ turbo run test
 | API integration | `apps/api/test/integration`        | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, records, the Trash and the audit trail, uploads (through the local storage) and who can see them, places, QR labels and place photos, reminders and their alerts (sent once, muting, snoozes, catching up), Medical ID and the emergency page, doctor share links (PIN and waiting, device limit, stopping and ending, files, alerts, who can share), search (every kind, Filipino words, QR codes, shared accounts only, the Trash left out), colors and text size (saved with the account, checked), downloading your data (every part of the ZIP, only your own account) and deleting it (suspending hides everything, signing in brings it back, the 6-month and week-before emails, deleting after a year with files removed, deleting right away), sessions, rate limit, errors |
 | Shared unit     | `packages/shared/src/**/*.test.ts` | Reading lab lines: formats, units, ranges, urinalysis, doubts, no made-up ranges; reminder schedules (every kind of repeat, ends, Philippine time) and their wording; lab comparison (matching names, units, ranges, stats); Medical ID rules (PhilHealth, phones, limits) and helpers; share link rules (PIN, device limit, status); reading a record from a printout (dates as month/day/year, doctor, hospital, type and title, imaging, prescriptions, bills, vaccines, nothing found); themes (Color Hunt links, every set readable in light and dark); search (accents, word starts, Filipino words, ranking, highlighting, excerpts)                                                                                                                                                                                                                                                                           |
 | Website unit    | `apps/web/src/**/*.test.ts`        | The API client (`ApiError`), error messages, dates, PDF line grouping, table-line removal, adding read rows to the form, the places tree, fitting labels on paper, the reminder form, lab filters, the Medical ID form and lock screen content, checking what was read and putting it in the form, how long a share link lasts and how it reads                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Phone app unit  | `apps/mobile/src/**/*.test.ts`     | The app's API client (token in and out, locked, signed out, offline), when to lock on coming back, sealing and opening the offline copies, the theme colors                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 ### The test database
 

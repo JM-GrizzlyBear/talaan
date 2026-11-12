@@ -1,0 +1,9 @@
+.expo/
+.expo-export/
+dist/
+.env
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision

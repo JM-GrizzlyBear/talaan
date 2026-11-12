@@ -10,7 +10,13 @@ import type { GetCurrentUser } from "../../../application/user/GetCurrentUser.js
 import type { LogInUser } from "../../../application/user/LogInUser.js";
 import type { RegisterUser } from "../../../application/user/RegisterUser.js";
 import type { UnlockSession } from "../../../application/user/UnlockSession.js";
-import { NotLoggedInError } from "../../../domain/user/errors.js";
+import { randomBytes } from "node:crypto";
+import { z } from "zod";
+import {
+  DeviceKeyError,
+  NotLoggedInError,
+} from "../../../domain/user/errors.js";
+import { deviceKeyMatches, hashDeviceKey } from "../appSessions.js";
 import { userJson } from "../json/account.js";
 import { currentUserId, requireAuth } from "../middleware/requireAuth.js";
 import {
@@ -23,6 +29,8 @@ import {
   unlockSession,
 } from "../session.js";
 import { readTrustCookie } from "../trustCookie.js";
+
+const deviceUnlockSchema = z.object({ deviceKey: z.string().min(20).max(100) });
 
 // Signing up, signing in with a password, the idle lock, and signing out.
 // The emailed code is signInCodeRoutes; passkeys are passkeyAuthRoutes.
@@ -99,6 +107,25 @@ export function authRoutes(deps: {
       currentUserId(req),
       input.password,
     );
+    unlockSession(req, user, now());
+    res.json({ user: userJson(user) });
+  });
+
+  // The phone app: a key for unlocking with Face ID or a fingerprint. The
+  // phone keeps it behind its own lock; only the hash stays here.
+  router.post("/auth/device-key", requireAuth(deps.clock), (req, res) => {
+    const key = randomBytes(32).toString("base64url");
+    req.session.deviceKeyHash = hashDeviceKey(key);
+    res.status(201).json({ deviceKey: key });
+  });
+
+  router.post("/auth/unlock/device", deps.unlockLimit, async (req, res) => {
+    const { deviceKey } = deviceUnlockSchema.parse(req.body);
+    const userId = currentUserId(req);
+    if (!deviceKeyMatches(deviceKey, req.session.deviceKeyHash)) {
+      throw new DeviceKeyError();
+    }
+    const user = await deps.getCurrentUser.execute(userId);
     unlockSession(req, user, now());
     res.json({ user: userJson(user) });
   });

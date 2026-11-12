@@ -18,6 +18,10 @@ import { remindersModule } from "./composition/remindersModule.js";
 import { recordsModule } from "./composition/recordsModule.js";
 import { apiNotFound, errorHandler } from "./presentation/http/errorHandler.js";
 import { healthRoutes } from "./presentation/http/routes/healthRoutes.js";
+import {
+  bearerSession,
+  exposeSessionToken,
+} from "./presentation/http/appSessions.js";
 import { createSessionMiddleware } from "./presentation/http/session.js";
 
 export type { BuildAppOptions };
@@ -57,6 +61,8 @@ export function buildApp(options: BuildAppOptions) {
     }),
   );
   app.use(express.json({ limit: "100kb" }));
+  // The phone app: a bearer token instead of a cookie
+  app.use(bearerSession);
   app.use(
     createSessionMiddleware({
       pool: options.pool,
@@ -64,6 +70,7 @@ export function buildApp(options: BuildAppOptions) {
       secureCookie: options.secureCookie,
     }),
   );
+  app.use(exposeSessionToken(options.sessionSecret));
 
   app.use("/api", healthRoutes(options.pool));
   for (const router of [

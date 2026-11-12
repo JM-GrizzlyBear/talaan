@@ -21,6 +21,7 @@ import {
   NotLoggedInError,
   SessionLockedError,
   WrongPasswordError,
+  DeviceKeyError,
 } from "../../domain/user/errors.js";
 
 function send(
@@ -105,6 +106,10 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
       message: error.message,
       errors: error.field ? { [error.field]: [error.message] } : undefined,
     });
+    return;
+  }
+  if (error instanceof DeviceKeyError) {
+    send(res, 400, { message: error.message });
     return;
   }
   if (error instanceof ShareFormError) {
