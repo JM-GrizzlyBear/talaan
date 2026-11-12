@@ -1,5 +1,6 @@
 import {
   addPasskeySchema,
+  appearanceSchema,
   changePasswordSchema,
   securitySettingsSchema,
 } from "@talaan/shared";
@@ -10,6 +11,7 @@ import type { Clock } from "../../../application/ports/Clock.js";
 import type { TrustedBrowsers } from "../../../application/twoStep/TrustedBrowsers.js";
 import type { ChangePassword } from "../../../application/user/ChangePassword.js";
 import type { SignOutOtherSessions } from "../../../application/user/SignOutOtherSessions.js";
+import type { SaveAppearance } from "../../../application/user/SaveAppearance.js";
 import type { UpdateSecuritySettings } from "../../../application/user/UpdateSecuritySettings.js";
 import { currentUserId } from "../middleware/requireAuth.js";
 import { savePasskeyChallenge, takePasskeyChallenge } from "../session.js";
@@ -21,6 +23,7 @@ import { idParam } from "../params.js";
 export function accountRoutes(deps: {
   changePassword: ChangePassword;
   updateSecuritySettings: UpdateSecuritySettings;
+  saveAppearance: SaveAppearance;
   passkeyRegistration: PasskeyRegistration;
   managePasskeys: ManagePasskeys;
   trustedBrowsers: TrustedBrowsers;
@@ -53,6 +56,15 @@ export function accountRoutes(deps: {
       input,
     );
     req.session.lockAfterMinutes = user.lockAfterMinutes;
+    res.json({ user: userJson(user) });
+  });
+
+  // Colors, light or dark, text size
+  router.put("/account/appearance", async (req, res) => {
+    const user = await deps.saveAppearance.execute(
+      currentUserId(req),
+      appearanceSchema.parse(req.body),
+    );
     res.json({ user: userJson(user) });
   });
 

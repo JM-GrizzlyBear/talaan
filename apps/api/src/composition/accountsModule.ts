@@ -14,6 +14,7 @@ import { LogInUser } from "../application/user/LogInUser.js";
 import { RegisterUser } from "../application/user/RegisterUser.js";
 import { SignOutOtherSessions } from "../application/user/SignOutOtherSessions.js";
 import { UnlockSession } from "../application/user/UnlockSession.js";
+import { SaveAppearance } from "../application/user/SaveAppearance.js";
 import { UpdateSecuritySettings } from "../application/user/UpdateSecuritySettings.js";
 import { accountRoutes } from "../presentation/http/routes/accountRoutes.js";
 import { authRoutes } from "../presentation/http/routes/authRoutes.js";
@@ -125,6 +126,7 @@ export function accountsModule(
         emails,
       ),
       updateSecuritySettings: new UpdateSecuritySettings(users, passwordHasher),
+      saveAppearance: new SaveAppearance(users),
       passkeyRegistration: new PasskeyRegistration(
         users,
         repos.passkeys,

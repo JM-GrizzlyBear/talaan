@@ -1,3 +1,4 @@
+import { DEFAULT_APPEARANCE } from "@talaan/shared";
 import { describe, expect, it } from "vitest";
 import {
   isCodeUsable,
@@ -33,6 +34,7 @@ describe("user rules", () => {
       lockAfterMinutes: 15,
       twoStepEnabled: true,
       passkeyCount: 0,
+      appearance: DEFAULT_APPEARANCE,
       privacyConsentAt: NOW,
       passwordChangedAt: null,
       createdAt: NOW,

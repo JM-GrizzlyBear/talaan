@@ -6,6 +6,7 @@ import {
   Link2,
   type LucideIcon,
   Package,
+  Palette,
   Search,
   Users,
 } from "lucide-react";
@@ -62,6 +63,12 @@ const PLACES: { to: string; title: string; text: string; icon: LucideIcon }[] =
       title: "Family",
       text: "Share with family, and keep records for the kids and lolo",
       icon: Users,
+    },
+    {
+      to: "/settings/appearance",
+      title: "Colors and text size",
+      text: "Light or dark, your own colors, bigger text",
+      icon: Palette,
     },
   ];
 

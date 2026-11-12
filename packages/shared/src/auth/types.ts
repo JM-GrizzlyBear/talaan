@@ -1,3 +1,4 @@
+import type { Appearance } from "../appearance/schema.js";
 import type { LockAfterMinutes } from "./constants.js";
 
 // What the API sends back about the signed-in user (never the password hash)
@@ -11,6 +12,8 @@ export interface PublicUser {
   // Asks for a code from email on browsers that aren't remembered
   twoStepEnabled: boolean;
   passkeyCount: number;
+  // Colors, light or dark, text size (the same on every device)
+  appearance: Appearance;
   createdAt: string;
 }
 

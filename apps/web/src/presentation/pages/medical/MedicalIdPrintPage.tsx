@@ -94,7 +94,7 @@ export function MedicalIdPrintPage() {
           {card ? (
             <WalletCard medicalId={medicalId.data} philhealth={philhealth} />
           ) : (
-            <div className="bg-white p-6 text-black shadow-md ring-1 ring-edge print:p-0 print:shadow-none print:ring-0">
+            <div className="paper bg-white p-6 text-black shadow-md ring-1 ring-edge print:p-0 print:shadow-none print:ring-0">
               <header className="mb-4 flex items-end justify-between gap-4 border-b-2 border-black pb-2">
                 <h1 className="text-xl font-bold">
                   Medical ID: {medicalId.data.personName}

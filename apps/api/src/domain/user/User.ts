@@ -1,4 +1,4 @@
-import type { LockAfterMinutes } from "@talaan/shared";
+import type { Appearance, LockAfterMinutes } from "@talaan/shared";
 
 export interface User {
   id: string;
@@ -13,6 +13,8 @@ export interface User {
   twoStepEnabled: boolean;
   // How many passkeys the person has added
   passkeyCount: number;
+  // Colors, light or dark, text size
+  appearance: Appearance;
   privacyConsentAt: Date;
   passwordChangedAt: Date | null;
   createdAt: Date;
@@ -30,6 +32,7 @@ export type SafeUser = Pick<
   | "lockAfterMinutes"
   | "twoStepEnabled"
   | "passkeyCount"
+  | "appearance"
   | "createdAt"
 >;
 
@@ -43,6 +46,7 @@ export function toSafeUser(user: User): SafeUser {
     lockAfterMinutes: user.lockAfterMinutes,
     twoStepEnabled: user.twoStepEnabled,
     passkeyCount: user.passkeyCount,
+    appearance: user.appearance,
     createdAt: user.createdAt,
   };
 }

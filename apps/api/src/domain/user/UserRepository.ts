@@ -1,4 +1,4 @@
-import type { LockAfterMinutes } from "@talaan/shared";
+import type { Appearance, LockAfterMinutes } from "@talaan/shared";
 import type { User } from "./User.js";
 
 export interface NewUser {
@@ -19,6 +19,7 @@ export interface UserRepository {
     passwordHash: string,
     changedAt: Date,
   ): Promise<void>;
+  updateAppearance(id: string, appearance: Appearance): Promise<User>;
   updateSecurity(
     id: string,
     settings: { lockAfterMinutes?: LockAfterMinutes; twoStepEnabled?: boolean },

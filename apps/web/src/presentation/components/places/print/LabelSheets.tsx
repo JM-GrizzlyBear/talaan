@@ -46,7 +46,7 @@ export function LabelSheets({
           <div
             key={index}
             aria-label={`Sheet ${index + 1} of ${sheets.length}`}
-            className="relative shrink-0 bg-white shadow-md ring-1 ring-edge print:break-after-page print:shadow-none print:ring-0"
+            className="paper relative shrink-0 bg-white shadow-md ring-1 ring-edge print:break-after-page print:shadow-none print:ring-0"
             style={{ width: `${paper.width}mm`, height: `${paper.height}mm` }}
           >
             <div

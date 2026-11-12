@@ -19,6 +19,7 @@ export function userJson(user: SafeUser): PublicUser {
     lockAfterMinutes: user.lockAfterMinutes,
     twoStepEnabled: user.twoStepEnabled,
     passkeyCount: user.passkeyCount,
+    appearance: user.appearance,
     createdAt: user.createdAt.toISOString(),
   };
 }

@@ -13,7 +13,7 @@ const CARD = { width: 85.6, height: 54 };
 
 const Face = ({ children }: { children: React.ReactNode }) => (
   <div
-    className="relative flex flex-col overflow-hidden bg-white text-black"
+    className="paper relative flex flex-col overflow-hidden bg-white text-black"
     style={{
       width: `${CARD.width}mm`,
       height: `${CARD.height}mm`,
