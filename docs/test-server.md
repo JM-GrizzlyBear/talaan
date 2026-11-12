@@ -106,12 +106,14 @@ In Expo Go, Face ID asks for permission as "Expo Go" rather than "Talaan"; the r
 
 ## Something wrong?
 
-| What you see                                     | Try                                                                                                                                                                |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| "Couldn't reach Talaan…"                         | Open `/api/health` in the phone's browser. Wait a minute if the server was asleep. Check `EXPO_PUBLIC_API_URL`, then restart `start` (it's read when Expo starts). |
-| Expo Go says the project is for another SDK      | Update Expo Go from the store.                                                                                                                                     |
-| The QR code doesn't open anything                | Same Wi-Fi, or use `-- --tunnel`.                                                                                                                                  |
-| Render build fails                               | Render → the service → **Logs**. A database error usually means `DATABASE_URL` is wrong.                                                                           |
-| Signing in doesn't stick (asked again each time) | Check that `TRUST_PROXY` is `1` and `APP_URL` is the Render address.                                                                                               |
+| What you see                                                                       | Try                                                                                                                                                                |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| "Couldn't reach Talaan…"                                                           | Open `/api/health` in the phone's browser. Wait a minute if the server was asleep. Check `EXPO_PUBLIC_API_URL`, then restart `start` (it's read when Expo starts). |
+| Expo Go says the project is for another SDK                                        | Update Expo Go from the store.                                                                                                                                     |
+| A red screen: `undefined is not a function` in `theme.ts` (or another shared rule) | The shared package was built before it had that rule. `start` now builds it first; if it still shows, run `pnpm --filter @talaan/mobile start -- --clear` once.    |
+| "An update for expo is available" in the terminal                                  | Safe to ignore. Talaan only uses versions that have been out for 2 weeks; they're updated on purpose, in their own PR.                                             |
+| The QR code doesn't open anything                                                  | Same Wi-Fi, or use `-- --tunnel`.                                                                                                                                  |
+| Render build fails                                                                 | Render → the service → **Logs**. A database error usually means `DATABASE_URL` is wrong.                                                                           |
+| Signing in doesn't stick (asked again each time)                                   | Check that `TRUST_PROXY` is `1` and `APP_URL` is the Render address.                                                                                               |
 
 Clearing the test database: GitHub → Actions → **Clear database** (README → "Clearing a database"), with the Neon URL as the secret.

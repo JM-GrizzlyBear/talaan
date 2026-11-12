@@ -4,13 +4,14 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
+    "build:shared": "pnpm --filter @talaan/shared build",
+    "start": "pnpm run build:shared && expo start",
+    "android": "pnpm run build:shared && expo start --android",
+    "ios": "pnpm run build:shared && expo start --ios",
+    "web": "pnpm run build:shared && expo start --web",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
-    "bundle": "expo export --platform android --platform ios --output-dir .expo-export"
+    "bundle": "pnpm run build:shared && expo export --platform android --platform ios --output-dir .expo-export"
   },
   "dependencies": {
     "@expo/metro-runtime": "58.0.15",
