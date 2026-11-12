@@ -1,4 +1,9 @@
-import type { RecordFieldsInput, RecordInfo, RecordType } from "@talaan/shared";
+import {
+  RECORD_TYPE_LABELS,
+  type RecordFieldsInput,
+  type RecordInfo,
+  type RecordType,
+} from "@talaan/shared";
 
 // What the form holds while someone types: every box as text
 export interface LabRow {
@@ -157,7 +162,8 @@ export function fieldsFromForm(form: RecordFormState): {
   }
   const base = {
     profileId: form.profileId || null,
-    title: form.title,
+    // Left empty (it couldn't be read, or isn't known yet): named by its type
+    title: form.title.trim() || RECORD_TYPE_LABELS[form.type],
     recordDate: form.recordDate,
     doctor: form.doctor,
     facility: form.facility,

@@ -5,3 +5,4 @@ export * from "./doubts.js";
 export * from "./readLabLines.js";
 export * from "./tests/index.js";
 export * from "./types.js";
+export * from "./details/index.js";
