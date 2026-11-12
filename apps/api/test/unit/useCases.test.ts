@@ -1,3 +1,4 @@
+import { DEFAULT_APPEARANCE } from "@talaan/shared";
 import { describe, expect, it } from "vitest";
 import { CheckResetCode } from "../../src/application/passwordReset/CheckResetCode.js";
 import { RequestPasswordReset } from "../../src/application/passwordReset/RequestPasswordReset.js";
@@ -47,6 +48,7 @@ function fakeUsers(existing: User[] = []): UserRepository & { all: User[] } {
         lockAfterMinutes: 15,
         twoStepEnabled: true,
         passkeyCount: 0,
+        appearance: DEFAULT_APPEARANCE,
         passwordChangedAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -55,6 +57,11 @@ function fakeUsers(existing: User[] = []): UserRepository & { all: User[] } {
       return created;
     },
     updatePassword: async () => {},
+    updateAppearance: async (id, appearance) => {
+      const user = all.find((u) => u.id === id)!;
+      user.appearance = appearance;
+      return user;
+    },
     updateSecurity: async (id, settings) => {
       const user = all.find((u) => u.id === id)!;
       if (settings.lockAfterMinutes !== undefined)
@@ -91,6 +98,7 @@ const maria: User = {
   lockAfterMinutes: 15,
   twoStepEnabled: false,
   passkeyCount: 0,
+  appearance: DEFAULT_APPEARANCE,
   privacyConsentAt: new Date(),
   passwordChangedAt: null,
   createdAt: new Date(),

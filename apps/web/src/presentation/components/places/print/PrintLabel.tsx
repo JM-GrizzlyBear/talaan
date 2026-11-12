@@ -27,7 +27,7 @@ export function PrintLabel({ item, size }: { item: LabelItem; size: Size }) {
 
   return (
     <div
-      className="flex items-center overflow-hidden text-black"
+      className="paper flex items-center overflow-hidden bg-white text-black"
       style={{
         width: `${size.width}mm`,
         height: `${size.height}mm`,

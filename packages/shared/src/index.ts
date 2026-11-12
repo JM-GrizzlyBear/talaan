@@ -15,3 +15,4 @@ export * from "./medical/index.js";
 export * from "./shares/index.js";
 export * from "./search/index.js";
 export * from "./account/index.js";
+export * from "./appearance/index.js";

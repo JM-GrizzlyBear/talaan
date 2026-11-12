@@ -55,7 +55,7 @@ export function LabPrintPages({
     <div ref={boxRef} className="w-full">
       <style>{`@page { size: ${page.width}mm ${page.height}mm; margin: ${MARGIN}mm; }`}</style>
       <div
-        className="bg-white text-black shadow-md ring-1 ring-edge print:w-auto! print:p-0! print:shadow-none print:ring-0 print:[zoom:1]"
+        className="paper bg-white text-black shadow-md ring-1 ring-edge print:w-auto! print:p-0! print:shadow-none print:ring-0 print:[zoom:1]"
         style={{
           width: `${page.width}mm`,
           minHeight: `${page.height}mm`,

@@ -27,7 +27,9 @@ import { ReminderFormPage } from "./presentation/pages/reminders/ReminderFormPag
 import { ReminderPage } from "./presentation/pages/reminders/ReminderPage";
 import { RemindersPage } from "./presentation/pages/reminders/RemindersPage";
 import { AlertSettingsPage } from "./presentation/pages/settings/AlertSettingsPage";
+import { useAppearanceSync } from "./application/appearance/useAppearance";
 import { GoodbyePage } from "./presentation/pages/GoodbyePage";
+import { AppearancePage } from "./presentation/pages/settings/AppearancePage";
 import { YourDataPage } from "./presentation/pages/settings/YourDataPage";
 import { SearchPage } from "./presentation/pages/search/SearchPage";
 import { SharedPage } from "./presentation/pages/shares/SharedPage";
@@ -38,6 +40,7 @@ import { SecurityPage } from "./presentation/pages/settings/SecurityPage";
 import { TrashPage } from "./presentation/pages/records/TrashPage";
 
 export function App() {
+  useAppearanceSync();
   return (
     <>
       <AppHeader />
@@ -83,6 +86,7 @@ export function App() {
           <Route path="/settings/security" element={<SecurityPage />} />
           <Route path="/settings/alerts" element={<AlertSettingsPage />} />
           <Route path="/settings/data" element={<YourDataPage />} />
+          <Route path="/settings/appearance" element={<AppearancePage />} />
           <Route path="/reminders" element={<RemindersPage />} />
           <Route path="/reminders/new" element={<ReminderFormPage />} />
           <Route path="/reminders/:id" element={<ReminderPage />} />

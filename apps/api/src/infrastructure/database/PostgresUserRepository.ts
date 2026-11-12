@@ -1,4 +1,9 @@
-import type { LockAfterMinutes } from "@talaan/shared";
+import {
+  type Appearance,
+  appearanceSchema,
+  DEFAULT_APPEARANCE,
+  type LockAfterMinutes,
+} from "@talaan/shared";
 import type { Pool } from "pg";
 import type { User } from "../../domain/user/User.js";
 import type {
@@ -16,6 +21,7 @@ interface UserRow {
   lock_after_minutes: number;
   two_step_enabled: boolean;
   passkey_count: number;
+  appearance: unknown;
   privacy_consent_at: Date;
   password_changed_at: Date | null;
   created_at: Date;
@@ -25,7 +31,7 @@ interface UserRow {
 // Every user column, plus how many passkeys they have
 const SELECT = `
   select u.id, u.first_name, u.middle_name, u.last_name, u.email, u.password_hash,
-         u.lock_after_minutes, u.two_step_enabled, u.privacy_consent_at,
+         u.lock_after_minutes, u.two_step_enabled, u.appearance, u.privacy_consent_at,
          u.password_changed_at, u.created_at, u.updated_at,
          (select count(*) from passkeys p where p.user_id = u.id)::int as passkey_count
     from users u`;
@@ -41,6 +47,10 @@ function toUser(row: UserRow): User {
     lockAfterMinutes: row.lock_after_minutes as LockAfterMinutes,
     twoStepEnabled: row.two_step_enabled,
     passkeyCount: row.passkey_count,
+    // A saved look that no longer fits (a removed color set) falls back
+    appearance:
+      appearanceSchema.safeParse(row.appearance ?? {}).data ??
+      DEFAULT_APPEARANCE,
     privacyConsentAt: row.privacy_consent_at,
     passwordChangedAt: row.password_changed_at,
     createdAt: row.created_at,
@@ -97,6 +107,14 @@ export class PostgresUserRepository implements UserRepository {
         where id = $1`,
       [id, passwordHash, changedAt],
     );
+  }
+
+  async updateAppearance(id: string, appearance: Appearance) {
+    await this.pool.query(
+      "update users set appearance = $2, updated_at = now() where id = $1",
+      [id, JSON.stringify(appearance)],
+    );
+    return await this.mustFind(id);
   }
 
   async updateSecurity(

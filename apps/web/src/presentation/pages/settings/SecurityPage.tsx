@@ -34,6 +34,12 @@ export function SecurityPage() {
         >
           Download or delete your data
         </Link>
+        <Link
+          to="/settings/appearance"
+          className="self-start font-semibold text-brand underline"
+        >
+          Colors and text size
+        </Link>
       </section>
     </main>
   );
