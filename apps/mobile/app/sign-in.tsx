@@ -4,7 +4,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { fieldError, messageOf } from "../src/api/ApiError";
 import { useSession } from "../src/auth/SessionProvider";
-import { WEB_URL } from "../src/config";
+import { API_URL, WEB_URL } from "../src/config";
 import { useTheme } from "../src/theme/ThemeProvider";
 import { Button, Field, Notice, Txt } from "../src/ui/kit";
 
@@ -100,6 +100,10 @@ export default function SignIn() {
           >
             Create an account
           </Button>
+          {/* Which server the app uses, to check apps/mobile/.env */}
+          <Txt tone="small" muted style={{ textAlign: "center" }}>
+            Server: {API_URL.replace(/^https?:\/\//, "")}
+          </Txt>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

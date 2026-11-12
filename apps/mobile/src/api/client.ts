@@ -15,7 +15,12 @@ export interface ClientOptions {
   // 401: signed out (the session ended)
   onSignedOut: () => void;
   fetch?: typeof fetch;
+  // How long to wait for an answer. The free test server can take about a
+  // minute to wake up, so a little longer than that
+  timeoutMs?: number;
 }
+
+export const TIMEOUT_MS = 75_000;
 
 export function createClient(options: ClientOptions) {
   const doFetch = options.fetch ?? fetch;
@@ -30,6 +35,12 @@ export function createClient(options: ClientOptions) {
     if (token) headers.Authorization = `Bearer ${token}`;
     if (body !== undefined) headers["Content-Type"] = "application/json";
 
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, options.timeoutMs ?? TIMEOUT_MS);
     let response: Response;
     try {
       response = await doFetch(`${options.baseUrl}${path}`, {
@@ -38,12 +49,17 @@ export function createClient(options: ClientOptions) {
         body: body === undefined ? undefined : JSON.stringify(body),
         // Never a cookie: only the token
         credentials: "omit",
+        signal: controller.signal,
       });
     } catch {
       throw new ApiError(
         0,
-        "Couldn't reach Talaan. Check your connection, or try again in a minute (the test server may be waking up).",
+        timedOut
+          ? "Talaan took too long to answer. Please try again."
+          : "Couldn't reach Talaan. Check your connection, or try again in a minute (the test server may be waking up).",
       );
+    } finally {
+      clearTimeout(timer);
     }
 
     const newToken = response.headers.get("x-session-token");

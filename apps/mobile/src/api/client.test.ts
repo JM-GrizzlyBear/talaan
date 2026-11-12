@@ -105,6 +105,29 @@ describe("the app's API client", () => {
     expect(error.offline).toBe(true);
   });
 
+  it("stops waiting when the server doesn't answer", async () => {
+    const client = createClient({
+      baseUrl: "https://api.example.com",
+      getToken: () => null,
+      setToken: () => {},
+      onLocked: () => {},
+      onSignedOut: () => {},
+      timeoutMs: 20,
+      // Never answers, until it's told to stop
+      fetch: ((_url: string, init: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () =>
+            reject(new DOMException("Aborted", "AbortError")),
+          );
+        })) as unknown as typeof fetch,
+    });
+    const error = (await client
+      .request("/api/auth/login", "POST", {})
+      .catch((e: unknown) => e)) as ApiError;
+    expect(error.offline).toBe(true);
+    expect(error.message).toContain("took too long");
+  });
+
   it("gives pictures the token as a header", () => {
     const t = setup({});
     expect(t.client.fileSource("/api/files/1/content?variant=thumb")).toEqual({
