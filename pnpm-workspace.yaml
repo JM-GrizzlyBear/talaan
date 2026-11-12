@@ -7,3 +7,5 @@ allowBuilds:
   tesseract.js: false
 # Exact versions only: pnpm add saves "1.2.3", never "^1.2.3"
 saveExact: true
+# Every package, direct or not, must have been out for 2 weeks (in minutes)
+minimumReleaseAge: 20160

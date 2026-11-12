@@ -36,3 +36,13 @@ export class WrongPasswordError extends Error {
     this.name = "WrongPasswordError";
   }
 }
+
+// The phone's Face ID / fingerprint key wasn't the one made for this session
+export class DeviceKeyError extends Error {
+  constructor() {
+    super(
+      "Unlocking with Face ID or fingerprint didn't work. Use your password.",
+    );
+    this.name = "DeviceKeyError";
+  }
+}

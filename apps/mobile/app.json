@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Talaan",
+    "slug": "talaan",
+    "scheme": "talaan",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.talaan",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Talaan uses Face ID to unlock your family's health records."
+      }
+    },
+    "android": {
+      "package": "app.talaan",
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Talaan uses Face ID to unlock your family's health records."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "web": {
+      "output": "single",
+      "bundler": "metro"
+    }
+  }
+}
