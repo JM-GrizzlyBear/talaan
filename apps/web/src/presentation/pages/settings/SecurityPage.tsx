@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { useCurrentUser } from "../../../application/auth/useAuth";
 import { ChangePasswordForm } from "../../components/security/ChangePasswordForm";
 import { LockSection } from "../../components/security/LockSection";
@@ -21,6 +22,19 @@ export function SecurityPage() {
 
       <ChangePasswordForm />
       <SignedInSection />
+
+      <section className="flex flex-col gap-2 rounded-2xl border border-edge bg-white p-5">
+        <h2 className="text-xl font-bold">Your data</h2>
+        <p className="text-muted">
+          Download everything in your account, or delete it.
+        </p>
+        <Link
+          to="/settings/data"
+          className="self-start font-semibold text-brand underline"
+        >
+          Download or delete your data
+        </Link>
+      </section>
     </main>
   );
 }

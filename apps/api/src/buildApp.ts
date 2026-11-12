@@ -10,6 +10,10 @@ import { medicalModule } from "./composition/medicalModule.js";
 import { placesModule } from "./composition/placesModule.js";
 import { searchModule } from "./composition/searchModule.js";
 import { sharesModule } from "./composition/sharesModule.js";
+import {
+  makeAccountDeletion,
+  yourDataModule,
+} from "./composition/yourDataModule.js";
 import { remindersModule } from "./composition/remindersModule.js";
 import { recordsModule } from "./composition/recordsModule.js";
 import { apiNotFound, errorHandler } from "./presentation/http/errorHandler.js";
@@ -23,7 +27,8 @@ export type { BuildAppOptions };
 // tests build their own copy.
 export function buildApp(options: BuildAppOptions) {
   const context = createContext(options);
-  const accounts = accountsModule(context);
+  const deletion = makeAccountDeletion(context);
+  const accounts = accountsModule(context, deletion);
   const family = familyModule(context);
   const records = recordsModule(context, family.members);
   const places = placesModule(context, records.access);
@@ -31,6 +36,7 @@ export function buildApp(options: BuildAppOptions) {
   const medical = medicalModule(context, records.access);
   const shares = sharesModule(context, records.access);
   const search = searchModule(context, records.access);
+  const yourData = yourDataModule(context, records.access, deletion);
 
   const app = express();
   app.disable("x-powered-by");
@@ -69,6 +75,7 @@ export function buildApp(options: BuildAppOptions) {
     ...medical.routers,
     ...shares.routers,
     ...search.routers,
+    ...yourData.routers,
   ]) {
     app.use("/api", router);
   }
@@ -91,5 +98,8 @@ export function buildApp(options: BuildAppOptions) {
     purgeExpiredTrash: () => records.trash.purgeExpired(),
     // Called every minute by main.ts (tests call it themselves)
     sendDueReminderAlerts: () => reminders.alerts.sendDue(),
+    // main.ts runs this every hour: emails to suspended accounts, and deleting
+    // those suspended for a year
+    runAccountDeletions: () => deletion.runDue(),
   });
 }

@@ -59,7 +59,11 @@ export function useUpdateSession() {
   };
 }
 
-const signedIn = (user: PublicUser): SessionInfo => ({ user, locked: false });
+const signedIn = (user: PublicUser, welcomeBack = false): SessionInfo => ({
+  user,
+  locked: false,
+  welcomeBack,
+});
 
 export function useRegister() {
   const setSession = useSetSession();
@@ -75,7 +79,9 @@ export function useLogIn() {
   return useMutation({
     mutationFn: async (input: LoginInput) => await logIn(input),
     onSuccess: (result) => {
-      if (!result.twoStep) setSession(signedIn(result.user));
+      if (!result.twoStep) {
+        setSession(signedIn(result.user, result.welcomeBack));
+      }
     },
   });
 }
@@ -84,7 +90,8 @@ export function useSignInCode() {
   const setSession = useSetSession();
   return useMutation({
     mutationFn: async (input: SignInCodeInput) => await submitSignInCode(input),
-    onSuccess: (user) => setSession(signedIn(user)),
+    onSuccess: (result) =>
+      setSession(signedIn(result.user, result.welcomeBack)),
   });
 }
 
@@ -96,8 +103,15 @@ export function usePasskeySignIn() {
   const setSession = useSetSession();
   return useMutation({
     mutationFn: async () => await signInWithPasskey(),
-    onSuccess: (user) => setSession(signedIn(user)),
+    onSuccess: (result) =>
+      setSession(signedIn(result.user, result.welcomeBack)),
   });
+}
+
+// Signed out by the API itself (deleting the account)
+export function useSignedOut() {
+  const setSession = useSetSession();
+  return () => setSession(null);
 }
 
 export function useLogOut() {

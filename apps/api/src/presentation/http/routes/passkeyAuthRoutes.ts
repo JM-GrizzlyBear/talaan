@@ -14,6 +14,8 @@ import {
 // Signing in and unlocking with a passkey (Face ID, a fingerprint, the
 // device PIN). Adding and removing passkeys is in accountRoutes.
 export function passkeyAuthRoutes(deps: {
+  // A suspended account comes back when its owner signs in
+  welcomeBack: (userId: string) => Promise<boolean>;
   passkeySignIn: PasskeySignIn;
   clock: Clock;
   // Per visitor
@@ -39,7 +41,8 @@ export function passkeyAuthRoutes(deps: {
       expectedChallenge,
     });
     await startSession(req, user, now());
-    res.json({ user: userJson(user) });
+    const welcomeBack = await deps.welcomeBack(user.id);
+    res.json({ user: userJson(user), welcomeBack });
   });
 
   // Unlock with a passkey instead of the password

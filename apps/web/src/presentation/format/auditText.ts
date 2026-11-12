@@ -69,6 +69,12 @@ export function auditSentence(entry: AuditEntryInfo) {
       return `${who} stopped the link for ${entry.subject}`;
     case "share.opened":
       return `The link for ${entry.subject} was opened`;
+    case "account.exported":
+      return `${who} downloaded all the data`;
+    case "account.suspended":
+      return `${who} asked to delete the account (suspended)`;
+    case "account.reactivated":
+      return `${who} signed in, so the account is active again`;
     case "labels.created":
       return `${who} made ${entry.subject} to print`;
   }

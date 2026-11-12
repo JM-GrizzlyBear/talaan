@@ -27,6 +27,8 @@ import { ReminderFormPage } from "./presentation/pages/reminders/ReminderFormPag
 import { ReminderPage } from "./presentation/pages/reminders/ReminderPage";
 import { RemindersPage } from "./presentation/pages/reminders/RemindersPage";
 import { AlertSettingsPage } from "./presentation/pages/settings/AlertSettingsPage";
+import { GoodbyePage } from "./presentation/pages/GoodbyePage";
+import { YourDataPage } from "./presentation/pages/settings/YourDataPage";
 import { SearchPage } from "./presentation/pages/search/SearchPage";
 import { SharedPage } from "./presentation/pages/shares/SharedPage";
 import { ShareNewPage } from "./presentation/pages/shares/ShareNewPage";
@@ -52,6 +54,7 @@ export function App() {
         <Route path="/e/:token" element={<EmergencyPage />} />
         {/* A doctor's link: no sign-in */}
         <Route path="/s/:token" element={<SharedPage />} />
+        <Route path="/goodbye" element={<GoodbyePage />} />
         <Route element={<RequireAuth />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/records" element={<RecordsPage />} />
@@ -79,6 +82,7 @@ export function App() {
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/settings/security" element={<SecurityPage />} />
           <Route path="/settings/alerts" element={<AlertSettingsPage />} />
+          <Route path="/settings/data" element={<YourDataPage />} />
           <Route path="/reminders" element={<RemindersPage />} />
           <Route path="/reminders/new" element={<ReminderFormPage />} />
           <Route path="/reminders/:id" element={<ReminderPage />} />

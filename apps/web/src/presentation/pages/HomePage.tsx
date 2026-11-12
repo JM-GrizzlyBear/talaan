@@ -10,7 +10,12 @@ import {
   Users,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import { useCurrentUser } from "../../application/auth/useAuth";
+import {
+  useCurrentUser,
+  useSession,
+  useUpdateSession,
+} from "../../application/auth/useAuth";
+import { Notice } from "../components/ui/Notice";
 import { TalaanLogo } from "../components/brand/TalaanLogo";
 import { inputBase } from "../components/ui/styles";
 
@@ -63,6 +68,8 @@ const PLACES: { to: string; title: string; text: string; icon: LucideIcon }[] =
 // The first page after signing in: everything Talaan keeps, one tap away
 export function HomePage() {
   const { data: user } = useCurrentUser();
+  const { data: session } = useSession();
+  const updateSession = useUpdateSession();
   const navigate = useNavigate();
 
   return (
@@ -79,6 +86,21 @@ export function HomePage() {
           </p>
         </div>
       </div>
+      {session?.welcomeBack && (
+        <div className="flex flex-col items-start gap-2">
+          <Notice>
+            Welcome back! Your account isn't being deleted anymore. Your
+            records, family sharing and reminders are just as you left them.
+          </Notice>
+          <button
+            type="button"
+            onClick={() => updateSession((s) => ({ ...s, welcomeBack: false }))}
+            className="cursor-pointer text-sm font-semibold text-brand underline"
+          >
+            OK
+          </button>
+        </div>
+      )}
       <form
         role="search"
         onSubmit={(e) => {

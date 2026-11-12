@@ -34,6 +34,9 @@ export const AUDIT_ACTIONS = [
   "share.changed",
   "share.stopped",
   "share.opened",
+  "account.exported",
+  "account.suspended",
+  "account.reactivated",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

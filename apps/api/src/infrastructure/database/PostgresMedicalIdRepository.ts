@@ -140,7 +140,8 @@ export class PostgresMedicalIdRepository implements MedicalIdRepository {
       `${SELECT.replace("select m.*,", "select m.*, coalesce(p.first_name, o.first_name) as person_first, case when p.id is null then o.middle_name else p.middle_name end as person_middle, coalesce(p.last_name, o.last_name) as person_last,")}
          join users o on o.id = m.owner_id
          left join family_profiles p on p.id = m.profile_id
-        where m.emergency_token = $1 and m.emergency_on`,
+        where m.emergency_token = $1 and m.emergency_on
+          and o.suspended_at is null`,
       [token],
     );
     const row = result.rows[0];
