@@ -1,15 +1,15 @@
 import type { MedicalIdInfo } from "@talaan/shared";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { useSaveMedicalId } from "../../../../application/medical/useMedicalId";
+import { useSaveMedicalId } from "@talaan/client";
 import { errorMessage, fieldError } from "../../../format/errorMessage";
 import { ErrorAlert } from "../../ui/ErrorAlert";
 import { buttonPrimary, buttonSecondary } from "../../ui/styles";
 import {
-  fieldsFromForm,
+  medicalFieldsFromForm,
   formFromFields,
   type MedicalForm,
-} from "./medicalFormState";
+} from "@talaan/client";
 import { MedicinesSection } from "./MedicinesSection";
 import {
   AllergiesSection,
@@ -50,7 +50,7 @@ export function MedicalIdForm({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const { fields, errors } = fieldsFromForm(form);
+    const { fields, errors } = medicalFieldsFromForm(form);
     setLocalErrors(errors);
     if (!fields) return;
     try {

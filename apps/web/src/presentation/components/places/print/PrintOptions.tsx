@@ -1,7 +1,7 @@
 import { CheckboxField } from "../../ui/CheckboxField";
 import { SelectField } from "../../ui/SelectField";
 import { TextField } from "../../ui/TextField";
-import { sheetLayout } from "./labelLayout";
+import { sheetLayout } from "@talaan/client";
 import { SizeInputs } from "./SizeInputs";
 import {
   CUSTOM_LIMITS,
@@ -12,7 +12,7 @@ import {
   type LabelSizeId,
   type PaperId,
   type PrintSettings,
-} from "./sizes";
+} from "@talaan/client";
 
 const mm = (n: number) => `${Math.round(n * 10) / 10}`;
 

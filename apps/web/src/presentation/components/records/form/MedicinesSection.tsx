@@ -4,7 +4,7 @@ import { TextField } from "../../ui/TextField";
 import { buttonSecondary, linkButton } from "../../ui/styles";
 import { FormSection } from "./FormSection";
 import type { RowPartProps } from "./formParts";
-import { emptyMedicine } from "./recordFormState";
+import { emptyMedicine } from "@talaan/client";
 
 // Prescription: one row per medicine
 export function MedicinesSection({ form, set, rowError }: RowPartProps) {

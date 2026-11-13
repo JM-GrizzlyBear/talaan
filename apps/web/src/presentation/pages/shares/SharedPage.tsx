@@ -2,10 +2,7 @@ import { isEmptyMedicalId, type SharedPageInfo } from "@talaan/shared";
 import { CalendarClock, Printer } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useParams } from "react-router";
-import {
-  useOpenShared,
-  useShared,
-} from "../../../application/shares/useShares";
+import { useOpenShared, useShared, shortDateTime } from "@talaan/client";
 import { MedicalIdView } from "../../components/medical/MedicalIdView";
 import { PinGate } from "../../components/shares/doctor/PinGate";
 import { SharedLabs } from "../../components/shares/doctor/SharedLabs";
@@ -14,7 +11,6 @@ import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { Loading } from "../../components/ui/Loading";
 import { buttonSecondary } from "../../components/ui/styles";
 import { useNoIndex } from "../../components/ui/useNoIndex";
-import { shortDateTime } from "../../format/dates";
 import { errorMessage } from "../../format/errorMessage";
 
 // /s/:token — what a doctor opens, without signing in: a PIN first when

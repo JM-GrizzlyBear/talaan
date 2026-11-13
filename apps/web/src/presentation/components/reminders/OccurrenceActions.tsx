@@ -1,9 +1,8 @@
 import type { OccurrenceState } from "@talaan/shared";
 import { AlarmClock, Check, SkipForward, Undo2 } from "lucide-react";
 import { useState } from "react";
-import { useOccurrenceAction } from "../../../application/reminders/useReminders";
+import { useOccurrenceAction, timeText } from "@talaan/client";
 import { errorMessage } from "../../format/errorMessage";
-import { timeText } from "./reminderTimes";
 
 const MINUTE = 60 * 1000;
 const small =

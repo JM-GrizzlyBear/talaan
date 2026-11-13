@@ -3,7 +3,7 @@ import { BellOff, ChevronRight } from "lucide-react";
 import { Link } from "react-router";
 import { listCard } from "../ui/styles";
 import { ReminderKindIcon } from "./ReminderKindIcon";
-import { whenText } from "./reminderTimes";
+import { whenText } from "@talaan/client";
 
 // Every reminder of an account, with how often and the next time
 export function ReminderList({ reminders }: { reminders: ReminderSummary[] }) {

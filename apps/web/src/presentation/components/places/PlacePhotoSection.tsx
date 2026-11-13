@@ -4,8 +4,8 @@ import { useRef, useState } from "react";
 import {
   useRemovePlacePhoto,
   useUploadPlacePhoto,
-} from "../../../application/places/usePlaces";
-import { placePhotoUrl } from "../../../infrastructure/api/placesApi";
+  placePhotoUrl,
+} from "@talaan/client";
 import { errorMessage } from "../../format/errorMessage";
 import { ErrorAlert } from "../ui/ErrorAlert";
 import { InlineConfirm } from "../ui/InlineConfirm";

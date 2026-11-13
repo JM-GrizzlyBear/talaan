@@ -1,5 +1,5 @@
 import type { ShareViewInfo } from "@talaan/shared";
-import { shortDateTime } from "../../format/dates";
+import { shortDateTime } from "@talaan/client";
 import { listCard } from "../ui/styles";
 
 // Every device that opened the link, newest first

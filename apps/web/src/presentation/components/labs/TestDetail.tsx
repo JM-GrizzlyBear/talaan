@@ -1,6 +1,6 @@
 import { formatRange, labStats, type LabSeries } from "@talaan/shared";
 import { RecordDateLink } from "./RecordDateLink";
-import type { RecordLink } from "./recordLink";
+import type { RecordLink } from "@talaan/client";
 import { LabChart } from "./LabChart";
 import { ResultCell } from "./ResultCell";
 import { TrendArrow } from "./TrendArrow";

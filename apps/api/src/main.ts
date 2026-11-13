@@ -1,3 +1,4 @@
+import { startBackgroundJobs } from "./scheduler/backgroundJobs.js";
 import { buildApp } from "./buildApp.js";
 import { readEnv } from "./config/env.js";
 import { createPool } from "./infrastructure/database/pool.js";
@@ -57,9 +58,12 @@ const server = app.listen(env.port, () => {
   console.log(`API listening on http://localhost:${env.port}`);
 });
 
-// Records 30 days in the Trash are deleted for good: at start, then every hour.
-// (Opening the Trash also does it, so nothing old shows even between runs.)
-async function emptyOldTrash() {
+// Background jobs (src/scheduler/backgroundJobs.ts): reminder alerts when
+// they're due, and once an hour: records 30 days in the Trash are deleted for
+// good, suspended accounts get their emails (or are deleted after a year),
+// and ended sessions are cleared. Between them the database is left alone,
+// so the free database can sleep.
+async function hourlyJobs() {
   try {
     const deleted = await app.purgeExpiredTrash();
     if (deleted > 0)
@@ -67,48 +71,27 @@ async function emptyOldTrash() {
   } catch (error) {
     console.error("Couldn't empty old records from the Trash:", error);
   }
-}
-void emptyOldTrash();
-const trashTimer = setInterval(emptyOldTrash, 60 * 60 * 1000);
-trashTimer.unref();
-
-// Suspended accounts: the 6-month and week-before emails, and deleting those
-// suspended for a year. At start, then every hour.
-async function deleteOldAccounts() {
   try {
     const deleted = await app.runAccountDeletions();
     if (deleted > 0) console.log(`Deleted ${deleted} suspended accounts`);
   } catch (error) {
     console.error("Couldn't check suspended accounts:", error);
   }
-}
-void deleteOldAccounts();
-const accountTimer = setInterval(deleteOldAccounts, 60 * 60 * 1000);
-accountTimer.unref();
-
-// Reminder alerts that are due go out every minute. On Render's free plan the
-// server sleeps after 15 minutes without visits, so something has to visit
-// it (README → "Reminders and alerts"); it catches up on waking.
-let sendingAlerts = false;
-async function sendReminderAlerts() {
-  if (sendingAlerts) return;
-  sendingAlerts = true;
   try {
-    await app.sendDueReminderAlerts();
+    await pool.query("delete from session where expire < now()");
   } catch (error) {
-    console.error("Couldn't send reminder alerts:", error);
-  } finally {
-    sendingAlerts = false;
+    console.error("Couldn't clear ended sessions:", error);
   }
 }
-void sendReminderAlerts();
-const alertTimer = setInterval(sendReminderAlerts, 60 * 1000);
-alertTimer.unref();
+const jobs = startBackgroundJobs({
+  sendAlerts: () => app.sendDueReminderAlerts(),
+  nextAlertAt: () => app.nextReminderAlertAt(),
+  hourly: hourlyJobs,
+});
+app.onRemindersChanged(jobs.poke);
 
 async function shutDown() {
-  clearInterval(trashTimer);
-  clearInterval(accountTimer);
-  clearInterval(alertTimer);
+  jobs.stop();
   server.close();
   await pool.end();
   process.exit(0);

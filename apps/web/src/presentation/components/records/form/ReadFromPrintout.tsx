@@ -1,10 +1,9 @@
 import { ScanText } from "lucide-react";
 import { useState } from "react";
-import { useRecordFiles } from "../../../../application/records/useRecordFiles";
+import { useRecordFiles, type LabRow } from "@talaan/client";
 import { Notice } from "../../ui/Notice";
 import { buttonSecondary } from "../../ui/styles";
 import { ReadLabDialog } from "../reader/ReadLabDialog";
-import type { LabRow } from "./recordFormState";
 
 // "Read from a photo or PDF": fills lab rows from the printout, read on this device
 export function ReadFromPrintout({

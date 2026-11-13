@@ -7,7 +7,7 @@ import {
 } from "@talaan/shared";
 import { ExternalLink, QrCode as QrIcon } from "lucide-react";
 import { useState } from "react";
-import { useSaveEmergency } from "../../../application/medical/useMedicalId";
+import { useSaveEmergency } from "@talaan/client";
 import { errorMessage } from "../../format/errorMessage";
 import { QrCode } from "../places/QrCode";
 import { CheckboxField } from "../ui/CheckboxField";

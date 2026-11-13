@@ -6,12 +6,14 @@ import {
   useRemoveShare,
   useShare,
   useStopShare,
-} from "../../../application/shares/useShares";
-import { shareUrl } from "../../../infrastructure/api/sharesApi";
+  shareUrl,
+  shortDate,
+  shortDateTime,
+} from "@talaan/client";
 import { LinkBox } from "../../components/shares/LinkBox";
 import { ShareSettingsForm } from "../../components/shares/ShareSettingsForm";
 import { ShareStatusBadge } from "../../components/shares/ShareStatusBadge";
-import { openedText, sharedThings } from "../../components/shares/shareText";
+import { openedText, sharedThings } from "@talaan/client";
 import { ViewsList } from "../../components/shares/ViewsList";
 import { BackLink } from "../../components/ui/BackLink";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
@@ -23,7 +25,6 @@ import {
   buttonSecondary,
   dangerLinkButton,
 } from "../../components/ui/styles";
-import { shortDate, shortDateTime } from "../../format/dates";
 import { errorMessage } from "../../format/errorMessage";
 
 // One link: give it, see who opened it, change it, stop it

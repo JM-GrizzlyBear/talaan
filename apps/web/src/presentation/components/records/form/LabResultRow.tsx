@@ -1,8 +1,8 @@
 import { TextField } from "../../ui/TextField";
 import { linkButton } from "../../ui/styles";
 import { LabFlagBadge } from "../LabFlagBadge";
-import { labRowFlag } from "./labRowFlag";
-import type { LabRow } from "./recordFormState";
+import { labRowFlag } from "@talaan/client";
+import type { LabRow } from "@talaan/client";
 
 // One test on the form: name, result, unit, normal range, Low/High
 export function LabResultRow({

@@ -1,7 +1,7 @@
 import type { PublicUser } from "@talaan/shared";
 import { MailCheck } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { useUpdateSecuritySettings } from "../../../application/auth/useAccount";
+import { useUpdateSecuritySettings } from "@talaan/client";
 import { errorMessage, fieldError } from "../../format/errorMessage";
 import { ErrorAlert } from "../ui/ErrorAlert";
 import { SectionHeading } from "../ui/SectionHeading";

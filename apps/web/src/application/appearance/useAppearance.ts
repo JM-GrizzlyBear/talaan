@@ -1,14 +1,17 @@
 import { type Appearance, DEFAULT_APPEARANCE } from "@talaan/shared";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { saveAppearance } from "../../infrastructure/api/appearanceApi";
+import {
+  saveAppearance,
+  useCurrentUser,
+  useUpdateSession,
+} from "@talaan/client";
 import {
   applyLook,
   lookFor,
   rememberedLook,
   rememberLook,
 } from "../../infrastructure/appearance/look";
-import { useCurrentUser, useUpdateSession } from "../auth/useAuth";
 
 // Paints the page in the signed-in person's colors (or, signed out, in the
 // ones this browser used last), and follows the device's light or dark

@@ -12,8 +12,7 @@ import { TextField } from "../ui/TextField";
 import { buttonPrimary } from "../ui/styles";
 import { KindPicker } from "./KindPicker";
 import { PhotoPicker } from "./PhotoPicker";
-import type { PlaceFormValues } from "./placeFormValues";
-import { insideOptions } from "./placeTree";
+import { type PlaceFormValues, insideOptions } from "@talaan/client";
 
 // Adding, editing, or naming a blank label: kind, name, inside what, note,
 // and for a new place an optional photo

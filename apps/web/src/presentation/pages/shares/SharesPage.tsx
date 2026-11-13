@@ -1,15 +1,13 @@
 import { Link2, Plus } from "lucide-react";
 import { Link } from "react-router";
-import { useRecordAccounts } from "../../../application/records/useRecords";
-import { useShares } from "../../../application/shares/useShares";
+import { useRecordAccounts, useShares, shortDateTime } from "@talaan/client";
 import { PersonPicker } from "../../components/people/PersonPicker";
 import { usePersonParams } from "../../components/medical/usePersonParams";
-import { openedText, sharedThings } from "../../components/shares/shareText";
+import { openedText, sharedThings } from "@talaan/client";
 import { ShareStatusBadge } from "../../components/shares/ShareStatusBadge";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { Loading } from "../../components/ui/Loading";
 import { buttonPrimary, listCard } from "../../components/ui/styles";
-import { shortDateTime } from "../../format/dates";
 import { errorMessage } from "../../format/errorMessage";
 
 // /shares?owner=…&person=…: the links made for doctors, open ones first

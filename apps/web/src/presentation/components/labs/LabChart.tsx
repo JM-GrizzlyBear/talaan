@@ -5,7 +5,7 @@ import {
   monthLabel,
   niceTicks,
   valueDomain,
-} from "./chartScale";
+} from "@talaan/client";
 
 const SIZES = {
   small: { width: 300, height: 110, left: 6, right: 6, top: 10, bottom: 8 },

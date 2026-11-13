@@ -2,7 +2,7 @@ import { FormSection } from "../../records/form/FormSection";
 import { SelectField } from "../../ui/SelectField";
 import { TextField } from "../../ui/TextField";
 import type { ReminderPartProps } from "./formParts";
-import type { RepeatChoice } from "./reminderFormState";
+import type { RepeatChoice } from "@talaan/client";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEKDAY_NAMES = [

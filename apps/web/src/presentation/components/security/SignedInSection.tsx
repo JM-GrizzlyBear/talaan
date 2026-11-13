@@ -5,8 +5,8 @@ import {
   useForgetBrowser,
   useSignOutOtherDevices,
   useTrustedBrowsers,
-} from "../../../application/auth/useAccount";
-import { shortDateTime } from "../../format/dates";
+  shortDateTime,
+} from "@talaan/client";
 import { errorMessage } from "../../format/errorMessage";
 import { ErrorAlert } from "../ui/ErrorAlert";
 import { Notice } from "../ui/Notice";

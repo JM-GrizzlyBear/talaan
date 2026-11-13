@@ -7,24 +7,19 @@ import {
   useBlankLabels,
   useCreateBlankLabels,
   usePlaces,
-} from "../../../application/places/usePlaces";
-import { useRecordAccounts } from "../../../application/records/useRecords";
-import { BlankLabelsPicker } from "../../components/places/print/BlankLabelsPicker";
-import { ChoosePlaces } from "../../components/places/print/ChoosePlaces";
-import { LabelSheets } from "../../components/places/print/LabelSheets";
-import {
-  sheetLayout,
-  toSheets,
-} from "../../components/places/print/labelLayout";
-import type { LabelItem } from "../../components/places/print/PrintLabel";
-import { PrintOptions } from "../../components/places/print/PrintOptions";
-import {
+  useRecordAccounts,
   CUSTOM_LIMITS,
   labelSize,
   paperSize,
-} from "../../components/places/print/sizes";
+  placeTree,
+} from "@talaan/client";
+import { BlankLabelsPicker } from "../../components/places/print/BlankLabelsPicker";
+import { ChoosePlaces } from "../../components/places/print/ChoosePlaces";
+import { LabelSheets } from "../../components/places/print/LabelSheets";
+import { sheetLayout, toSheets } from "@talaan/client";
+import type { LabelItem } from "../../components/places/print/PrintLabel";
+import { PrintOptions } from "../../components/places/print/PrintOptions";
 import { usePrintSettings } from "../../components/places/print/usePrintSettings";
-import { placeTree } from "../../components/places/placeTree";
 import { BackLink } from "../../components/ui/BackLink";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { Loading } from "../../components/ui/Loading";

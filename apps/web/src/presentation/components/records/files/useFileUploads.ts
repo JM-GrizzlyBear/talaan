@@ -1,8 +1,7 @@
 import { FILE_LIMITS } from "@talaan/shared";
 import { useRef, useState } from "react";
-import { useUploadRecordFile } from "../../../../application/records/useRecordFiles";
+import { useUploadRecordFile, fileProblem } from "@talaan/client";
 import { errorMessage } from "../../../format/errorMessage";
-import { fileProblem } from "../../../format/fileCheck";
 
 // One file on its way up, as shown under the tiles
 export interface FileUpload {

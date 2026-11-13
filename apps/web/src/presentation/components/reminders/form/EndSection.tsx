@@ -1,7 +1,7 @@
 import { FormSection } from "../../records/form/FormSection";
 import { TextField } from "../../ui/TextField";
 import type { ReminderPartProps } from "./formParts";
-import { type EndChoice, supplyCount } from "./reminderFormState";
+import { type EndChoice, supplyCount } from "@talaan/client";
 
 // When a repeating reminder stops
 export function EndSection({ form, set, error }: ReminderPartProps) {

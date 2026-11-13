@@ -1,7 +1,7 @@
 import type { AlertSettingsInfo } from "@talaan/shared";
 import { BellRing } from "lucide-react";
 import { useTurnOnThisBrowser } from "../../../application/reminders/useAlertSettings";
-import { ApiError } from "../../../infrastructure/api/http";
+import { ApiError } from "@talaan/client";
 import { pushSupport } from "../../../infrastructure/push/browserPush";
 import { errorMessage } from "../../format/errorMessage";
 import { ErrorAlert } from "../ui/ErrorAlert";

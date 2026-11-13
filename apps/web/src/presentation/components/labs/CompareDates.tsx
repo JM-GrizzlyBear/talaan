@@ -2,7 +2,7 @@ import type { LabRecordResults, LabSeries } from "@talaan/shared";
 import { roundLab } from "@talaan/shared";
 import { useState } from "react";
 import { SelectField } from "../ui/SelectField";
-import { dateLabel } from "./chartScale";
+import { dateLabel } from "@talaan/client";
 import { ResultCell } from "./ResultCell";
 
 const signed = (n: number) => (n > 0 ? `+${n}` : String(n));

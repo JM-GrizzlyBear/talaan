@@ -2,7 +2,7 @@ import { TextField } from "../../ui/TextField";
 import { linkButton } from "../../ui/styles";
 import { FormSection } from "./FormSection";
 import type { FormPartProps } from "./formParts";
-import { parseNumber } from "./recordFormState";
+import { parseNumber } from "@talaan/client";
 
 // HMO / Billing: the HMO, LOA number and amounts
 export function BillingSection({ form, set, error }: FormPartProps) {

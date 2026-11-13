@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { DEFAULT_SETTINGS, type PrintSettings } from "./sizes";
+import { DEFAULT_SETTINGS, type PrintSettings } from "@talaan/client";
 
 const KEY = "talaan.labelPrint";
 

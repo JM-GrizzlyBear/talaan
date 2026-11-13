@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PAPER_SIZES, type PaperSizeId } from "../../print/paper";
+import { PAPER_SIZES, type PaperSizeId } from "@talaan/client";
 
 export interface LabPrintSettings {
   paper: PaperSizeId;

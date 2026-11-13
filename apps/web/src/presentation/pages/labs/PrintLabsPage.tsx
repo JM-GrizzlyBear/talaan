@@ -1,10 +1,14 @@
 import { todayText } from "@talaan/shared";
 import { Printer } from "lucide-react";
 import { useSearchParams } from "react-router";
-import { useLabs } from "../../../application/labs/useLabs";
-import { useRecordAccounts } from "../../../application/records/useRecords";
-import { columnsFor, filterSeries } from "../../components/labs/labFilters";
-import { filtersFromParams, isFiltered } from "../../components/labs/labParams";
+import {
+  useLabs,
+  useRecordAccounts,
+  columnsFor,
+  filterSeries,
+  filtersFromParams,
+  isFiltered,
+} from "@talaan/client";
 import { LabPrintOptions } from "../../components/labs/print/LabPrintOptions";
 import { LabPrintPages } from "../../components/labs/print/LabPrintPages";
 import { useLabPrintSettings } from "../../components/labs/print/labPrintSettings";

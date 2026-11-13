@@ -1,26 +1,35 @@
-import type { PublicUser } from "@talaan/shared";
-import { useQueryClient } from "@tanstack/react-query";
+import {
+  ApiError,
+  fetchSession,
+  lockSession,
+  logIn,
+  logOut,
+  register,
+  SESSION_KEY,
+  submitSignInCode,
+  unlockSession,
+} from "@talaan/client";
+import type { PublicUser, RegisterInput, SessionInfo } from "@talaan/shared";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   type ReactNode,
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
 import { AppState } from "react-native";
-import { ApiError } from "../api/ApiError";
-import { createClient } from "../api/client";
-import { endpoints, type Endpoints } from "../api/endpoints";
-import { API_URL } from "../config";
+import { makeDeviceKey, unlockWithDeviceKey } from "../api/appAuth";
+import { connectApi, connection, wakeServer } from "../api/connection";
+import { savedState } from "../offline/savedResponses";
+import { phoneNotifications } from "../reminders/notifications";
 import { offline } from "../storage/offline";
 import { secure } from "../storage/secure";
 import { confirmOwner, phoneLock, type PhoneLock } from "./biometrics";
 import { shouldLockOnReturn } from "./lockRules";
 
-const TOKEN = "talaan.session";
 const DEVICE_KEY = "talaan.deviceKey";
 
 // starting: reading the saved session; code: waiting for the emailed code;
@@ -37,15 +46,17 @@ interface Session {
   // Unlocked without internet: showing what was saved on the phone
   offlineOnly: boolean;
   lock: PhoneLock;
-  api: Endpoints;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (input: RegisterInput) => Promise<void>;
   submitCode: (code: string) => Promise<void>;
   unlockWithPhone: () => Promise<boolean>;
   unlockWithPassword: (password: string) => Promise<void>;
+  lockNow: () => void;
   signOut: () => Promise<void>;
+  // Signed out by the API itself (a new password, deleting the account)
+  signedOutElsewhere: () => Promise<void>;
   // Two-step: back to the email and password
   cancelSignIn: () => Promise<void>;
-  setUser: (user: PublicUser) => void;
   dismissWelcome: () => void;
 }
 
@@ -59,108 +70,139 @@ export function useSession() {
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [status, setStatus] = useState<Status>("starting");
-  const [user, setUser] = useState<PublicUser | null>(null);
+  const [status, setStatusState] = useState<Status>("starting");
   const [codeEmail, setCodeEmail] = useState<string | null>(null);
-  const [welcomeBack, setWelcomeBack] = useState(false);
   const [offlineOnly, setOfflineOnly] = useState(false);
   const [lock, setLock] = useState<PhoneLock>("none");
-  const token = useRef<string | null>(null);
   const leftAt = useRef<number | null>(null);
   const statusRef = useRef(status);
   statusRef.current = status;
+  // Nothing loads behind the lock screen (opened before the screens see
+  // "ready"); unlocking loads the screen again
+  const setStatus = useCallback((next: Status) => {
+    connection.setOpen(next === "ready");
+    statusRef.current = next;
+    setStatusState(next);
+  }, []);
+  useEffect(() => {
+    if (status === "ready") void queryClient.invalidateQueries();
+  }, [status, queryClient]);
+
+  // The signed-in person lives where the shared hooks look for it (the
+  // website's SESSION_KEY), so a change on the Security page shows everywhere
+  const { data: sessionInfo } = useQuery<SessionInfo | null>({
+    queryKey: SESSION_KEY,
+    queryFn: fetchSession,
+    enabled: false,
+    staleTime: Infinity,
+  });
+  const user = sessionInfo?.user ?? null;
+
+  const setInfo = useCallback(
+    (info: SessionInfo | null) => {
+      queryClient.setQueryData(SESSION_KEY, info);
+    },
+    [queryClient],
+  );
 
   const forget = useCallback(async () => {
-    token.current = null;
-    await secure.remove(TOKEN);
+    await connection.forgetSession();
     await secure.remove(DEVICE_KEY);
     await offline.wipe();
+    await phoneNotifications.clear().catch(() => {});
+    savedState.reset();
     queryClient.clear();
-    setUser(null);
     setCodeEmail(null);
     setOfflineOnly(false);
     setStatus("signedOut");
   }, [queryClient]);
 
-  const api = useMemo(
-    () =>
-      endpoints(
-        createClient({
-          baseUrl: API_URL,
-          getToken: () => token.current,
-          setToken: (t) => {
-            token.current = t;
-            void secure.set(TOKEN, t);
-          },
-          onLocked: () => {
-            if (statusRef.current === "ready") setStatus("locked");
-          },
-          onSignedOut: () => {
-            if (statusRef.current !== "signedOut") void forget();
-          },
-        }),
-      ),
-    [forget],
-  );
+  // Set up once: the token, and what the API's answers mean for the screen
+  const forgetRef = useRef(forget);
+  forgetRef.current = forget;
+  const [connected] = useState(() => {
+    connectApi({
+      onLocked: () => {
+        if (statusRef.current === "ready") setStatus("locked");
+      },
+      onSignedOut: () => {
+        if (statusRef.current !== "signedOut") void forgetRef.current();
+      },
+    });
+    return true;
+  });
 
   // A key for Face ID / fingerprint unlocking, made right after signing in
-  const makeDeviceKey = useCallback(async () => {
+  const keepDeviceKey = useCallback(async () => {
     try {
-      const { deviceKey } = await api.makeDeviceKey();
+      const { deviceKey } = await makeDeviceKey();
       await secure.set(DEVICE_KEY, deviceKey);
     } catch {
       // Without it, unlocking asks for the password
     }
-  }, [api]);
+  }, []);
 
   const signedIn = useCallback(
     async (u: PublicUser, back = false) => {
-      setUser(u);
-      setWelcomeBack(back);
+      // Forget the previous person's data
+      queryClient.removeQueries({
+        predicate: (q) => q.queryKey[0] !== SESSION_KEY[0],
+      });
+      setInfo({ user: u, locked: false, welcomeBack: back });
       setOfflineOnly(false);
       setCodeEmail(null);
       setStatus("ready");
-      await makeDeviceKey();
+      await keepDeviceKey();
     },
-    [makeDeviceKey],
+    [keepDeviceKey, queryClient, setInfo],
   );
 
-  // Starting: a saved session opens locked (Face ID first) when the phone
-  // has a lock; without internet, what was saved can still be opened
+  const unlocked = useCallback(
+    (u: PublicUser) => {
+      setInfo({ user: u, locked: false, welcomeBack: false });
+      setOfflineOnly(false);
+      setStatus("ready");
+    },
+    [setInfo],
+  );
+
+  // Starting: a saved session opens locked (Face ID first); without
+  // internet, what was saved can still be opened
   useEffect(() => {
+    if (!connected) return;
+    wakeServer();
     void (async () => {
       setLock(await phoneLock());
-      token.current = await secure.get(TOKEN);
-      if (!token.current) {
+      if (!(await connection.load())) {
         setStatus("signedOut");
         return;
       }
       try {
-        const me = await api.me();
-        setUser(me.user);
+        const me = await fetchSession();
+        if (!me) {
+          await forget();
+          return;
+        }
+        setInfo({ ...me, locked: true });
         setStatus("locked");
       } catch (error) {
-        if (error instanceof ApiError && error.offline) {
-          setOfflineOnly(true);
-          setStatus("locked");
-        } else if (error instanceof ApiError && error.status === 401) {
-          await forget();
-        } else {
-          setStatus("locked");
-        }
+        if (error instanceof ApiError && error.offline) setOfflineOnly(true);
+        setStatus("locked");
       }
     })();
-  }, [api, forget]);
+  }, [connected, forget, setInfo]);
 
-  // Away for longer than the "lock after" time: locked again
+  // Away for longer than the "lock after" time: locked again. Coming back
+  // also wakes the server.
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
       if (state === "background" || state === "inactive") {
         leftAt.current ??= Date.now();
         return;
       }
+      if (state !== "active") return;
+      if (leftAt.current) wakeServer();
       if (
-        state === "active" &&
         statusRef.current === "ready" &&
         shouldLockOnReturn(
           leftAt.current,
@@ -179,12 +221,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     status,
     user,
     codeEmail,
-    welcomeBack,
+    welcomeBack: sessionInfo?.welcomeBack ?? false,
     offlineOnly,
     lock,
-    api,
     async signIn(email, password) {
-      const result = await api.logIn(email, password);
+      const result = await logIn({ email, password });
       if (result.twoStep) {
         setCodeEmail(result.email);
         setStatus("code");
@@ -192,8 +233,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
       await signedIn(result.user, result.welcomeBack);
     },
+    async signUp(input) {
+      await signedIn(await register(input));
+    },
     async submitCode(code) {
-      const result = await api.submitCode(code);
+      // Remembered: this phone isn't asked for a code again (30 days)
+      const result = await submitSignInCode({ code, rememberBrowser: true });
       await signedIn(result.user, result.welcomeBack);
     },
     async unlockWithPhone() {
@@ -201,10 +246,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const key = await secure.get(DEVICE_KEY);
       try {
         if (!key) throw new ApiError(400, "No key");
-        const { user: u } = await api.unlockWithDeviceKey(key);
-        setUser(u);
-        setOfflineOnly(false);
-        setStatus("ready");
+        unlocked(await unlockWithDeviceKey(key));
         return true;
       } catch (error) {
         // No internet: what's saved on the phone can still be seen
@@ -217,23 +259,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
     },
     async unlockWithPassword(password) {
-      const { user: u } = await api.unlockWithPassword(password);
-      setUser(u);
-      setOfflineOnly(false);
-      setStatus("ready");
-      await makeDeviceKey();
+      unlocked(await unlockSession(password));
+      await keepDeviceKey();
+    },
+    lockNow: () => {
+      void lockSession().catch(() => {});
+      setStatus("locked");
     },
     async signOut() {
       try {
-        await api.logOut();
+        await logOut();
       } catch {
         // Offline: the phone forgets the session anyway
       }
       await forget();
     },
+    signedOutElsewhere: forget,
     cancelSignIn: forget,
-    setUser,
-    dismissWelcome: () => setWelcomeBack(false),
+    dismissWelcome: () => {
+      if (sessionInfo) setInfo({ ...sessionInfo, welcomeBack: false });
+    },
   };
 
   return (

@@ -1,12 +1,11 @@
 import { RECORD_LIMITS } from "@talaan/shared";
 import { Plus } from "lucide-react";
 import { buttonSecondary } from "../../ui/styles";
-import { addToForm } from "../reader/check/checkRows";
+import { addToForm, emptyLabRow } from "@talaan/client";
 import { FormSection } from "./FormSection";
 import type { RowPartProps } from "./formParts";
 import { LabResultRow } from "./LabResultRow";
 import { ReadFromPrintout } from "./ReadFromPrintout";
-import { emptyLabRow } from "./recordFormState";
 
 // Lab results: one row per test, typed in or read from a photo or PDF
 export function LabResultsSection({

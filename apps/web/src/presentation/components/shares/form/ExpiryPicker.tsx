@@ -5,7 +5,7 @@ import {
 } from "@talaan/shared";
 import { useId } from "react";
 import { inputBase } from "../../ui/styles";
-import { type Expiry, expiryDate, localInputValue } from "./expiry";
+import { type Expiry, expiryDate, localInputValue } from "@talaan/client";
 
 const chip = (on: boolean) =>
   `min-h-11 cursor-pointer rounded-lg border px-3 text-sm font-semibold ${

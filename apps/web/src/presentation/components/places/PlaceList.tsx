@@ -1,11 +1,9 @@
 import { PLACE_KIND_LABELS, type PlaceSummary } from "@talaan/shared";
 import { ChevronRight, FileText } from "lucide-react";
 import { Link } from "react-router";
-import { placePhotoUrl } from "../../../infrastructure/api/placesApi";
+import { placePhotoUrl, shownCode, placeTree } from "@talaan/client";
 import { listCard } from "../ui/styles";
 import { PlaceKindIcon } from "./PlaceKindIcon";
-import { shownCode } from "./labelAddress";
-import { placeTree } from "./placeTree";
 
 // "3 records, 1 place inside"
 function contentsText(place: PlaceSummary) {

@@ -1,7 +1,6 @@
 import type { RecordFileInfo } from "@talaan/shared";
 import { useCallback, useRef, useState } from "react";
-import { ApiError } from "../../infrastructure/api/http";
-import { fetchFileContent } from "../../infrastructure/api/filesApi";
+import { ApiError, fetchFileContent } from "@talaan/client";
 import type { ReadProgress } from "../../infrastructure/reader/progress";
 import {
   readLabDocument,

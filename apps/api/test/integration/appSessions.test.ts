@@ -89,4 +89,59 @@ describe("the phone app's sessions", () => {
     await app().post("/api/auth/lock");
     expect((await app().post("/api/auth/device-key")).status).toBe(423);
   });
+
+  it("asks for the emailed code once per phone, not every sign-in", async () => {
+    await t.as("maria");
+    await t.pool.query(
+      "update users set two_step_enabled = true where id = $1",
+      [USERS.maria.id],
+    );
+    const login = (trust?: string) => {
+      const request = t
+        .api()
+        .post("/api/auth/login")
+        .set("X-Talaan-App", "1")
+        .set("X-Talaan-Device", "Maria's iPhone <script>");
+      if (trust) request.set("X-Talaan-Trust", trust);
+      return request.send({ email: USERS.maria.email, password: PASSWORD });
+    };
+
+    const first = await login();
+    expect(first.status).toBe(202);
+    const pending = first.headers["x-session-token"] as string;
+    const code = await t
+      .api()
+      .post("/api/auth/login/code")
+      .set("X-Talaan-App", "1")
+      .set("X-Talaan-Device", "Maria's iPhone <script>")
+      .set("Authorization", `Bearer ${pending}`)
+      .send({ code: t.emails.signInCodes.at(-1)!.code, rememberBrowser: true });
+    expect(code.status).toBe(200);
+    // The app gets the remembered-phone token in a header, never a cookie
+    const trust = code.headers["x-talaan-trust"] as string;
+    expect(trust).toMatch(/^[0-9a-f-]{36}\./);
+    expect(code.headers["set-cookie"] ?? []).not.toEqual(
+      expect.arrayContaining([expect.stringContaining("talaan.tb")]),
+    );
+
+    // Next time on this phone: signed in at once
+    const again = await login(trust);
+    expect(again.status).toBe(200);
+    expect(again.body.twoStep).toBe(false);
+    // Listed by the phone's name on the Security page
+    const session = again.headers["x-session-token"] as string;
+    const security = await t
+      .api()
+      .get("/api/account/browsers")
+      .set("Authorization", `Bearer ${session}`)
+      .set("X-Talaan-Trust", trust);
+    const names = (security.body.browsers ?? []).map(
+      (b: { label: string }) => b.label,
+    );
+    expect(names).toContain("Talaan app on Maria's iPhone script");
+    expect(security.body.browsers[0].current).toBe(true);
+
+    // A made-up token still needs the code
+    expect((await login(`${trust.split(".")[0]}.wrong`)).status).toBe(202);
+  });
 });

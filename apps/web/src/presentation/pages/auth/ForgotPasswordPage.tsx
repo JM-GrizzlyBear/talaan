@@ -1,12 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { SESSION_KEY } from "../../../application/auth/useAuth";
 import {
+  SESSION_KEY,
   useCheckResetCode,
   useCompletePasswordReset,
   useRequestResetCode,
-} from "../../../application/auth/usePasswordReset";
+} from "@talaan/client";
 import { NewPasswordStep } from "../../components/auth/passwordReset/NewPasswordStep";
 import { ResetCodeStep } from "../../components/auth/passwordReset/ResetCodeStep";
 import { ResetEmailStep } from "../../components/auth/passwordReset/ResetEmailStep";

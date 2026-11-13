@@ -1,5 +1,5 @@
 import { formatPesos, type RecordInfo } from "@talaan/shared";
-import { shortDate } from "../../../format/dates";
+import { shortDate } from "@talaan/client";
 import { PlacePath } from "../../places/PlacePath";
 
 // Amounts like ₱45,210.50, or a dash when there's none

@@ -4,12 +4,15 @@ import {
   scheduleSchema,
 } from "@talaan/shared";
 import { CalendarClock } from "lucide-react";
-import { fieldsFromForm, type ReminderFormState } from "./reminderFormState";
-import { whenText } from "../reminderTimes";
+import { reminderFieldsFromForm, type ReminderFormState } from "@talaan/client";
+import { whenText } from "@talaan/client";
 
 // The schedule in words and its next few times, as you fill the form in
 export function SchedulePreview({ form }: { form: ReminderFormState }) {
-  const { fields } = fieldsFromForm({ ...form, kind: form.kind || "other" });
+  const { fields } = reminderFieldsFromForm({
+    ...form,
+    kind: form.kind || "other",
+  });
   const parsed = fields ? scheduleSchema.safeParse(fields.schedule) : null;
   if (!parsed?.success) return null;
   const next = nextOccurrences(parsed.data, new Date(), 5);

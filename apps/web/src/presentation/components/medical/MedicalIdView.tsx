@@ -8,7 +8,7 @@ import {
 } from "@talaan/shared";
 import { Phone, TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
-import { shortDate } from "../../format/dates";
+import { shortDate } from "@talaan/client";
 
 const SEX = { female: "Female", male: "Male", "": "" };
 

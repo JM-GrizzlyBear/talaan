@@ -72,6 +72,18 @@ export function buildApp(options: BuildAppOptions) {
   );
   app.use(exposeSessionToken(options.sessionSecret));
 
+  // Adding or changing a reminder (or its times) tells the alert timer
+  const reminderListeners: (() => void)[] = [];
+  app.use("/api/reminders", (req, res, next) => {
+    if (req.method !== "GET") {
+      res.on("finish", () => {
+        if (res.statusCode < 400)
+          for (const listener of reminderListeners) listener();
+      });
+    }
+    next();
+  });
+
   app.use("/api", healthRoutes(options.pool));
   for (const router of [
     ...accounts,
@@ -105,6 +117,10 @@ export function buildApp(options: BuildAppOptions) {
     purgeExpiredTrash: () => records.trash.purgeExpired(),
     // Called every minute by main.ts (tests call it themselves)
     sendDueReminderAlerts: () => reminders.alerts.sendDue(),
+    nextReminderAlertAt: () => reminders.alerts.nextDueAt(),
+    onRemindersChanged: (listener: () => void) => {
+      reminderListeners.push(listener);
+    },
     // main.ts runs this every hour: emails to suspended accounts, and deleting
     // those suspended for a year
     runAccountDeletions: () => deletion.runDue(),

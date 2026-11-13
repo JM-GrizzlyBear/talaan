@@ -1,11 +1,7 @@
 import { ACCESS_LABELS, type RecordAccountInfo } from "@talaan/shared";
 import { Plus, Printer } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
-import {
-  useBlankLabels,
-  usePlaces,
-} from "../../../application/places/usePlaces";
-import { useRecordAccounts } from "../../../application/records/useRecords";
+import { useBlankLabels, usePlaces, useRecordAccounts } from "@talaan/client";
 import { PlaceList } from "../../components/places/PlaceList";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { Loading } from "../../components/ui/Loading";

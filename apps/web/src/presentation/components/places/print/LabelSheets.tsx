@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import type { SheetLayout } from "./labelLayout";
+import type { SheetLayout } from "@talaan/client";
 import { PrintLabel, type LabelItem } from "./PrintLabel";
-import type { Size } from "./sizes";
+import type { Size } from "@talaan/client";
 
 // 1 mm in CSS pixels
 const MM = 96 / 25.4;

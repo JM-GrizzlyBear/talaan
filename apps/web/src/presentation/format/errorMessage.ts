@@ -1,4 +1,4 @@
-import { ApiError } from "../../infrastructure/api/http";
+import { ApiError } from "@talaan/client";
 import {
   PasskeyCancelledError,
   PasskeyDeviceError,

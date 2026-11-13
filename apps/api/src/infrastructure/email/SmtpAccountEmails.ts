@@ -39,6 +39,12 @@ export class SmtpAccountEmails implements AccountEmails {
       // Port 465 is encrypted from the start; 587, 2525 (and Mailpit's 1025)
       // switch to encryption (STARTTLS) when the server offers it
       secure: settings.port === 465,
+      // Give up quickly when the mail server can't be reached (like a port the
+      // host blocks), instead of nodemailer's 2 minutes, so signing in doesn't
+      // just keep loading
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000,
       auth:
         settings.user && settings.pass
           ? { user: settings.user, pass: settings.pass }

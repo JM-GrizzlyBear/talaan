@@ -2,10 +2,9 @@ import { type LabRecordResults, buildLabSeries } from "@talaan/shared";
 import { useMemo, useState } from "react";
 import { ChartsGrid } from "../../labs/ChartsGrid";
 import { CompareDates } from "../../labs/CompareDates";
-import { columnsFor } from "../../labs/labFilters";
+import { columnsFor, type RecordLink } from "@talaan/client";
 import { LabTable } from "../../labs/LabTable";
 import { NeedsAttention } from "../../labs/NeedsAttention";
-import type { RecordLink } from "../../labs/recordLink";
 import { TestDetail } from "../../labs/TestDetail";
 import { linkButton } from "../../ui/styles";
 

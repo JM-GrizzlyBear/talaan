@@ -1,32 +1,31 @@
-import * as Linking from "expo-linking";
+import { AUTH_LIMITS } from "@talaan/shared";
+import { useMutation } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { fieldError, messageOf } from "../src/api/ApiError";
+import { fieldError } from "../src/api/ApiError";
 import { useSession } from "../src/auth/SessionProvider";
-import { WEB_URL } from "../src/config";
+import { API_URL } from "../src/config";
 import { useTheme } from "../src/theme/ThemeProvider";
-import { Button, Field, Notice, Txt } from "../src/ui/kit";
+import { Field } from "../src/ui/form";
+import { Button, ErrorNotice, Notice, Txt } from "../src/ui/kit";
+import { TalaanMark } from "../src/ui/TalaanMark";
 
+// Sign in with the email and password. On a phone Talaan doesn't know yet,
+// two-step sign-in then asks for the emailed code once; after that this
+// phone is remembered.
 export default function SignIn() {
   const t = useTheme();
+  const router = useRouter();
   const session = useSession();
+  const { changed } = useLocalSearchParams<{ changed?: string }>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<unknown>(null);
-
-  const submit = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      await session.signIn(email.trim(), password);
-    } catch (e) {
-      setError(e);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const signIn = useMutation({
+    mutationFn: () => session.signIn(email.trim(), password),
+  });
+  const error = signIn.error;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.page }}>
@@ -43,14 +42,24 @@ export default function SignIn() {
           }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={{ gap: 6 }}>
-            <Txt tone="title" color={t.brand}>
-              Talaan
-            </Txt>
+          <View style={{ gap: 10, alignItems: "flex-start" }}>
+            <TalaanMark size={52} />
+            <Txt tone="title">Sign in to Talaan</Txt>
             <Txt muted>
               Your family's medical records, and where the paper is.
             </Txt>
           </View>
+          {changed && !signIn.isPending ? (
+            <Notice>
+              Your password was changed and every device was signed out. Sign in
+              with the new password.
+            </Notice>
+          ) : null}
+          {error &&
+          !fieldError(error, "email") &&
+          !fieldError(error, "password") ? (
+            <ErrorNotice error={error} />
+          ) : null}
           <Field
             label="Email"
             value={email}
@@ -59,6 +68,7 @@ export default function SignIn() {
             autoComplete="email"
             keyboardType="email-address"
             textContentType="emailAddress"
+            maxLength={AUTH_LIMITS.emailMax}
             error={fieldError(error, "email")}
           />
           <Field
@@ -69,37 +79,41 @@ export default function SignIn() {
             autoComplete="current-password"
             textContentType="password"
             returnKeyType="go"
-            onSubmitEditing={() => void submit()}
+            onSubmitEditing={() => signIn.mutate()}
             error={fieldError(error, "password")}
           />
-          {Boolean(error) &&
-            !fieldError(error, "email") &&
-            !fieldError(error, "password") && (
-              <Notice tone="error">{messageOf(error)}</Notice>
-            )}
           <Button
-            onPress={() => void submit()}
-            busy={busy}
+            onPress={() => signIn.mutate()}
+            busy={signIn.isPending}
             disabled={!email || !password}
           >
-            Sign in
+            {signIn.isPending ? "Signing in…" : "Sign in"}
           </Button>
-          <Button
-            kind="secondary"
-            onPress={() => void Linking.openURL(`${WEB_URL}/forgot-password`)}
-          >
+          {signIn.isPending ? (
+            <Notice>
+              If Talaan was asleep, it can take up to a minute to wake up.
+            </Notice>
+          ) : null}
+          <Button kind="link" onPress={() => router.push("/forgot-password")}>
             Forgot password?
           </Button>
-          <Txt tone="small" muted style={{ textAlign: "center" }}>
-            New here? Make your account on the Talaan website, then sign in
-            here.
+          <View style={{ gap: 8 }}>
+            <Txt tone="small" muted>
+              New to Talaan?
+            </Txt>
+            <Button kind="secondary" onPress={() => router.push("/register")}>
+              Create an account
+            </Button>
+          </View>
+          <Txt tone="tiny" muted>
+            Talaan keeps records. It doesn't diagnose or give medical advice.
           </Txt>
-          <Button
-            kind="secondary"
-            onPress={() => void Linking.openURL(`${WEB_URL}/register`)}
-          >
-            Create an account
-          </Button>
+          {__DEV__ ? (
+            // Only while testing: which server this copy of the app uses
+            <Txt tone="tiny" muted style={{ textAlign: "center" }}>
+              Server: {API_URL.replace(/^https?:\/\//, "")}
+            </Txt>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

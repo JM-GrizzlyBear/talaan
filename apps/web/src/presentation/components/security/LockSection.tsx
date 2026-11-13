@@ -3,8 +3,7 @@ import {
   type LockAfterMinutes,
   type PublicUser,
 } from "@talaan/shared";
-import { useUpdateSecuritySettings } from "../../../application/auth/useAccount";
-import { useLock } from "../../../application/auth/useAuth";
+import { useUpdateSecuritySettings, useLock } from "@talaan/client";
 import { errorMessage } from "../../format/errorMessage";
 import { ErrorAlert } from "../ui/ErrorAlert";
 import { Notice } from "../ui/Notice";

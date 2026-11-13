@@ -1,6 +1,6 @@
 import { CheckboxField } from "../../ui/CheckboxField";
 import { SelectField } from "../../ui/SelectField";
-import { PAPER_SIZES, type PaperSizeId } from "../../print/paper";
+import { PAPER_SIZES, type PaperSizeId } from "@talaan/client";
 import type { LabPrintSettings } from "./labPrintSettings";
 
 // Paper, portrait or landscape, what to include, how many dates

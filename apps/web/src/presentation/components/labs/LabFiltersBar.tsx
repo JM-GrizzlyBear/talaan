@@ -2,7 +2,7 @@ import { LAB_GROUPS, type LabGroup } from "@talaan/shared";
 import { CheckboxField } from "../ui/CheckboxField";
 import { SelectField } from "../ui/SelectField";
 import { TextField } from "../ui/TextField";
-import type { LabFilters } from "./labFilters";
+import type { LabFilters } from "@talaan/client";
 
 // Search, group, years, and only results out of range
 export function LabFiltersBar({

@@ -1,11 +1,10 @@
 import { FILE_ACCEPT } from "@talaan/shared";
 import { Camera, ScanText, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { useRecordFiles } from "../../../../application/records/useRecordFiles";
+import { useRecordFiles, type RecordFormState } from "@talaan/client";
 import { Notice } from "../../ui/Notice";
 import { buttonSecondary } from "../../ui/styles";
 import { ReadRecordDialog } from "../reader/ReadRecordDialog";
-import type { RecordFormState } from "./recordFormState";
 
 // A new record: start from the paper. The photo is read on this device right
 // away, checked, put in the form, and added to the record when it's saved.

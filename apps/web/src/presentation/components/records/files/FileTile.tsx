@@ -1,7 +1,7 @@
 import { formatBytes, type RecordFileInfo } from "@talaan/shared";
 import { FileText } from "lucide-react";
 import { useState } from "react";
-import { fileUrl } from "../../../../infrastructure/api/filesApi";
+import { fileUrl } from "@talaan/client";
 
 // A file as a small picture (or a PDF icon) with its name and size
 export function FileTile({

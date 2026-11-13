@@ -1,6 +1,6 @@
 import { formatRange, needsAttention, type LabSeries } from "@talaan/shared";
 import { CircleCheck } from "lucide-react";
-import { dateLabel } from "./chartScale";
+import { dateLabel } from "@talaan/client";
 import { LabChart } from "./LabChart";
 import { ResultCell } from "./ResultCell";
 import { TrendArrow } from "./TrendArrow";

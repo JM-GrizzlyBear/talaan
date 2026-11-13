@@ -1,11 +1,14 @@
 import { Printer } from "lucide-react";
 import { useState } from "react";
-import { useMedicalId } from "../../../application/medical/useMedicalId";
-import { useRecordAccounts } from "../../../application/records/useRecords";
+import {
+  useMedicalId,
+  useRecordAccounts,
+  PAPER_SIZES,
+  type PaperSizeId,
+} from "@talaan/client";
 import { MedicalIdView } from "../../components/medical/MedicalIdView";
 import { usePersonParams } from "../../components/medical/usePersonParams";
 import { WalletCard } from "../../components/medical/print/WalletCard";
-import { PAPER_SIZES, type PaperSizeId } from "../../components/print/paper";
 import { BackLink } from "../../components/ui/BackLink";
 import { CheckboxField } from "../../components/ui/CheckboxField";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";

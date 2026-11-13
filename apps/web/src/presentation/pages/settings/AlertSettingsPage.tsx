@@ -17,7 +17,7 @@ import {
   dangerLinkButton,
   listCard,
 } from "../../components/ui/styles";
-import { shortDate } from "../../format/dates";
+import { shortDate } from "@talaan/client";
 import { errorMessage } from "../../format/errorMessage";
 
 // /settings/alerts: your own reminder alerts, for every reminder you see

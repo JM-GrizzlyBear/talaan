@@ -12,7 +12,7 @@ import {
   lockScreenSections,
   PHONE_SIZES,
   type PhoneSize,
-} from "./lockScreenContent";
+} from "@talaan/client";
 
 const INCLUDE: [keyof LockScreenOptions, string][] = [
   ["bloodType", "Blood type"],

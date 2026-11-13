@@ -1,6 +1,6 @@
 import { FILE_LIMITS, formatBytes, type RecordFileInfo } from "@talaan/shared";
 import { useState } from "react";
-import { useRecordFiles } from "../../../../application/records/useRecordFiles";
+import { useRecordFiles } from "@talaan/client";
 import { errorMessage } from "../../../format/errorMessage";
 import { ErrorAlert } from "../../ui/ErrorAlert";
 import { FilePickers } from "./FilePickers";

@@ -1,9 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { fieldError, messageOf } from "../api/ApiError";
 import { useTheme } from "../theme/ThemeProvider";
-import { Button, Field, Notice, Txt } from "../ui/kit";
+import { Field } from "../ui/form";
+import { Button, Notice, Txt } from "../ui/kit";
+import { TalaanMark } from "../ui/TalaanMark";
+import { ResetPassword } from "./ResetPassword";
 import { PHONE_LOCK_NAMES } from "./biometrics";
 import { useSession } from "./SessionProvider";
 
@@ -17,6 +26,8 @@ export function LockScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [phoneFailed, setPhoneFailed] = useState(false);
+  // Forgot the password while locked: reset it here (like the website)
+  const [resetting, setResetting] = useState(false);
   const asked = useRef(false);
   const canUsePhone = lock !== "none";
 
@@ -61,6 +72,7 @@ export function LockScreen() {
         style={{ flex: 1, justifyContent: "center", padding: 24, gap: 18 }}
       >
         <View style={{ gap: 6 }}>
+          <TalaanMark size={44} />
           <Txt tone="title">Talaan is locked</Txt>
           <Txt muted>
             {user
@@ -114,10 +126,39 @@ export function LockScreen() {
             </Button>
           </View>
         )}
+        {!offlineOnly && (
+          <Button kind="link" onPress={() => setResetting(true)}>
+            Forgot password?
+          </Button>
+        )}
         <Button kind="secondary" onPress={() => void session.signOut()}>
           Not you? Sign out
         </Button>
       </KeyboardAvoidingView>
+      <Modal
+        visible={resetting}
+        animationType="slide"
+        onRequestClose={() => setResetting(false)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: t.page }}>
+          <ScrollView
+            contentContainerStyle={{ padding: 24, gap: 16 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Txt tone="title">Forgot password</Txt>
+            <ResetPassword
+              startEmail={user?.email ?? ""}
+              cancelLabel="Back to unlocking"
+              onCancel={() => setResetting(false)}
+              onDone={() => {
+                setResetting(false);
+                // Every device was signed out, this one too
+                void session.signedOutElsewhere();
+              }}
+            />
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }

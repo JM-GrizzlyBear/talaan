@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router";
-import { useCurrentUser } from "../../../application/auth/useAuth";
+import { useCurrentUser } from "@talaan/client";
 
 // Sign in and sign up: someone already signed in goes straight to the app,
 // or back to the page that sent them here (like an invitation link)

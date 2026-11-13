@@ -1,7 +1,7 @@
 import { EMAIL_CODE } from "@talaan/shared";
 import { type FormEvent, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { useLogIn, usePasskeySignIn } from "../../../application/auth/useAuth";
+import { useLogIn, usePasskeySignIn } from "@talaan/client";
 import { passkeysSupported } from "../../../infrastructure/passkeys/devicePasskeys";
 import { errorMessage, isPasskeyCancelled } from "../../format/errorMessage";
 import { AuthCard } from "../layout/AuthCard";

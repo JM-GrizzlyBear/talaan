@@ -1,6 +1,6 @@
 import { MEDICAL_LIMITS } from "@talaan/shared";
 import { Pill } from "lucide-react";
-import { useReminders } from "../../../../application/reminders/useReminders";
+import { useReminders } from "@talaan/client";
 import { FormSection } from "../../records/form/FormSection";
 import { buttonSecondary } from "../../ui/styles";
 import { ListEditor } from "./ListEditor";

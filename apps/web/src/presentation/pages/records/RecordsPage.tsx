@@ -1,10 +1,7 @@
 import type { RecordType } from "@talaan/shared";
 import { ChartLine, ClipboardList, Plus, Trash } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
-import {
-  useRecordAccounts,
-  useRecordList,
-} from "../../../application/records/useRecords";
+import { useRecordAccounts, useRecordList } from "@talaan/client";
 import { RecordFilters } from "../../components/records/RecordFilters";
 import { RecordList } from "../../components/records/RecordList";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";

@@ -10,6 +10,7 @@ import { userJson } from "../json/account.js";
 import { pendingSignIn, startSession } from "../session.js";
 import { setTrustCookie } from "../trustCookie.js";
 import { browserLabel } from "../userAgent.js";
+import { appDeviceLabel, isApp } from "../appSessions.js";
 
 // Two-step sign-in: the code from the email finishes signing in, and can
 // remember this browser for 30 days
@@ -37,11 +38,17 @@ export function signInCodeRoutes(deps: {
     await startSession(req, user, now());
     const welcomeBack = await deps.welcomeBack(user.id);
     if (input.rememberBrowser) {
+      const app = isApp(req);
       const trust = await deps.trustedBrowsers.remember(
         user.id,
-        browserLabel(req.get("user-agent")),
+        app ? appDeviceLabel(req) : browserLabel(req.get("user-agent")),
       );
-      setTrustCookie(res, trust.cookie, trust.expiresAt, deps.secureCookie);
+      // The app keeps it in the phone's secure storage and sends it back as
+      // X-Talaan-Trust; a browser keeps it as an httpOnly cookie
+      if (app) res.setHeader("X-Talaan-Trust", trust.cookie);
+      else {
+        setTrustCookie(res, trust.cookie, trust.expiresAt, deps.secureCookie);
+      }
     }
     res.json({ user: userJson(user), welcomeBack });
   });

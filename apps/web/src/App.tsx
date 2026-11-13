@@ -4,7 +4,9 @@ import { GuestOnly } from "./presentation/components/routing/GuestOnly";
 import { RequireAuth } from "./presentation/components/routing/RequireAuth";
 import { ActivityPage } from "./presentation/pages/records/ActivityPage";
 import { FamilyPage } from "./presentation/pages/family/FamilyPage";
+import { AppReaderPage } from "./presentation/pages/app/AppReaderPage";
 import { ForgotPasswordPage } from "./presentation/pages/auth/ForgotPasswordPage";
+import { ResetOnlyWhenNeeded } from "./presentation/components/routing/ResetOnlyWhenNeeded";
 import { HomePage } from "./presentation/pages/HomePage";
 import { InvitationPage } from "./presentation/pages/family/InvitationPage";
 import { EmergencyPage } from "./presentation/pages/medical/EmergencyPage";
@@ -49,8 +51,10 @@ export function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
         </Route>
-        {/* Open to everyone: a locked or signed-out person may need it */}
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        {/* Signed out, or locked: someone signed in changes it on Security */}
+        <Route element={<ResetOnlyWhenNeeded />}>
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        </Route>
         {/* The link in a family invitation email: open before signing in */}
         <Route path="/invite/:token" element={<InvitationPage />} />
         {/* What the emergency QR opens: anyone, no sign-in */}
@@ -58,6 +62,8 @@ export function App() {
         {/* A doctor's link: no sign-in */}
         <Route path="/s/:token" element={<SharedPage />} />
         <Route path="/goodbye" element={<GoodbyePage />} />
+        {/* The phone app's reader (opened inside the app) */}
+        <Route path="/app-reader" element={<AppReaderPage />} />
         <Route element={<RequireAuth />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/records" element={<RecordsPage />} />

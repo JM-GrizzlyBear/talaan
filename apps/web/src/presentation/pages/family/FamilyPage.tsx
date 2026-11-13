@@ -1,4 +1,4 @@
-import { useFamily } from "../../../application/family/useFamily";
+import { useFamily } from "@talaan/client";
 import { MembersSection } from "../../components/family/MembersSection";
 import { ProfilesSection } from "../../components/family/ProfilesSection";
 import { SharedWithMeSection } from "../../components/family/SharedWithMeSection";
