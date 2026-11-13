@@ -1,5 +1,6 @@
 import { configureApi } from "@talaan/client";
 import { API_URL, WEB_URL } from "../config";
+import { sendPhoneFile } from "../files/sendPhoneFile";
 import { savedFetch } from "../offline/savedResponses";
 import { secure } from "../storage/secure";
 import { deviceName } from "./deviceName";
@@ -80,6 +81,7 @@ export function connectApi(handlers: {
     baseUrl: API_URL,
     webUrl: WEB_URL,
     credentials: "omit",
+    sendPhoneFile,
     // A free server can take up to a minute to wake up
     timeoutMs: 70_000,
     offlineMessage:

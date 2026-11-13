@@ -60,6 +60,24 @@ export interface ApiSettings {
   offlineMessage?: string;
   passkeys?: PasskeyDevice;
   fetch?: typeof fetch;
+  // The app: sends a file on the phone with the phone's own uploader (more
+  // reliable than XMLHttpRequest there, with real progress)
+  // (null: it can't, so the usual way is used)
+  sendPhoneFile?: (
+    upload: PhoneUpload,
+  ) => Promise<{ status: number; body: string } | null>;
+}
+
+export interface PhoneUpload {
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  uri: string;
+  type: string;
+  // Multipart (Cloudinary): the form's file field and other fields
+  fileField: string | null;
+  fields: Record<string, string>;
+  onProgress: (fraction: number) => void;
 }
 
 let settings: ApiSettings = { baseUrl: "" };
