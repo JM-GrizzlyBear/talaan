@@ -15,6 +15,24 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Android: alerts go in their own "Reminders" channel. If the phone won't make
+// one (Expo Go on some Android phones refuses), they use the default channel.
+let channel: Promise<string | undefined> | null = null;
+function remindersChannel() {
+  if (Platform.OS !== "android") return Promise.resolve(undefined);
+  channel ??= Notifications.setNotificationChannelAsync("reminders", {
+    name: "Reminders",
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: "#0F766E",
+    enableVibrate: true,
+    showBadge: true,
+  })
+    .then(() => "reminders")
+    .catch(() => undefined);
+  return channel;
+}
+
 export const phoneNotifications = {
   // On unless turned off on this phone (and the phone allows them)
   async wanted() {
@@ -25,14 +43,14 @@ export const phoneNotifications = {
     return status === "granted";
   },
   async ask() {
-    if (Platform.OS === "android") {
-      await Notifications.setNotificationChannelAsync("reminders", {
-        name: "Reminders",
-        importance: Notifications.AndroidImportance.HIGH,
-      });
+    // (Android 13+ needs a channel before it asks)
+    await remindersChannel();
+    try {
+      const { status } = await Notifications.requestPermissionsAsync();
+      return status === "granted";
+    } catch {
+      return false;
     }
-    const { status } = await Notifications.requestPermissionsAsync();
-    return status === "granted";
   },
   async setWanted(on: boolean) {
     await secure.set(SETTING, on ? "on" : "off");
@@ -41,6 +59,7 @@ export const phoneNotifications = {
   // Replaces everything waiting with this plan
   async schedule(plan: PhoneAlert[]) {
     await Notifications.cancelAllScheduledNotificationsAsync();
+    const channelId = await remindersChannel();
     for (const alert of plan) {
       await Notifications.scheduleNotificationAsync({
         identifier: alert.id.replace(/[^\w-]/g, "_"),
@@ -52,7 +71,7 @@ export const phoneNotifications = {
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
           date: alert.at,
-          channelId: "reminders",
+          ...(channelId ? { channelId } : {}),
         },
       });
     }

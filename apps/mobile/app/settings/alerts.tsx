@@ -39,10 +39,12 @@ export default function AlertSettings() {
       setPhone({
         wanted: await phoneNotifications.wanted(),
         allowed: await phoneNotifications.allowed(),
-      }))();
+      }))().catch(() => setPhone({ wanted: false, allowed: false }));
   }, []);
 
-  const setPhoneOn = async (on: boolean) => {
+  const setPhoneOn = (on: boolean) =>
+    changePhone(on).catch(() => setPhoneProblem(true));
+  const changePhone = async (on: boolean) => {
     setPhoneProblem(false);
     if (
       on &&
