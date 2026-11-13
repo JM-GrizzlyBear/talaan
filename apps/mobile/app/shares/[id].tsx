@@ -17,7 +17,7 @@ import {
   type ShareLinkInfo,
 } from "@talaan/shared";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
+import { PagePreview } from "../../src/ui/PagePreview";
 import { useState } from "react";
 import { View } from "react-native";
 import { fieldError } from "../../src/api/ApiError";
@@ -59,6 +59,7 @@ export default function ShareScreen() {
   const [changing, setChanging] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
   const stop = useStopShare(params.id);
   const remove = useRemoveShare();
   if (link.isPending) return <Loading />;
@@ -76,6 +77,11 @@ export default function ShareScreen() {
       refreshing={link.isRefetching}
     >
       <Stack.Screen options={{ title: l.recipient }} />
+      <PagePreview
+        url={preview}
+        title={`What ${l.recipient} sees`}
+        onClose={() => setPreview(null)}
+      />
       <View style={{ gap: 4 }}>
         <View
           style={{
@@ -146,7 +152,7 @@ export default function ShareScreen() {
           <Button
             kind="secondary"
             small
-            onPress={() => void WebBrowser.openBrowserAsync(shareUrl(l.token))}
+            onPress={() => setPreview(shareUrl(l.token))}
           >
             See what they see
           </Button>

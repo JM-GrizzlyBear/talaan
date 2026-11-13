@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react-native";
 import { ChevronRight } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { Children, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -293,7 +293,11 @@ export function Notice({
         padding: 12,
       }}
     >
-      {typeof children === "string" ? (
+      {/* Words alone (also "You can see {name}'s…", which is several
+          pieces) go in text; anything else is passed as it is */}
+      {Children.toArray(children).every(
+        (c) => typeof c === "string" || typeof c === "number",
+      ) ? (
         <Txt tone="small" color={look.fg} style={{ fontWeight: "600" }}>
           {children}
         </Txt>

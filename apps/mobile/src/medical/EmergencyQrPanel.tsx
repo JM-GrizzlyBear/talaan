@@ -6,8 +6,8 @@ import {
   type EmergencyExtra,
   type MedicalIdInfo,
 } from "@talaan/shared";
-import * as WebBrowser from "expo-web-browser";
-import { ExternalLink, QrCode as QrIcon } from "lucide-react-native";
+import { Eye, QrCode as QrIcon } from "lucide-react-native";
+import { PagePreview } from "../ui/PagePreview";
 import { useState } from "react";
 import { View } from "react-native";
 import { WEB_URL } from "../config";
@@ -28,6 +28,7 @@ export function EmergencyQrPanel({ medicalId }: { medicalId: MedicalIdInfo }) {
   };
   const save = useSaveEmergency(person);
   const [renewing, setRenewing] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
   const { on, token } = medicalId.emergency;
   const saved = medicalId.emergency.extras;
   const [extras, setExtras] = useState(saved);
@@ -46,6 +47,11 @@ export function EmergencyQrPanel({ medicalId }: { medicalId: MedicalIdInfo }) {
   };
   return (
     <Card>
+      <PagePreview
+        url={preview}
+        title="What the emergency QR shows"
+        onClose={() => setPreview(null)}
+      />
       <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
         <QrIcon size={20} color={t.brand} />
         <Txt tone="heading">Emergency QR</Txt>
@@ -100,10 +106,8 @@ export function EmergencyQrPanel({ medicalId }: { medicalId: MedicalIdInfo }) {
               <Button
                 kind="secondary"
                 small
-                icon={ExternalLink}
-                onPress={() =>
-                  void WebBrowser.openBrowserAsync(emergencyUrl(token))
-                }
+                icon={Eye}
+                onPress={() => setPreview(emergencyUrl(token))}
               >
                 See what it shows
               </Button>

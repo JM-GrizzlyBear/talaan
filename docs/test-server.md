@@ -151,12 +151,14 @@ Everything on the website is in the app now. A tour:
 - **Share with a doctor**: a link with a QR code and PIN, see who opened it.
 - **Reminders**: medicines, refills, check-ups; Done / Skip / Snooze; alerts come as **phone notifications** (allow them when asked).
 - **Places**: where the paper copies are, QR labels to print, **Scan a QR label** with the camera.
-- **Family**: invite, accept, profiles without email.
+- **Family**: invite, profiles without email, and **accepting an invitation in the app**: copy the link from the invitation email, then Family → "Got an invitation by email? Open it here".
 - **Search** (the magnifier at the top).
 - **Security**: lock time, two-step sign-in, phones and browsers, sessions, change password. **Your data**: download or delete. **Colors and text size**: the same as on the website.
 - **Locking and offline**: leave the app longer than your lock time → it locks (Face ID / fingerprint, or password). Turn on airplane mode → what you opened before still shows, with a "No internet" note.
 
-Expo Go limits: Face ID asks for "Expo Go" rather than "Talaan", and adding a **passkey** works on the website only for now (the app unlocks with the phone's own Face ID / fingerprint). Both come with the store build.
+Everything happens in the app: creating an account, Forgot password, accepting an invitation, and previewing what a doctor or the emergency QR shows (in a window inside the app). The only things that open outside: phoning an emergency contact (the phone app), saving or sharing a file (the share sheet), and the link to Color Hunt in Colors.
+
+Expo Go limits: tapping a link in an email opens the website, not the app (that needs the store build, so paste invitation links in the app instead). Face ID asks for "Expo Go" rather than "Talaan", and adding a **passkey** works on the website only for now (the app unlocks with the phone's own Face ID / fingerprint). Both come with the store build.
 
 ## Something wrong?
 

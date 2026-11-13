@@ -635,6 +635,7 @@ Each feature goes through the layers in the same order:
 
 - **Reading photos and PDFs** uses the website's reader: the app opens `<website>/app-reader` in a hidden web view and sends it the file. It stays on the phone; nothing is uploaded to read it.
 - **Printing** (lab results, Medical ID card, QR labels) uses the phone's print and share sheet (Save as PDF).
+- **Nothing sends you to the website**: creating an account, Forgot password, accepting a family invitation (paste the emailed link in Family) and previewing a doctor's link or the emergency page (an in-app window) all happen in the app.
 - **Phone notifications** for reminder alerts are planned on the phone for the next 7 days, so they come on time even without internet. Turn them on or off in Reminders → My alerts.
 
 ```bash

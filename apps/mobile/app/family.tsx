@@ -26,8 +26,8 @@ import {
   type SentInvitationInfo,
   type SharedWithMeInfo,
 } from "@talaan/shared";
-import { Stack } from "expo-router";
-import { Baby, Eye, UserPlus, Users } from "lucide-react-native";
+import { Stack, useRouter } from "expo-router";
+import { Baby, Eye, MailOpen, UserPlus, Users } from "lucide-react-native";
 import { type ReactNode, useState } from "react";
 import { Pressable, View } from "react-native";
 import { fieldError } from "../src/api/ApiError";
@@ -51,6 +51,7 @@ import {
 // shared with you (the website's Family page)
 export default function Family() {
   const family = useFamily();
+  const router = useRouter();
   return (
     <Screen
       onRefresh={() => void family.refetch()}
@@ -61,6 +62,14 @@ export default function Family() {
         Share your records one way: the people you invite see yours, and you see
         theirs only if they invite you too.
       </Txt>
+      <Button
+        kind="secondary"
+        small
+        icon={MailOpen}
+        onPress={() => router.push("/invite")}
+      >
+        Got an invitation by email? Open it here
+      </Button>
       {family.isPending ? <Loading /> : null}
       <ErrorNotice error={family.error} />
       {family.data ? (
