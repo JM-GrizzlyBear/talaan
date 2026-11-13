@@ -5,7 +5,12 @@ import {
 } from "@talaan/shared";
 import { Link2 } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { useCreateShare } from "../../../../application/shares/useShares";
+import {
+  useCreateShare,
+  DEFAULT_EXPIRY,
+  type Expiry,
+  expiryDate,
+} from "@talaan/client";
 import { errorMessage, fieldError } from "../../../format/errorMessage";
 import { FormSection } from "../../records/form/FormSection";
 import { CheckboxField } from "../../ui/CheckboxField";
@@ -13,7 +18,6 @@ import { ErrorAlert } from "../../ui/ErrorAlert";
 import { TextAreaField } from "../../ui/TextAreaField";
 import { TextField } from "../../ui/TextField";
 import { buttonPrimary } from "../../ui/styles";
-import { DEFAULT_EXPIRY, type Expiry, expiryDate } from "./expiry";
 import { ExpiryPicker } from "./ExpiryPicker";
 import { MaxViewsField } from "./MaxViewsField";
 import { PinChoice } from "./PinChoice";

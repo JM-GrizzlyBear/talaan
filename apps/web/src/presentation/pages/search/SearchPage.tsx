@@ -9,7 +9,7 @@ import {
 import { Search as SearchIcon, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
-import { useSearch } from "../../../application/search/useSearch";
+import { useSearch } from "@talaan/client";
 import { SearchResultItem } from "../../components/search/SearchResultItem";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { inputBase, listCard } from "../../components/ui/styles";

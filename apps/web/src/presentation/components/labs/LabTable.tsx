@@ -3,9 +3,8 @@ import {
   type LabRecordResults,
   type LabSeries,
 } from "@talaan/shared";
-import { dateLabel } from "./chartScale";
+import { dateLabel, type RecordLink } from "@talaan/client";
 import { RecordDateLink } from "./RecordDateLink";
-import type { RecordLink } from "./recordLink";
 import { ResultCell } from "./ResultCell";
 import { TrendArrow } from "./TrendArrow";
 

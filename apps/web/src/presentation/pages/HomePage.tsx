@@ -11,11 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import {
-  useCurrentUser,
-  useSession,
-  useUpdateSession,
-} from "../../application/auth/useAuth";
+import { useCurrentUser, useSession, useUpdateSession } from "@talaan/client";
 import { Notice } from "../components/ui/Notice";
 import { TalaanLogo } from "../components/brand/TalaanLogo";
 import { inputBase } from "../components/ui/styles";

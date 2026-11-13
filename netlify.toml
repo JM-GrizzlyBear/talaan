@@ -1,0 +1,30 @@
+# The website on Netlify. /api/* is passed on to the API on Render, so the
+# website and the API share one address (the sign-in cookie stays first-party).
+# Set API_ORIGIN in Netlify → Site configuration → Environment variables,
+# like https://talaan-api.onrender.com (README → "Putting it online").
+[build]
+  command = "pnpm --filter @talaan/shared build && pnpm --filter @talaan/client build && pnpm --filter @talaan/web build && node apps/web/scripts/netlify-redirects.mjs"
+  publish = "apps/web/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Install only the website and what it uses (not the API or the phone app)
+  PNPM_FLAGS = "--filter @talaan/web..."
+
+# The same protection the API gave the website before
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; font-src 'self' https: data:; form-action 'self'; frame-ancestors 'self'; img-src 'self' data: blob:; object-src 'none'; script-src 'self' 'wasm-unsafe-eval'; script-src-attr 'none'; style-src 'self' https: 'unsafe-inline'; upgrade-insecure-requests; connect-src 'self' https://api.cloudinary.com"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Referrer-Policy = "no-referrer"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Permissions-Policy = "camera=(self), microphone=(), geolocation=()"
+
+# Built files never change (their names do), so browsers keep them
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

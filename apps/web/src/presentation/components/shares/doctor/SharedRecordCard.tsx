@@ -1,5 +1,5 @@
 import { RECORD_TYPE_LABELS, type SharedRecordInfo } from "@talaan/shared";
-import { shortDate } from "../../../format/dates";
+import { shortDate } from "@talaan/client";
 import { RecordTypeIcon } from "../../records/RecordTypeIcon";
 import { LabTable } from "../../records/view/LabTable";
 import { MedicinesList } from "../../records/view/MedicinesList";

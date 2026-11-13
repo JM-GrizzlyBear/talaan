@@ -1,7 +1,7 @@
 import { TriangleAlert } from "lucide-react";
 import { LabFlagBadge } from "../../LabFlagBadge";
-import { labRowFlag } from "../../form/labRowFlag";
-import type { CheckRow } from "./checkRows";
+import { labRowFlag } from "@talaan/client";
+import type { CheckRow } from "@talaan/client";
 
 type Box = "name" | "value" | "unit" | "rangeLow" | "rangeHigh";
 

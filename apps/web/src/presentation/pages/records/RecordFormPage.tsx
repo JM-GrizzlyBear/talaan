@@ -3,12 +3,10 @@ import { useLocation, useParams, useSearchParams } from "react-router";
 import {
   useRecord,
   useRecordAccounts,
-} from "../../../application/records/useRecords";
-import { RecordForm } from "../../components/records/form/RecordForm";
-import {
   emptyForm,
   formFromRecord,
-} from "../../components/records/form/recordFormState";
+} from "@talaan/client";
+import { RecordForm } from "../../components/records/form/RecordForm";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { Loading } from "../../components/ui/Loading";
 import { errorMessage } from "../../format/errorMessage";

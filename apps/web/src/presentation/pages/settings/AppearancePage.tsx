@@ -10,7 +10,7 @@ import {
 } from "@talaan/shared";
 import { Check, ExternalLink, Monitor, Moon, Sun } from "lucide-react";
 import { useSaveAppearance } from "../../../application/appearance/useAppearance";
-import { useCurrentUser } from "../../../application/auth/useAuth";
+import { useCurrentUser } from "@talaan/client";
 import { ChoiceCard } from "../../components/appearance/ChoiceCard";
 import { ColorHuntPaste } from "../../components/appearance/ColorHuntPaste";
 import { LookPreview } from "../../components/appearance/LookPreview";

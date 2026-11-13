@@ -6,7 +6,7 @@ import {
   removePushDevice,
   saveAlertSettings,
   sendTestPush,
-} from "../../infrastructure/api/remindersApi";
+} from "@talaan/client";
 import {
   browserLabel,
   currentEndpoint,

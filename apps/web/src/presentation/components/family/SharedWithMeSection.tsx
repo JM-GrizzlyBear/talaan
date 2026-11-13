@@ -6,7 +6,7 @@ import {
 } from "@talaan/shared";
 import { Eye } from "lucide-react";
 import { useState } from "react";
-import { useLeaveShared } from "../../../application/family/useFamily";
+import { useLeaveShared } from "@talaan/client";
 import { errorMessage } from "../../format/errorMessage";
 import { ErrorAlert } from "../ui/ErrorAlert";
 import { InlineConfirm } from "../ui/InlineConfirm";

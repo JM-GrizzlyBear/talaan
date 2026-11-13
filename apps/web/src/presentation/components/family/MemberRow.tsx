@@ -7,10 +7,7 @@ import {
   relationshipLabel,
 } from "@talaan/shared";
 import { useState } from "react";
-import {
-  useChangeMemberAccess,
-  useRemoveMember,
-} from "../../../application/family/useFamily";
+import { useChangeMemberAccess, useRemoveMember } from "@talaan/client";
 import { errorMessage } from "../../format/errorMessage";
 import { Badge } from "../ui/Badge";
 import { ErrorAlert } from "../ui/ErrorAlert";

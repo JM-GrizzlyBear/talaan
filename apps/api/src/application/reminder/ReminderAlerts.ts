@@ -53,6 +53,11 @@ export class ReminderAlerts {
     return owner ? fullName(owner) : "";
   }
 
+  // When to check again (null: no alerts coming)
+  async nextDueAt() {
+    return await this.reminders.nextAlertAt();
+  }
+
   // Returns how many alerts went out
   async sendDue(): Promise<number> {
     const now = this.clock.now();

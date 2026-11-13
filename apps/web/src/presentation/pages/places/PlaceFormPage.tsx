@@ -5,11 +5,11 @@ import {
   usePlace,
   usePlaces,
   useUpdatePlace,
-} from "../../../application/places/usePlaces";
-import { useSavePlace } from "../../../application/places/useSavePlace";
-import { useRecordAccounts } from "../../../application/records/useRecords";
+  useSavePlace,
+  useRecordAccounts,
+  emptyPlace,
+} from "@talaan/client";
 import { PlaceFieldsForm } from "../../components/places/PlaceFieldsForm";
-import { emptyPlace } from "../../components/places/placeFormValues";
 import { BackLink } from "../../components/ui/BackLink";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { Loading } from "../../components/ui/Loading";

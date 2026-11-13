@@ -26,7 +26,28 @@
         {
           "faceIDPermission": "Talaan uses Face ID to unlock your family's health records."
         }
-      ]
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Talaan uses the camera to photograph medical papers and scan Talaan QR labels.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Talaan adds photos of medical papers to your records.",
+          "cameraPermission": "Talaan uses the camera to photograph medical papers."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0f766e"
+        }
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": false

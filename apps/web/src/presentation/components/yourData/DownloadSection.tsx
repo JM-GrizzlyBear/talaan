@@ -1,5 +1,5 @@
 import { Download } from "lucide-react";
-import { EXPORT_URL } from "../../../infrastructure/api/yourDataApi";
+import { EXPORT_URL } from "@talaan/client";
 import { buttonPrimary } from "../ui/styles";
 
 // Everything in your own account, as one ZIP

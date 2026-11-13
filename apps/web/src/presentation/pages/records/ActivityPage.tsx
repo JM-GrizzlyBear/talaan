@@ -1,4 +1,4 @@
-import { useActivity } from "../../../application/records/useRecords";
+import { useActivity } from "@talaan/client";
 import { HistoryList } from "../../components/records/HistoryList";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { buttonSecondary } from "../../components/ui/styles";

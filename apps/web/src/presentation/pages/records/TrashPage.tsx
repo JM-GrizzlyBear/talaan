@@ -6,7 +6,9 @@ import {
   useEmptyTrash,
   useRestoreRecord,
   useTrash,
-} from "../../../application/records/useRecords";
+  shortDate,
+  shortDateTime,
+} from "@talaan/client";
 import { RecordTypeIcon } from "../../components/records/RecordTypeIcon";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { Notice } from "../../components/ui/Notice";
@@ -16,7 +18,6 @@ import {
   linkButton,
   listCard,
 } from "../../components/ui/styles";
-import { shortDate, shortDateTime } from "../../format/dates";
 import { errorMessage } from "../../format/errorMessage";
 import { BackLink } from "../../components/ui/BackLink";
 import { InlineConfirm } from "../../components/ui/InlineConfirm";

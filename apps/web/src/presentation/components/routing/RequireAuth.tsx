@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router";
-import { useSession } from "../../../application/auth/useAuth";
+import { useSession } from "@talaan/client";
 import { LockScreen } from "../../pages/auth/LockScreen";
 import { IdleWatcher } from "../auth/IdleWatcher";
 import { Loading } from "../ui/Loading";

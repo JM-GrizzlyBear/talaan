@@ -2,16 +2,17 @@ import { todayText } from "@talaan/shared";
 import { Link2, Printer } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { useLabs } from "../../../application/labs/useLabs";
-import { useRecordAccounts } from "../../../application/records/useRecords";
-import { ChartsGrid } from "../../components/labs/ChartsGrid";
-import { CompareDates } from "../../components/labs/CompareDates";
-import { columnsFor, filterSeries } from "../../components/labs/labFilters";
-import { LabFiltersBar } from "../../components/labs/LabFiltersBar";
 import {
+  useLabs,
+  useRecordAccounts,
+  columnsFor,
+  filterSeries,
   filtersFromParams,
   filtersToParams,
-} from "../../components/labs/labParams";
+} from "@talaan/client";
+import { ChartsGrid } from "../../components/labs/ChartsGrid";
+import { CompareDates } from "../../components/labs/CompareDates";
+import { LabFiltersBar } from "../../components/labs/LabFiltersBar";
 import { LabTable } from "../../components/labs/LabTable";
 import { NeedsAttention } from "../../components/labs/NeedsAttention";
 import { PersonPicker } from "../../components/people/PersonPicker";

@@ -5,7 +5,7 @@ import {
   type DetailCheck,
   needsCheck,
   shown,
-} from "./detailChecks";
+} from "@talaan/client";
 
 const box =
   "w-full rounded-lg border border-edge bg-white px-2.5 text-base text-gray-900";

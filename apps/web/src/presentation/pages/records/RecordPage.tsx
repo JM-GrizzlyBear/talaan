@@ -7,7 +7,9 @@ import { Link, useLocation, useNavigate, useParams } from "react-router";
 import {
   useRecord,
   useRecordHistory,
-} from "../../../application/records/useRecords";
+  shortDate,
+  shortDateTime,
+} from "@talaan/client";
 import { HistoryList } from "../../components/records/HistoryList";
 import { RecordFilesSection } from "../../components/records/files/RecordFilesSection";
 import { RecordTypeIcon } from "../../components/records/RecordTypeIcon";
@@ -19,7 +21,6 @@ import { TextSection } from "../../components/records/view/TextSection";
 import { BackLink } from "../../components/ui/BackLink";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { Loading } from "../../components/ui/Loading";
-import { shortDate, shortDateTime } from "../../format/dates";
 import { errorMessage } from "../../format/errorMessage";
 
 export function RecordPage() {

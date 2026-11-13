@@ -1,11 +1,7 @@
 import { EMAIL_CODE, TRUSTED_BROWSER_DAYS } from "@talaan/shared";
 import { type FormEvent, useState } from "react";
 import { Link } from "react-router";
-import {
-  useResendSignInCode,
-  useSignInCode,
-} from "../../../application/auth/useAuth";
-import { ApiError } from "../../../infrastructure/api/http";
+import { useResendSignInCode, useSignInCode, ApiError } from "@talaan/client";
 import { errorMessage, fieldError } from "../../format/errorMessage";
 import { AuthCard } from "../layout/AuthCard";
 import { CheckboxField } from "../ui/CheckboxField";

@@ -1,6 +1,6 @@
 import type { PlaceInfo } from "@talaan/shared";
 import { QrCode } from "./QrCode";
-import { labelUrl, shownCode } from "./labelAddress";
+import { labelUrl, shownCode } from "@talaan/client";
 
 // The place's QR label, as it prints
 export function LabelPreview({ place }: { place: PlaceInfo }) {

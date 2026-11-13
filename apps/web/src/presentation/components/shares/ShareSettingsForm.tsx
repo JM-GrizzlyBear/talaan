@@ -1,12 +1,11 @@
 import { randomPin, SHARE_LIMITS, type ShareLinkInfo } from "@talaan/shared";
 import { type FormEvent, useState } from "react";
-import { useUpdateShare } from "../../../application/shares/useShares";
+import { useUpdateShare, type Expiry, expiryDate } from "@talaan/client";
 import { errorMessage, fieldError } from "../../format/errorMessage";
 import { ErrorAlert } from "../ui/ErrorAlert";
 import { SelectField } from "../ui/SelectField";
 import { TextField } from "../ui/TextField";
 import { buttonPrimary, buttonSecondary } from "../ui/styles";
-import { type Expiry, expiryDate } from "./form/expiry";
 import { ExpiryPicker } from "./form/ExpiryPicker";
 import { MaxViewsField } from "./form/MaxViewsField";
 

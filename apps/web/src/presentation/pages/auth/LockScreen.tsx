@@ -1,11 +1,7 @@
 import { fullName, type PublicUser } from "@talaan/shared";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router";
-import {
-  useLogOut,
-  usePasskeyUnlock,
-  useUnlock,
-} from "../../../application/auth/useAuth";
+import { useLogOut, usePasskeyUnlock, useUnlock } from "@talaan/client";
 import { passkeysSupported } from "../../../infrastructure/passkeys/devicePasskeys";
 import { PasskeyButton } from "../../components/auth/PasskeyButton";
 import { Notice } from "../../components/ui/Notice";

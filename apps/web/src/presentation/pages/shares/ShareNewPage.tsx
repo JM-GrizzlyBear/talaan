@@ -1,8 +1,5 @@
 import { useNavigate } from "react-router";
-import {
-  useRecordAccounts,
-  useRecordList,
-} from "../../../application/records/useRecords";
+import { useRecordAccounts, useRecordList } from "@talaan/client";
 import { PersonPicker } from "../../components/people/PersonPicker";
 import { usePersonParams } from "../../components/medical/usePersonParams";
 import { ShareForm } from "../../components/shares/form/ShareForm";

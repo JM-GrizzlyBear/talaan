@@ -2,7 +2,7 @@ import type { RecordInfo } from "@talaan/shared";
 import { BellPlus, ChartLine, Link2, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { useMoveToTrash } from "../../../../application/records/useRecords";
+import { useMoveToTrash } from "@talaan/client";
 import { errorMessage } from "../../../format/errorMessage";
 import { ErrorAlert } from "../../ui/ErrorAlert";
 import { buttonDanger, buttonSecondary } from "../../ui/styles";

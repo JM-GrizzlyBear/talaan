@@ -5,9 +5,9 @@ import {
   useAddPasskey,
   usePasskeys,
   useRemovePasskey,
-} from "../../../application/auth/useAccount";
+  shortDateTime,
+} from "@talaan/client";
 import { passkeysSupported } from "../../../infrastructure/passkeys/devicePasskeys";
-import { shortDateTime } from "../../format/dates";
 import { suggestedPasskeyName } from "../../format/deviceName";
 import {
   errorMessage,

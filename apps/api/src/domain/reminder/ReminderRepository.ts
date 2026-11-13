@@ -52,6 +52,9 @@ export interface ReminderRepository {
 
   // Reminders with an alert due by now (not paused)
   dueForAlerts(now: Date, limit: number): Promise<Reminder[]>;
+  // When the next alert of any reminder is due (null: none), so the server
+  // can wait until then instead of asking the database every minute
+  nextAlertAt(): Promise<Date | null>;
   // The owner and everyone the account is shared with, minus those who
   // turned this reminder's alerts off
   recipients(reminderId: string, ownerId: string): Promise<AlertRecipient[]>;

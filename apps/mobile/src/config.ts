@@ -1,6 +1,7 @@
-// Where the Talaan server is. Set EXPO_PUBLIC_API_URL in apps/mobile/.env
-// (Expo puts it into the app when it starts). The website is on the same
-// address for now (the test server serves both).
+// Where Talaan is. Set EXPO_PUBLIC_API_URL in apps/mobile/.env (Expo puts it
+// into the app when it starts): the website's address, like
+// https://talaan.netlify.app. The API answers there too (/api), so one
+// address is enough. EXPO_PUBLIC_WEB_URL is only for a website elsewhere.
 const fromEnv = process.env.EXPO_PUBLIC_API_URL;
 
 export const API_URL = (fromEnv || "http://localhost:4000").replace(/\/+$/, "");

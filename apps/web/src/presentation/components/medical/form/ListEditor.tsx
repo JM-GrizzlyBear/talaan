@@ -2,7 +2,7 @@ import { ArrowDown, ArrowUp, Plus } from "lucide-react";
 import { SelectField } from "../../ui/SelectField";
 import { TextField } from "../../ui/TextField";
 import { buttonSecondary, linkButton } from "../../ui/styles";
-import { move } from "./medicalFormState";
+import { moveItem } from "@talaan/client";
 
 export interface Column<T> {
   key: keyof T & string;
@@ -87,7 +87,7 @@ export function ListEditor<T extends Record<string, string>>({
               <>
                 <button
                   type="button"
-                  onClick={() => onChange(move(items, index, -1))}
+                  onClick={() => onChange(moveItem(items, index, -1))}
                   disabled={index === 0}
                   aria-label={`Move ${itemLabel} ${index + 1} up`}
                   className={`${linkButton} disabled:opacity-40`}
@@ -96,7 +96,7 @@ export function ListEditor<T extends Record<string, string>>({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onChange(move(items, index, 1))}
+                  onClick={() => onChange(moveItem(items, index, 1))}
                   disabled={index === items.length - 1}
                   aria-label={`Move ${itemLabel} ${index + 1} down`}
                   className={`${linkButton} disabled:opacity-40`}

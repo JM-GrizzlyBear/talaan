@@ -4,11 +4,11 @@ import {
   useLabel,
   useNameLabel,
   usePlaces,
-} from "../../../application/places/usePlaces";
-import { useSavePlace } from "../../../application/places/useSavePlace";
+  useSavePlace,
+  emptyPlace,
+  shownCode,
+} from "@talaan/client";
 import { PlaceFieldsForm } from "../../components/places/PlaceFieldsForm";
-import { emptyPlace } from "../../components/places/placeFormValues";
-import { shownCode } from "../../components/places/labelAddress";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { Loading } from "../../components/ui/Loading";
 import { errorMessage } from "../../format/errorMessage";

@@ -5,10 +5,7 @@ import type {
 } from "@talaan/shared";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import {
-  useCreateReminder,
-  useUpdateReminder,
-} from "../../../../application/reminders/useReminders";
+import { useCreateReminder, useUpdateReminder } from "@talaan/client";
 import { errorMessage, fieldError } from "../../../format/errorMessage";
 import { ErrorAlert } from "../../ui/ErrorAlert";
 import { buttonPrimary, buttonSecondary } from "../../ui/styles";
@@ -18,11 +15,11 @@ import { EndSection } from "./EndSection";
 import type { SetReminder } from "./formParts";
 import { KindChooser } from "./KindChooser";
 import {
-  fieldsFromForm,
+  reminderFieldsFromForm,
   KIND_ALERTS,
   type ReminderFormState,
   SERVER_FIELDS,
-} from "./reminderFormState";
+} from "@talaan/client";
 import { RepeatSection } from "./RepeatSection";
 import { SchedulePreview } from "./SchedulePreview";
 import { WhenSection } from "./WhenSection";
@@ -84,7 +81,7 @@ export function ReminderForm({
       setLocalErrors({ kind: "Choose what it's for" });
       return;
     }
-    const { fields, errors } = fieldsFromForm(form);
+    const { fields, errors } = reminderFieldsFromForm(form);
     setLocalErrors(errors);
     if (!fields) return;
     try {

@@ -1,4 +1,4 @@
-import type { ReminderFormState } from "./reminderFormState";
+import type { ReminderFormState } from "@talaan/client";
 
 export type SetReminder = <K extends keyof ReminderFormState>(
   key: K,

@@ -1,8 +1,11 @@
 import type { ReadLabDocument } from "../../../../../infrastructure/reader/readLabDocument";
 import { CheckRows } from "../check/CheckRows";
-import type { CheckRow } from "../check/checkRows";
+import {
+  type CheckRow,
+  type DetailCheck,
+  type MedicineCheck,
+} from "@talaan/client";
 import { DetailCheckCard } from "./DetailCheckCard";
-import type { DetailCheck, MedicineCheck } from "./detailChecks";
 import { MedicineCheckCard } from "./MedicineCheckCard";
 
 // The picture beside everything read from it

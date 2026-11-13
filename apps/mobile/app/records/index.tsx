@@ -1,156 +1,222 @@
+import { shortDate, useRecordAccounts, useRecordList } from "@talaan/client";
 import {
-  parseSearch,
   RECORD_TYPE_LABELS,
   RECORD_TYPES,
   type RecordType,
-  scoreSearch,
 } from "@talaan/shared";
-import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
-import { messageOf } from "../../src/api/ApiError";
-import { useSession } from "../../src/auth/SessionProvider";
-import { useSavedQuery } from "../../src/offline/useSavedQuery";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import {
+  ChartLine,
+  ClipboardList,
+  Paperclip,
+  Plus,
+  Trash,
+} from "lucide-react-native";
+import { View } from "react-native";
+import { RECORD_ICONS } from "../../src/records/RecordTypeIcon";
 import { useTheme } from "../../src/theme/ThemeProvider";
-import { shortDate } from "../../src/ui/dates";
-import { Card, Loading, Notice, Screen, Txt } from "../../src/ui/kit";
-import { OfflineNote } from "../../src/ui/OfflineNote";
-import { PersonPicker } from "../../src/ui/PersonPicker";
-import { usePeople } from "../../src/ui/usePeople";
+import { AccountSelect, PersonSelect } from "../../src/ui/accounts";
+import { Select } from "../../src/ui/form";
+import {
+  Badge,
+  Button,
+  Buttons,
+  Empty,
+  ErrorNotice,
+  List,
+  Loading,
+  Notice,
+  Row,
+  Screen,
+  Txt,
+} from "../../src/ui/kit";
 
-// One person's records, newest first: find, filter by type, open
+// Records, newest first, filtered by whose, who and type (like the website)
 export default function Records() {
   const t = useTheme();
   const router = useRouter();
-  const { api } = useSession();
-  const { people, person, choose, accounts } = usePeople();
-  const [type, setType] = useState<RecordType | "">("");
-  const [search, setSearch] = useState("");
-  const list = useSavedQuery(
-    ["records", person?.ownerId, person?.profileId],
-    () => api.records(person!.ownerId, person!.profileId),
-    Boolean(person),
-  );
+  const params = useLocalSearchParams<{
+    owner?: string;
+    person?: string;
+    type?: string;
+    trashed?: string;
+  }>();
+  const accounts = useRecordAccounts();
+  const list = accounts.data ?? [];
+  const account =
+    list.find((a) => a.ownerId === params.owner) ?? list[0] ?? null;
+  const person = params.person ?? "";
+  const type = (params.type ?? "") as RecordType | "";
+  const records = useRecordList({
+    ownerId: account?.ownerId,
+    profileId: person || undefined,
+    type: type || undefined,
+  });
 
-  const query = parseSearch(search);
-  const records = (list.data?.records ?? [])
-    .filter((r) => !type || r.type === type)
-    .filter(
-      (r) =>
-        query.length === 0 ||
-        scoreSearch(query, [
-          { text: r.title, weight: 3 },
-          { text: RECORD_TYPE_LABELS[r.type], weight: 2 },
-          {
-            text: `${r.facility} ${r.doctor} ${r.recordDate} ${shortDate(r.recordDate)}`,
-            weight: 1,
-          },
-        ]).score > 0,
-    );
-  const types = RECORD_TYPES.filter((k) =>
-    list.data?.records.some((r) => r.type === k),
-  );
+  const setFilter = (key: "owner" | "person" | "type", value: string) =>
+    router.setParams({
+      [key]: value || undefined,
+      trashed: undefined,
+      ...(key === "owner" ? { person: undefined } : {}),
+    });
+
+  const canAdd = account?.role === "owner" || account?.role === "manage";
+  const add = () =>
+    router.push({
+      pathname: "/records/new",
+      params: {
+        ...(account ? { owner: account.ownerId } : {}),
+        ...(person ? { person } : {}),
+      },
+    });
 
   return (
     <Screen
-      onRefresh={() => void list.refetch()}
-      refreshing={list.isRefetching}
+      onRefresh={() => void records.refetch()}
+      refreshing={records.isRefetching}
     >
-      <PersonPicker people={people} chosen={person} onChoose={choose} />
-      <OfflineNote savedAt={list.savedAt} />
-      <TextInput
-        value={search}
-        onChangeText={setSearch}
-        placeholder="Find: CBC, X-ray, St. Luke's, dugo…"
-        placeholderTextColor={t.muted}
-        accessibilityLabel="Find records"
-        clearButtonMode="while-editing"
-        style={{
-          minHeight: 46,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: t.edge,
-          backgroundColor: t.card,
-          color: t.ink,
-          paddingHorizontal: 14,
-          fontSize: 16 * t.scale,
-        }}
-      />
-      {types.length > 1 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {(["", ...types] as const).map((k) => {
-            const on = type === k;
-            return (
-              <Pressable
-                key={k || "all"}
-                onPress={() => setType(k)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: on }}
-                style={{
-                  minHeight: 36,
-                  justifyContent: "center",
-                  paddingHorizontal: 12,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: on ? t.brand : t.edge,
-                  backgroundColor: on ? t.brandSoft : t.card,
-                }}
-              >
-                <Txt
-                  tone="small"
-                  color={on ? t.deep : t.ink}
-                  style={{ fontWeight: "600" }}
-                >
-                  {k ? RECORD_TYPE_LABELS[k] : "All"}
-                </Txt>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      )}
-      {(accounts.isPending || list.isPending) && <Loading />}
-      {list.isError && <Notice tone="error">{messageOf(list.error)}</Notice>}
-      {list.data && records.length === 0 && (
-        <Txt muted>
-          {list.data.records.length === 0
-            ? "No records yet. Add them on the website for now."
-            : "No records match."}
-        </Txt>
-      )}
-      <View style={{ gap: 10 }}>
-        {records.map((r) => (
-          <Card
-            key={r.id}
-            onPress={() => router.push(`/records/${r.id}`)}
-            label={`${r.title}, ${shortDate(r.recordDate)}`}
+      <Stack.Screen options={{ title: "Records" }} />
+      <Buttons>
+        {canAdd ? (
+          <Button small icon={Plus} onPress={add}>
+            Add record
+          </Button>
+        ) : null}
+        {account ? (
+          <Button
+            kind="secondary"
+            small
+            icon={ChartLine}
+            onPress={() =>
+              router.push({
+                pathname: "/labs",
+                params: { owner: account.ownerId },
+              })
+            }
           >
-            <Txt tone="small" color={t.brand} style={{ fontWeight: "700" }}>
-              {RECORD_TYPE_LABELS[r.type]}
-            </Txt>
-            <Txt tone="heading">{r.title}</Txt>
-            <Txt tone="small" muted>
-              {[
-                shortDate(r.recordDate),
-                r.facility,
-                r.fileCount > 0 &&
-                  `${r.fileCount} ${r.fileCount === 1 ? "photo" : "photos"}`,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </Txt>
-            {r.outOfRange > 0 && (
-              <Txt tone="small" color={t.danger} style={{ fontWeight: "600" }}>
-                {r.outOfRange} {r.outOfRange === 1 ? "result" : "results"}{" "}
-                outside the normal range
-              </Txt>
-            )}
-          </Card>
-        ))}
-      </View>
+            Lab results
+          </Button>
+        ) : null}
+        {account?.role === "owner" ? (
+          <>
+            <Button
+              kind="secondary"
+              small
+              icon={ClipboardList}
+              onPress={() => router.push("/activity")}
+            >
+              Activity
+            </Button>
+            <Button
+              kind="secondary"
+              small
+              icon={Trash}
+              onPress={() => router.push("/records/trash")}
+            >
+              Trash
+            </Button>
+          </>
+        ) : null}
+      </Buttons>
+
+      {params.trashed ? (
+        <Notice>
+          {`“${params.trashed}” was moved to the Trash. ${account?.role === "owner" ? "You can restore it there for 30 days." : "The owner can restore it for 30 days."}`}
+        </Notice>
+      ) : null}
+      <ErrorNotice error={accounts.error} />
+
+      {account ? (
+        <View style={{ gap: 12 }}>
+          <AccountSelect
+            accounts={list}
+            value={account.ownerId}
+            onChange={(v) => setFilter("owner", v)}
+          />
+          <PersonSelect
+            account={account}
+            value={person}
+            onChange={(v) => setFilter("person", v)}
+          />
+          <Select
+            label="Type"
+            value={type}
+            onChange={(v) => setFilter("type", v)}
+            options={[
+              { value: "" as RecordType | "", label: "All types" },
+              ...RECORD_TYPES.map((v) => ({
+                value: v,
+                label: RECORD_TYPE_LABELS[v],
+              })),
+            ]}
+          />
+        </View>
+      ) : null}
+
+      {account?.role === "view" ? (
+        <Txt tone="small" muted>
+          {account.ownerName} shared these records with you to view.
+        </Txt>
+      ) : null}
+
+      {records.isPending && account ? <Loading /> : null}
+      <ErrorNotice error={records.error} />
+      {records.data && records.data.records.length === 0 ? (
+        <Empty
+          title="No records here yet."
+          text={
+            person || type
+              ? "Try another person or type."
+              : "Start with the last X-ray, lab result or prescription you have on hand."
+          }
+          action={
+            canAdd && !person && !type ? (
+              <Button onPress={add}>Add the first record</Button>
+            ) : undefined
+          }
+        />
+      ) : null}
+      {records.data && records.data.records.length > 0 ? (
+        <List>
+          {records.data.records.map((record, i) => (
+            <Row
+              key={record.id}
+              first={i === 0}
+              icon={RECORD_ICONS[record.type]}
+              title={record.title}
+              badge={
+                record.outOfRange > 0 ? (
+                  <Badge tone="danger">{`${record.outOfRange} out of range`}</Badge>
+                ) : undefined
+              }
+              subtitle={`${RECORD_TYPE_LABELS[record.type]} · ${record.personName}${record.facility ? ` · ${record.facility}` : ""}`}
+              right={
+                <View style={{ alignItems: "flex-end", gap: 2 }}>
+                  <Txt tone="small" muted>
+                    {shortDate(record.recordDate)}
+                  </Txt>
+                  {record.fileCount > 0 ? (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 2,
+                      }}
+                      accessibilityLabel={`${record.fileCount} ${record.fileCount === 1 ? "file" : "files"}`}
+                    >
+                      <Paperclip size={12} color={t.muted} />
+                      <Txt tone="tiny" muted>
+                        {record.fileCount}
+                      </Txt>
+                    </View>
+                  ) : null}
+                </View>
+              }
+              onPress={() => router.push(`/records/${record.id}`)}
+            />
+          ))}
+        </List>
+      ) : null}
     </Screen>
   );
 }

@@ -1,5 +1,4 @@
-import { useMedicalId } from "../../../application/medical/useMedicalId";
-import { useRecordAccounts } from "../../../application/records/useRecords";
+import { useMedicalId, useRecordAccounts } from "@talaan/client";
 import { MedicalIdForm } from "../../components/medical/form/MedicalIdForm";
 import { usePersonParams } from "../../components/medical/usePersonParams";
 import { BackLink } from "../../components/ui/BackLink";

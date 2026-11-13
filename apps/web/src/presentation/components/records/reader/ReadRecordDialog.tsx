@@ -3,9 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import { useLabReader } from "../../../../application/reader/useLabReader";
 import { ErrorAlert } from "../../ui/ErrorAlert";
 import { buttonPrimary, buttonSecondary } from "../../ui/styles";
-import { type RecordFormState, todayLocal } from "../form/recordFormState";
-import { chosenRows, toCheckRows, type CheckRow } from "./check/checkRows";
 import {
+  type RecordFormState,
+  todayLocal,
+  chosenRows,
+  toCheckRows,
+  type CheckRow,
   applyChecks,
   type DetailCheck,
   doubtCount,
@@ -13,10 +16,10 @@ import {
   notFound,
   toDetailChecks,
   toMedicineChecks,
-} from "./details/detailChecks";
+  canRead,
+} from "@talaan/client";
 import { DetailsCheckStep } from "./details/DetailsCheckStep";
 import { ReaderFrame } from "./ReaderFrame";
-import { canRead } from "./readableFiles";
 import { ChooseSource } from "./steps/ChooseSource";
 import { ReadingProgress } from "./steps/ReadingProgress";
 

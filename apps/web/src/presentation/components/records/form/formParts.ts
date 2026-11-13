@@ -1,4 +1,4 @@
-import type { RecordFormState } from "./recordFormState";
+import type { RecordFormState } from "@talaan/client";
 
 // What every part of the record form gets: the values, a way to change one,
 // and the message for a box ("title", "details.hmo", …), if there is one

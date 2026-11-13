@@ -1,6 +1,6 @@
 import type { PlaceSummary } from "@talaan/shared";
 import { linkButton } from "../../ui/styles";
-import { placeTree } from "../placeTree";
+import { placeTree } from "@talaan/client";
 
 // Ticking which places get a label
 export function ChoosePlaces({

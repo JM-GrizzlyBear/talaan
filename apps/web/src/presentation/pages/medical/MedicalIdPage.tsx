@@ -8,8 +8,9 @@ import { Link } from "react-router";
 import {
   useMarkChecked,
   useMedicalId,
-} from "../../../application/medical/useMedicalId";
-import { useRecordAccounts } from "../../../application/records/useRecords";
+  useRecordAccounts,
+  shortDate,
+} from "@talaan/client";
 import { EmergencyQrPanel } from "../../components/medical/EmergencyQrPanel";
 import { LockScreenMaker } from "../../components/medical/lockscreen/LockScreenMaker";
 import { MedicalIdView } from "../../components/medical/MedicalIdView";
@@ -19,7 +20,6 @@ import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { Loading } from "../../components/ui/Loading";
 import { Notice } from "../../components/ui/Notice";
 import { buttonPrimary, buttonSecondary } from "../../components/ui/styles";
-import { shortDate } from "../../format/dates";
 import { errorMessage } from "../../format/errorMessage";
 
 // Ask again after this long without a check

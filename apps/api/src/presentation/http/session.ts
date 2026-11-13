@@ -44,7 +44,13 @@ export function createSessionMiddleware(options: {
 }) {
   const PgStore = connectPgSimple(session);
   return session({
-    store: new PgStore({ pool: options.pool, tableName: "session" }),
+    // Ended sessions are cleared by the hourly job (main.ts), not every 15
+    // minutes, so the free database can sleep
+    store: new PgStore({
+      pool: options.pool,
+      tableName: "session",
+      pruneSessionInterval: false,
+    }),
     name: SESSION_COOKIE,
     secret: options.secret,
     resave: false,

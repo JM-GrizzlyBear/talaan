@@ -1,5 +1,5 @@
 import { CheckRowCard } from "./CheckRowCard";
-import type { CheckRow } from "./checkRows";
+import type { CheckRow } from "@talaan/client";
 
 // Every read row, each one editable
 export function CheckRows({

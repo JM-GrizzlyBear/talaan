@@ -1,6 +1,5 @@
 import { Link } from "react-router";
-import { dateLabel } from "./chartScale";
-import { type RecordLink, recordPage } from "./recordLink";
+import { dateLabel, type RecordLink, recordPage } from "@talaan/client";
 
 const linkClass = "font-semibold text-brand underline-offset-2 hover:underline";
 

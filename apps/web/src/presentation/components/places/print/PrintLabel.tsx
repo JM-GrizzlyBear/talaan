@@ -1,7 +1,6 @@
 import { PLACE_KIND_LABELS, type PlaceKind } from "@talaan/shared";
 import { QrCode } from "../QrCode";
-import { labelUrl, shownCode } from "../labelAddress";
-import type { Size } from "./sizes";
+import { labelUrl, shownCode, type Size } from "@talaan/client";
 
 export interface LabelItem {
   code: string;

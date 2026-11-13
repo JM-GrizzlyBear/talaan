@@ -1,9 +1,8 @@
 import type { AgendaInfo } from "@talaan/shared";
 import { Link } from "react-router";
-import { isMissed } from "./agendaItems";
+import { isMissed, dayHeading, dayKey, timeText } from "@talaan/client";
 import { OccurrenceActions } from "./OccurrenceActions";
 import { ReminderKindIcon } from "./ReminderKindIcon";
-import { dayHeading, dayKey, timeText } from "./reminderTimes";
 import { StateBadge } from "./StateBadge";
 
 type Item = AgendaInfo["items"][number];

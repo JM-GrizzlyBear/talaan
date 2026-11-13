@@ -6,13 +6,12 @@ import {
   type FamilyRelationship,
 } from "@talaan/shared";
 import { type FormEvent, useState } from "react";
-import { useInviteFamily } from "../../../application/family/useFamily";
+import { useInviteFamily, relationshipOptions } from "@talaan/client";
 import { errorMessage, fieldError } from "../../format/errorMessage";
 import { ErrorAlert } from "../ui/ErrorAlert";
 import { SelectField } from "../ui/SelectField";
 import { TextField } from "../ui/TextField";
 import { buttonPrimary, buttonSecondary } from "../ui/styles";
-import { relationshipOptions } from "./relationshipOptions";
 
 // Invite by email: who they are to you and what they can do
 export function InviteForm({

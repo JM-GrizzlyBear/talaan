@@ -1,7 +1,6 @@
 import type { RecordAccountInfo } from "@talaan/shared";
 import { Link } from "react-router";
-import { usePlaces } from "../../../../application/places/usePlaces";
-import { placeOptions } from "../../places/placeTree";
+import { usePlaces, placeOptions } from "@talaan/client";
 import { SelectField } from "../../ui/SelectField";
 import type { FormPartProps } from "./formParts";
 

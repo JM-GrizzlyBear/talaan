@@ -267,6 +267,16 @@ export class PostgresReminderRepository implements ReminderRepository {
     return result.rows.map(toReminder);
   }
 
+  async nextAlertAt() {
+    const result = await this.pool.query<{ at: Date | null }>(
+      `select min(r.next_alert_at) as at from reminders r
+        where not r.paused and r.next_alert_at is not null
+          and not exists (select 1 from users o
+                           where o.id = r.owner_id and o.suspended_at is not null)`,
+    );
+    return result.rows[0]?.at ?? null;
+  }
+
   async recipients(reminderId: string, ownerId: string) {
     const result = await this.pool.query<{
       id: string;

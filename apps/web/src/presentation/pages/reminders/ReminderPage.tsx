@@ -13,17 +13,17 @@ import {
   useRemoveReminder,
   useSetMyAlerts,
   useSetPaused,
-} from "../../../application/reminders/useReminders";
+  whenText,
+  shortDateTime,
+} from "@talaan/client";
 import { OccurrenceActions } from "../../components/reminders/OccurrenceActions";
 import { ReminderKindIcon } from "../../components/reminders/ReminderKindIcon";
-import { whenText } from "../../components/reminders/reminderTimes";
 import { StateBadge } from "../../components/reminders/StateBadge";
 import { BackLink } from "../../components/ui/BackLink";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { InlineConfirm } from "../../components/ui/InlineConfirm";
 import { Loading } from "../../components/ui/Loading";
 import { buttonSecondary, dangerLinkButton } from "../../components/ui/styles";
-import { shortDateTime } from "../../format/dates";
 import { errorMessage } from "../../format/errorMessage";
 
 export function ReminderPage() {

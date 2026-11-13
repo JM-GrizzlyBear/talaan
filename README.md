@@ -131,19 +131,20 @@ Talaan keeps records. It doesn't diagnose or give medical advice.
 
 ## Tech stack
 
-| Part     | Tools                                                                     |
-| -------- | ------------------------------------------------------------------------- |
-| Monorepo | Turborepo, pnpm workspaces                                                |
-| API      | Node 22, Express 5, TypeScript, PostgreSQL (`pg`), dbmate migrations, zod |
-| Login    | bcryptjs, express-session, connect-pg-simple (sessions in Postgres)       |
-| Email    | nodemailer: Mailpit locally, Brevo on the live site                       |
-| Security | helmet (security headers), rate limits, HMAC-hashed reset codes           |
-| Website  | React 19, Vite, Tailwind CSS v4, TanStack Query, React Router             |
-| Shared   | `packages/shared`: zod schemas and types used by the API and the website  |
-| Tests    | Vitest, supertest                                                         |
-| Docker   | Postgres 17 for development; one production image (API + website)         |
-| CI       | GitHub Actions                                                            |
-| Hosting  | Netlify (website), Render (API), Neon (database)                          |
+| Part     | Tools                                                                       |
+| -------- | --------------------------------------------------------------------------- |
+| Monorepo | Turborepo, pnpm workspaces                                                  |
+| API      | Node 22, Express 5, TypeScript, PostgreSQL (`pg`), dbmate migrations, zod   |
+| Login    | bcryptjs, express-session, connect-pg-simple (sessions in Postgres)         |
+| Email    | nodemailer: Mailpit locally, Brevo on the live site                         |
+| Security | helmet (security headers), rate limits, HMAC-hashed reset codes             |
+| Website  | React 19, Vite, Tailwind CSS v4, TanStack Query, React Router               |
+| Shared   | `packages/shared`: zod schemas and types used by the API, website and app   |
+| Client   | `packages/client`: API calls, data hooks and form logic for website and app |
+| Tests    | Vitest, supertest                                                           |
+| Docker   | Postgres 17 for development; one production image (API + website)           |
+| CI       | GitHub Actions                                                              |
+| Hosting  | Netlify (website), Render (API), Neon (database)                            |
 
 ---
 
@@ -203,7 +204,8 @@ On the website, a page in `pages/<feature>/` stays short: it loads data and puts
 talaan/
 ├── .env.example             # copy to .env → the Postgres user/password for docker compose
 ├── docker-compose.yml       # db (Postgres) and app (the production image)
-├── Dockerfile               # production image: builds everything, the API serves the website
+├── Dockerfile               # one-server image (docker compose): the API also serves the website
+├── netlify.toml             # the website on Netlify: build, /api → Render, security headers
 ├── package.json             # root scripts, pinned pnpm version, Prettier
 ├── pnpm-workspace.yaml      # workspace: apps/* and packages/*; saveExact (no ^ versions)
 ├── turbo.json               # tasks: build, dev, check-types, lint, test, db:*
@@ -212,6 +214,7 @@ talaan/
 │   └── clear-database.yml   # manual: empty every table of the database in the DATABASE_URL secret
 ├── apps/
 │   ├── api/                 # Express API
+│   │   ├── Dockerfile       # the API alone, for Render (runs the migrations, then the API)
 │   │   ├── .env.example     # copy to apps/api/.env → the API's settings
 │   │   ├── db/migrations/   # SQL migrations (dbmate): users, session, codes, passkeys, remembered browsers, family, records, the audit log and record files
 │   │   ├── vitest.config.ts # two test projects: unit and integration
@@ -227,26 +230,29 @@ talaan/
 │   │       ├── presentation/http/   # routes/ (one file per feature), json/ (what the browser receives), middleware/, session, errors
 │   │       ├── config/env.ts        # reads and checks the environment variables
 │   │       ├── composition/         # wiring per area (accounts, family, records), repositories, rate limits
+│   │       ├── scheduler/           # background jobs: reminder alerts when due, hourly clean-up
 │   │       ├── buildApp.ts          # composition root (also used by the tests)
 │   │       └── main.ts              # starts the server
 │   ├── mobile/              # Expo phone app (iPhone and Android)
 │   │   ├── .env.example     # copy to apps/mobile/.env → EXPO_PUBLIC_API_URL
-│   │   ├── app/             # screens (expo-router): sign-in, home, records/, medical-id, settings
+│   │   ├── app/             # screens (expo-router), the same as the website's pages: records/, labs/, medical-id/, shares/, reminders/, places/, family, search, scan, activity, settings/
 │   │   └── src/
-│   │       ├── api/         # the API client (bearer token, ApiError), endpoints
-│   │       ├── auth/        # session, lock rules, lock screen, Face ID / fingerprint
+│   │       ├── api/         # connects @talaan/client to the phone: bearer token, remembered phone, wake-up, "unlock first"
+│   │       ├── auth/        # session, lock rules, lock screen, Face ID / fingerprint, reset password
 │   │       ├── storage/     # secure storage, encrypted offline copies (AES-GCM)
-│   │       ├── offline/     # useSavedQuery: online → save a copy; offline → show it
+│   │       ├── offline/     # every answer saved encrypted; shown when there's no internet
 │   │       ├── theme/       # the same colors as the website (from shared)
-│   │       ├── records/     # lab table, medicines, photos
-│   │       └── ui/          # shared pieces: Screen, Card, Button, Field, PersonPicker, QR
+│   │       ├── records/ labs/ medical/ shares/ reminders/ places/   # each feature's parts
+│   │       ├── reader/      # reads photos and PDFs with the website's reader (hidden web view)
+│   │       ├── files/ print/   # camera, photos, files; printing and the share sheet
+│   │       └── ui/          # shared pieces: Screen, Card, Button, Field, Select, DateField, NavBar, QR
 │   └── web/                 # React website (Vite)
 │       ├── public/          # favicon and app icons (the Talaan logo); reader/ is copied there (not in git)
-│       ├── scripts/         # copy-reader-files.mjs: puts the lab reader's files in public/reader/
+│       ├── scripts/         # copy-reader-files.mjs (the lab reader's files); netlify-redirects.mjs (/api → API_ORIGIN)
 │       ├── vite.config.ts   # dev server: forwards /api to the API on port 4000
 │       └── src/
-│           ├── infrastructure/      # api/ (fetch + ApiError, authApi, accountApi), passkeys/ (the device prompt), reader/ (photo/ and pdf/: text from photos and PDFs)
-│           ├── application/         # auth/, family/ and records/ hooks (TanStack Query); reader/ (reading a lab result step by step)
+│           ├── infrastructure/      # passkeys/ (the device prompt), reader/ (photo/ and pdf/: text from photos and PDFs)
+│           ├── application/         # reader/ (reading a lab result step by step); the API calls and hooks are in packages/client
 │           ├── presentation/
 │           │   ├── components/      # per feature: auth/, family/, records/ (form/, view/, files/, reader/ with steps/ and check/), security/; plus brand/, layout/, routing/, ui/ (shared pieces)
 │           │   ├── pages/           # auth/, records/, family/, settings/: short pages that put components together
@@ -254,6 +260,7 @@ talaan/
 │           ├── App.tsx              # routes
 │           └── index.css            # Tailwind and the theme colors
 └── packages/
+    ├── client/              # @talaan/client, used by the website and the app: api/ (calls, ApiError, uploads), hooks/ (TanStack Query), logic/ (form states, label layouts, chart scales…)
     └── shared/              # form rules and types used by both: auth/, family/, records/, scan/ (lab line reader, one step per file; tests/ lists the known lab tests), files, audit
 ```
 
@@ -441,13 +448,15 @@ The API secret is like a password: keep it only in `apps/api/.env` and Render's 
 
 ## Reminders and alerts
 
-**How alerts go out.** Every minute, the API checks which alerts are due and sends them by email and browser notification. Each alert is written down before it's sent, so it goes out **once per person and way**, even after a restart. If the server was asleep, it catches up when it wakes: only the latest alert of each time is sent, and nothing older than 3 hours (too late to help). Times marked done or skipped send nothing more; a snooze sends one alert when it ends.
+**How alerts go out.** The API knows when the next alert is due (one small query) and sleeps until then, at most an hour; adding or changing a reminder wakes it to look again. It doesn't ask the database every minute, so the free Neon database can sleep between alerts. When an alert is due, it sends it by email and browser notification. Each alert is written down before it's sent, so it goes out **once per person and way**, even after a restart. If the server was asleep, it catches up when it wakes: only the latest alert of each time is sent, and nothing older than 3 hours (too late to help). Times marked done or skipped send nothing more; a snooze sends one alert when it ends.
 
 **Keep the free server awake.** Render's free plan puts the API to sleep after 15 minutes without visits, and a sleeping server can't send alerts. Have a free service visit it:
 
 1. Sign up at [cron-job.org](https://cron-job.org) (free).
-2. **Create cronjob**: URL `https://<your-api>.onrender.com/api/health`, schedule **every 14 minutes** (not 15: that's exactly when Render puts it to sleep). Save.
-3. That's all: the visits keep it awake, and the API sends alerts on its own every minute. Render's 750 free hours a month cover one always-on service (a 31-day month is 744 hours), so keep the API the only free service on that Render account.
+2. **Create cronjob**: URL `https://<your-api>.onrender.com/api/ping`, schedule **every 10 minutes**. Save.
+3. That's all. `/api/ping` doesn't touch the database (`/api/health` does), so the visits keep the API awake without keeping Neon awake. Render's 750 free hours a month cover one always-on service (a 31-day month is 744 hours), so keep the API the only free service on that Render account.
+
+The app also visits `/api/ping` when it opens and when you come back to it, and says "Talaan is starting up…" while a sleeping API wakes. Once an hour the API also empties old Trash, deletes accounts whose 30 days are over, and clears ended sessions.
 
 **Browser notifications (VAPID keys).** Web Push needs a key pair, made once:
 
@@ -620,7 +629,14 @@ Each feature goes through the layers in the same order:
 
 `apps/mobile` is an Expo app (SDK 58) for iPhone and Android, on the same API as the website.
 
-**Try it on your phone:** [docs/test-server.md](docs/test-server.md) sets up a free test server (Render + Neon) and opens the app in **Expo Go**.
+**Put it online and try it on your phone:** [docs/test-server.md](docs/test-server.md) sets up the website on Netlify, the API on Render, the database on Neon, a keep-awake visit on cron-job.org, and opens the app in **Expo Go**. Point the app at the **Netlify** address.
+
+**The app does what the website does**: records (by hand, from a photo, files, compare, Trash, Activity), lab results (table, charts, print), Medical ID (emergency QR, lock-screen picture, wallet card), sharing with a doctor, reminders with **phone notifications**, places and QR labels (print and scan), family, search, security, your data, and colors. Both use **`packages/client`** (`@talaan/client`): the same API calls, data hooks (TanStack Query) and form rules, so a fix there fixes both.
+
+- **Reading photos and PDFs** uses the website's reader: the app opens `<website>/app-reader` in a hidden web view and sends it the file. It stays on the phone; nothing is uploaded to read it.
+- **Printing** (lab results, Medical ID card, QR labels) uses the phone's print and share sheet (Save as PDF).
+- **Nothing sends you to the website**: creating an account, Forgot password, accepting a family invitation (paste the emailed link in Family) and previewing a doctor's link or the emergency page (an in-app window) all happen in the app.
+- **Phone notifications** for reminder alerts are planned on the phone for the next 7 days, so they come on time even without internet. Turn them on or off in Reminders → My alerts.
 
 ```bash
 cp apps/mobile/.env.example apps/mobile/.env   # EXPO_PUBLIC_API_URL=…
@@ -633,8 +649,9 @@ To use your own computer's API instead, put its Wi-Fi address in `EXPO_PUBLIC_AP
 
 - The website uses a cookie. The app sends **`X-Talaan-App: 1`**, and the API answers with the session in an **`X-Session-Token`** header. The app keeps it in the phone's secure storage (Keychain / Keystore, this device only) and sends it back as `Authorization: Bearer …`. It's the same signed session as the cookie, so locking, signing out and "sign out everywhere" work the same.
 - **Face ID / fingerprint**: after signing in, the app asks for a **device key** (`POST /api/auth/device-key`) and keeps it in secure storage. When the app is locked, the phone checks your face or finger, then the app sends the key (`POST /api/auth/unlock/device`). The API keeps only a hash of the key, in that one session; signing out ends it. The face or fingerprint itself never leaves the phone.
-- Two-step sign-in asks for the email code every time on the app (no "remember this browser").
-- Passkeys and opening the app from links need a development build; they come with the app-store step.
+- Two-step sign-in asks for the email code **once per phone**, like "remember this browser" on the website: after the code, the API answers with an **`X-Talaan-Trust`** header, the app keeps it in secure storage and sends it back when signing in. It shows as "Talaan app on <phone name>" in Security → phones and browsers that skip the code, lasts 30 days, and can be removed there.
+- **Forgot password** is on the sign-in screen and the lock screen. When you're signed in, the website's `/forgot-password` goes to Security → Change password instead, which has its own "Forgot your current password?" (a code by email).
+- Adding passkeys and opening the app from links need a development build; they come with the app-store step. (Face ID / fingerprint unlocking works now.)
 
 ### Offline
 
@@ -676,11 +693,12 @@ turbo run test
 
 | Suite           | Where                              | What it checks                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | --------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| API unit        | `apps/api/test/unit`               | User rules, place levels, which reminder alerts are due, when a suspended account is emailed and deleted, shared schemas, use cases with fake repositories (no database)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| API unit        | `apps/api/test/unit`               | Background jobs (alerts when due, no polling, hourly clean-up), user rules, place levels, which reminder alerts are due, when a suspended account is emailed and deleted, shared schemas, use cases with fake repositories (no database)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | API integration | `apps/api/test/integration`        | Register, sign in, two-step codes, remembered browsers, passkeys (with a fake device), family invitations, access and profiles, records, the Trash and the audit trail, uploads (through the local storage) and who can see them, places, QR labels and place photos, reminders and their alerts (sent once, muting, snoozes, catching up), Medical ID and the emergency page, doctor share links (PIN and waiting, device limit, stopping and ending, files, alerts, who can share), search (every kind, Filipino words, QR codes, shared accounts only, the Trash left out), colors and text size (saved with the account, checked), downloading your data (every part of the ZIP, only your own account) and deleting it (suspending hides everything, signing in brings it back, the 6-month and week-before emails, deleting after a year with files removed, deleting right away), sessions, rate limit, errors |
 | Shared unit     | `packages/shared/src/**/*.test.ts` | Reading lab lines: formats, units, ranges, urinalysis, doubts, no made-up ranges; reminder schedules (every kind of repeat, ends, Philippine time) and their wording; lab comparison (matching names, units, ranges, stats); Medical ID rules (PhilHealth, phones, limits) and helpers; share link rules (PIN, device limit, status); reading a record from a printout (dates as month/day/year, doctor, hospital, type and title, imaging, prescriptions, bills, vaccines, nothing found); themes (Color Hunt links, every set readable in light and dark); search (accents, word starts, Filipino words, ranking, highlighting, excerpts)                                                                                                                                                                                                                                                                           |
+| Client unit     | `packages/client/src/**/*.test.ts` | The shared API client (`ApiError`, timeouts, "starting up", signed out), form states, label layouts, reminder times, chart scales, lab filters                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Website unit    | `apps/web/src/**/*.test.ts`        | The API client (`ApiError`), error messages, dates, PDF line grouping, table-line removal, adding read rows to the form, the places tree, fitting labels on paper, the reminder form, lab filters, the Medical ID form and lock screen content, checking what was read and putting it in the form, how long a share link lasts and how it reads                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| Phone app unit  | `apps/mobile/src/**/*.test.ts`     | The app's API client (token in and out, locked, signed out, offline), when to lock on coming back, sealing and opening the offline copies, the theme colors                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Phone app unit  | `apps/mobile/src/**/*.test.ts`     | Phone alerts planned from reminders, reading a scanned QR label, the app's connection (token in and out, locked, signed out, offline), when to lock on coming back, sealing and opening the offline copies, the theme colors                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ### The test database
 

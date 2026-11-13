@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { isIdle, shouldReportActivity } from "../../../application/auth/idle";
-import { useLock } from "../../../application/auth/useAuth";
-import { reportActivity } from "../../../infrastructure/api/authApi";
+import { useLock, reportActivity } from "@talaan/client";
 
 const ACTIVITY_EVENTS = [
   "pointerdown",

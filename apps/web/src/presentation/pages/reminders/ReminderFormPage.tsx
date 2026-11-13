@@ -1,16 +1,12 @@
 import type { RecordAccountInfo, ReminderInfo } from "@talaan/shared";
 import { useParams, useSearchParams } from "react-router";
-import {
-  useRecord,
-  useRecordAccounts,
-} from "../../../application/records/useRecords";
-import { useReminder } from "../../../application/reminders/useReminders";
+import { useRecord, useRecordAccounts, useReminder } from "@talaan/client";
 import { ReminderForm } from "../../components/reminders/form/ReminderForm";
 import {
   emptyReminder,
   formFromReminder,
   newReminderToday,
-} from "../../components/reminders/form/reminderFormState";
+} from "@talaan/client";
 import { BackLink } from "../../components/ui/BackLink";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { Loading } from "../../components/ui/Loading";

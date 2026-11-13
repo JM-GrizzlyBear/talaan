@@ -5,3 +5,5 @@ node_modules
 
 # The lab reader files copied from node_modules (apps/web/scripts/copy-reader-files.mjs)
 apps/web/public/reader/
+.expo
+.expo-export

@@ -4,17 +4,25 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
 import { App } from "./App";
-import { SESSION_KEY } from "./application/auth/useAuth";
-import { setLockedHandler } from "./infrastructure/api/http";
+import { configureApi, SESSION_KEY } from "@talaan/client";
+import {
+  createPasskeyOnDevice,
+  signWithPasskeyOnDevice,
+} from "./infrastructure/passkeys/devicePasskeys";
 import "./index.css";
 
 const queryClient = new QueryClient();
 
-// Any API answer "423 Locked" shows the lock screen
-setLockedHandler(() => {
-  queryClient.setQueryData<SessionInfo | null>(SESSION_KEY, (session) =>
-    session ? { ...session, locked: true } : session,
-  );
+// The website reaches the API on its own address, with the browser's cookie.
+// Any answer "423 Locked" shows the lock screen.
+configureApi({
+  baseUrl: "",
+  passkeys: { create: createPasskeyOnDevice, sign: signWithPasskeyOnDevice },
+  onLocked: () => {
+    queryClient.setQueryData<SessionInfo | null>(SESSION_KEY, (session) =>
+      session ? { ...session, locked: true } : session,
+    );
+  },
 });
 
 createRoot(document.getElementById("root")!).render(

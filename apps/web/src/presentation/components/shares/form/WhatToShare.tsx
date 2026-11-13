@@ -1,7 +1,7 @@
 import { RECORD_TYPE_LABELS, type RecordSummary } from "@talaan/shared";
 import { ChartLine, HeartPulse, Search } from "lucide-react";
 import { useState } from "react";
-import { shortDate } from "../../../format/dates";
+import { shortDate } from "@talaan/client";
 import { RecordTypeIcon } from "../../records/RecordTypeIcon";
 import { CheckboxField } from "../../ui/CheckboxField";
 import { inputBase, linkButton } from "../../ui/styles";

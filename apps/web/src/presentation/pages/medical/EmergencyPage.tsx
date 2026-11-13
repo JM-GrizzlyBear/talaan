@@ -1,7 +1,7 @@
 import { allergiesBySeverity, SEVERITY_LABELS } from "@talaan/shared";
 import { TriangleAlert } from "lucide-react";
 import { useParams } from "react-router";
-import { useEmergency } from "../../../application/medical/useMedicalId";
+import { useEmergency } from "@talaan/client";
 import { ContactList } from "../../components/medical/MedicalIdView";
 import { Loading } from "../../components/ui/Loading";
 import { useNoIndex } from "../../components/ui/useNoIndex";

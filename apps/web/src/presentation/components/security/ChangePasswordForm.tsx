@@ -1,14 +1,15 @@
 import { AUTH_LIMITS } from "@talaan/shared";
 import { type FormEvent, useState } from "react";
-import { useChangePassword } from "../../../application/auth/useAccount";
+import { useChangePassword } from "@talaan/client";
 import { errorMessage, fieldError } from "../../format/errorMessage";
 import { ErrorAlert } from "../ui/ErrorAlert";
+import { ForgotCurrentPassword } from "./ForgotCurrentPassword";
 import { Notice } from "../ui/Notice";
 import { TextField } from "../ui/TextField";
 import { buttonPrimary } from "../ui/styles";
 
 // Change the password: this browser stays signed in, the others are signed out
-export function ChangePasswordForm() {
+export function ChangePasswordForm({ email }: { email: string }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const change = useChangePassword();
@@ -28,7 +29,11 @@ export function ChangePasswordForm() {
   const fieldErrors =
     fieldError(error, "currentPassword") ?? fieldError(error, "newPassword");
   return (
-    <section aria-labelledby="password-heading" className="flex flex-col gap-3">
+    <section
+      id="password"
+      aria-labelledby="password-heading"
+      className="flex scroll-mt-20 flex-col gap-3"
+    >
       <h2 id="password-heading" className="text-lg font-bold">
         Change password
       </h2>
@@ -72,6 +77,7 @@ export function ChangePasswordForm() {
           {change.isPending ? "Saving…" : "Change password"}
         </button>
       </form>
+      <ForgotCurrentPassword email={email} />
     </section>
   );
 }

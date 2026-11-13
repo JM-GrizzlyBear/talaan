@@ -8,8 +8,11 @@ import { Link, useNavigate } from "react-router";
 import {
   useCreateRecord,
   useUpdateRecord,
-} from "../../../../application/records/useRecords";
-import { uploadRecordFile } from "../../../../infrastructure/api/filesApi";
+  uploadRecordFile,
+  fieldsFromForm,
+  type RecordFormState,
+  sentRowIndexes,
+} from "@talaan/client";
 import { errorMessage, fieldError } from "../../../format/errorMessage";
 import { BackLink } from "../../ui/BackLink";
 import { ErrorAlert } from "../../ui/ErrorAlert";
@@ -25,11 +28,6 @@ import { MedicinesSection } from "./MedicinesSection";
 import { TypePicker } from "./TypePicker";
 import { VaccinationSection } from "./VaccinationSection";
 import type { SetField } from "./formParts";
-import {
-  fieldsFromForm,
-  type RecordFormState,
-  sentRowIndexes,
-} from "./recordFormState";
 
 // Adding or editing a record: the type, then the fields for that type
 export function RecordForm({

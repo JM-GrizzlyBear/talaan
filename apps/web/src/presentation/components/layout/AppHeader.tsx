@@ -10,7 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import { Link, NavLink } from "react-router";
-import { useLogOut, useSession } from "../../../application/auth/useAuth";
+import { useLogOut, useSession } from "@talaan/client";
 import { TalaanLogo } from "../brand/TalaanLogo";
 
 const LINKS: { to: string; label: string; icon: LucideIcon }[] = [

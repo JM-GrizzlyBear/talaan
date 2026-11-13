@@ -9,8 +9,9 @@ import { Link, useLocation, useNavigate, useParams } from "react-router";
 import {
   usePlace,
   useRemovePlace,
-} from "../../../application/places/usePlaces";
-import { useRecordList } from "../../../application/records/useRecords";
+  useRecordList,
+  shortDateTime,
+} from "@talaan/client";
 import { LabelPreview } from "../../components/places/LabelPreview";
 import { PlaceKindIcon } from "../../components/places/PlaceKindIcon";
 import { PlaceList } from "../../components/places/PlaceList";
@@ -23,7 +24,6 @@ import { InlineConfirm } from "../../components/ui/InlineConfirm";
 import { Loading } from "../../components/ui/Loading";
 import { Notice } from "../../components/ui/Notice";
 import { buttonSecondary, dangerLinkButton } from "../../components/ui/styles";
-import { shortDateTime } from "../../format/dates";
 import { errorMessage } from "../../format/errorMessage";
 
 export function PlacePage() {

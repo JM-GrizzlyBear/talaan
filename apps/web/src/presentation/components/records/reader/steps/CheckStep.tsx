@@ -1,6 +1,6 @@
 import type { ReadLabDocument } from "../../../../../infrastructure/reader/readLabDocument";
 import { CheckRows } from "../check/CheckRows";
-import type { CheckRow } from "../check/checkRows";
+import type { CheckRow } from "@talaan/client";
 
 // The picture beside the rows it gave, to compare one against the other
 export function CheckStep({

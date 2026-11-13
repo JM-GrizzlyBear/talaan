@@ -1,5 +1,5 @@
 import { TextField } from "../../ui/TextField";
-import type { Size } from "./sizes";
+import type { Size } from "@talaan/client";
 
 // Width × height in millimetres, for a custom paper or label
 export function SizeInputs({

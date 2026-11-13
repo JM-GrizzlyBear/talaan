@@ -7,13 +7,13 @@ import { type FormEvent, useState } from "react";
 import {
   useAddProfile,
   useUpdateProfile,
-} from "../../../application/family/useFamily";
+  relationshipOptions,
+} from "@talaan/client";
 import { errorMessage, fieldError } from "../../format/errorMessage";
 import { ErrorAlert } from "../ui/ErrorAlert";
 import { SelectField } from "../ui/SelectField";
 import { TextField } from "../ui/TextField";
 import { buttonPrimary, buttonSecondary } from "../ui/styles";
-import { relationshipOptions } from "./relationshipOptions";
 
 // Adding or editing a profile
 export function ProfileForm({

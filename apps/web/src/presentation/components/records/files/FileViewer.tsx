@@ -1,9 +1,7 @@
 import { formatBytes, type RecordFileInfo } from "@talaan/shared";
 import { Download, ExternalLink, FileText, ScanText, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useRemoveRecordFile } from "../../../../application/records/useRecordFiles";
-import { fileUrl } from "../../../../infrastructure/api/filesApi";
-import { shortDateTime } from "../../../format/dates";
+import { useRemoveRecordFile, fileUrl, shortDateTime } from "@talaan/client";
 import { errorMessage } from "../../../format/errorMessage";
 import { ErrorAlert } from "../../ui/ErrorAlert";
 import { buttonSecondary, linkButton } from "../../ui/styles";

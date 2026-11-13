@@ -10,7 +10,7 @@ import { SelectField } from "../../ui/SelectField";
 import { TextAreaField } from "../../ui/TextAreaField";
 import { TextField } from "../../ui/TextField";
 import { ListEditor } from "./ListEditor";
-import type { MedicalForm } from "./medicalFormState";
+import type { MedicalForm } from "@talaan/client";
 
 export interface PartProps {
   form: MedicalForm;

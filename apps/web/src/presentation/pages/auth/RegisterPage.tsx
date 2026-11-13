@@ -1,7 +1,7 @@
 import { AUTH_LIMITS } from "@talaan/shared";
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { useRegister } from "../../../application/auth/useAuth";
+import { useRegister } from "@talaan/client";
 import { AuthCard } from "../../components/layout/AuthCard";
 import { CheckboxField } from "../../components/ui/CheckboxField";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";

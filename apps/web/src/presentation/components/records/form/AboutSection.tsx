@@ -3,7 +3,7 @@ import { SelectField } from "../../ui/SelectField";
 import { TextField } from "../../ui/TextField";
 import { FormSection } from "./FormSection";
 import type { FormPartProps } from "./formParts";
-import { TITLE_HINTS } from "./titleHints";
+import { TITLE_HINTS } from "@talaan/client";
 
 // Who it's for, the title, the date, the doctor and the clinic
 export function AboutSection({

@@ -2,14 +2,14 @@ import { ACCESS_LABELS, type RecordAccountInfo } from "@talaan/shared";
 import { Plus, Settings } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { useRecordAccounts } from "../../../application/records/useRecords";
 import {
+  useRecordAccounts,
   useAgenda,
   useReminders,
-} from "../../../application/reminders/useReminders";
+  dayKey,
+} from "@talaan/client";
 import { AgendaList } from "../../components/reminders/AgendaList";
 import { ReminderList } from "../../components/reminders/ReminderList";
-import { dayKey } from "../../components/reminders/reminderTimes";
 import { ErrorAlert } from "../../components/ui/ErrorAlert";
 import { Loading } from "../../components/ui/Loading";
 import { SelectField } from "../../components/ui/SelectField";

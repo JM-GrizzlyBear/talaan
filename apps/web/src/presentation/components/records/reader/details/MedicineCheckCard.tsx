@@ -1,5 +1,5 @@
 import { TriangleAlert } from "lucide-react";
-import type { MedicineCheck } from "./detailChecks";
+import type { MedicineCheck } from "@talaan/client";
 
 const box =
   "h-10 w-full rounded-lg border border-edge bg-white px-2.5 text-base text-gray-900";

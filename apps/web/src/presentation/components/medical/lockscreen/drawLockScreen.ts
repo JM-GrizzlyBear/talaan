@@ -1,5 +1,5 @@
 import qrcode from "qrcode-generator";
-import type { LockScreenSection } from "./lockScreenContent";
+import type { LockScreenSection } from "@talaan/client";
 
 interface Picture {
   width: number;

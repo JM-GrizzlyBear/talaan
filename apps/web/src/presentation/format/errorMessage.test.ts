@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ApiError } from "../../infrastructure/api/http";
+import { ApiError } from "@talaan/client";
 import { errorMessage, fieldError } from "./errorMessage";
 
 describe("error messages", () => {

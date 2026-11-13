@@ -1,7 +1,7 @@
 import { RECORD_TYPE_LABELS, type RecordSummary } from "@talaan/shared";
 import { Paperclip } from "lucide-react";
 import { Link } from "react-router";
-import { shortDate } from "../../format/dates";
+import { shortDate } from "@talaan/client";
 import { listCard } from "../ui/styles";
 import { RecordTypeIcon } from "./RecordTypeIcon";
 

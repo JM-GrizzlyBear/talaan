@@ -3,10 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import { useLabReader } from "../../../../application/reader/useLabReader";
 import { ErrorAlert } from "../../ui/ErrorAlert";
 import { buttonPrimary, buttonSecondary } from "../../ui/styles";
-import type { LabRow } from "../form/recordFormState";
-import { chosenRows, toCheckRows, type CheckRow } from "./check/checkRows";
+import {
+  type LabRow,
+  chosenRows,
+  toCheckRows,
+  type CheckRow,
+  canRead,
+} from "@talaan/client";
 import { ReaderFrame } from "./ReaderFrame";
-import { canRead } from "./readableFiles";
 import { CheckStep } from "./steps/CheckStep";
 import { ChooseSource } from "./steps/ChooseSource";
 import { ReadingProgress } from "./steps/ReadingProgress";

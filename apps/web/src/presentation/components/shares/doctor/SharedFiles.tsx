@@ -1,7 +1,7 @@
 import { formatBytes, type RecordFileInfo } from "@talaan/shared";
 import { Download, ExternalLink, FileText } from "lucide-react";
 import { useState } from "react";
-import { sharedFileUrl } from "../../../../infrastructure/api/sharesApi";
+import { sharedFileUrl } from "@talaan/client";
 
 // A record's photos and PDFs on the doctor's page: open or download each
 export function SharedFiles({

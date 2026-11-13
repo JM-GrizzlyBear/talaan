@@ -1,7 +1,6 @@
 import type { AuditEntryInfo } from "@talaan/shared";
 import { Link } from "react-router";
-import { auditSentence, changeText } from "../../format/auditText";
-import { shortDateTime } from "../../format/dates";
+import { auditSentence, changeText, shortDateTime } from "@talaan/client";
 import { listCard } from "../ui/styles";
 
 // A list of history entries: who did what, when, and exactly what changed
