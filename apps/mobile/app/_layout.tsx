@@ -8,6 +8,7 @@ import { Pressable, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { LockScreen } from "../src/auth/LockScreen";
 import { SessionProvider, useSession } from "../src/auth/SessionProvider";
+import { CameraHost } from "../src/files/CameraHost";
 import { AlertScheduler } from "../src/reminders/AlertScheduler";
 import { ThemeProvider, useTheme } from "../src/theme/ThemeProvider";
 import { Loading } from "../src/ui/kit";
@@ -90,6 +91,7 @@ function Gate() {
       {inApp && <NavBar />}
       {status === "ready" && <AlertScheduler />}
       {status === "locked" && <LockScreen />}
+      {inApp && <CameraHost />}
       {status === "starting" && (
         <View
           style={{

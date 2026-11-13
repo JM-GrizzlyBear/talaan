@@ -43,6 +43,7 @@ import {
   List,
   Txt,
 } from "../ui/kit";
+import { CameraHost } from "../files/CameraHost";
 import { ReaderFrame } from "./ReaderFrame";
 import { useReader } from "./useReader";
 
@@ -418,6 +419,8 @@ export function ReadDialog({
           </Buttons>
         </View>
       </SafeAreaView>
+      {/* The camera opens over this window, not under it */}
+      <CameraHost />
     </Modal>
   );
 }

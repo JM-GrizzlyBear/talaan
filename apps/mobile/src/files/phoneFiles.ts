@@ -3,6 +3,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import { openCamera } from "./CameraHost";
 
 // Photos and PDFs from the phone: the camera, the photo library, or files.
 // Photos are made smaller first (like the website: at most 2400 px across),
@@ -32,20 +33,11 @@ async function shrink(uri: string, width?: number, height?: number) {
 
 const stamp = () => new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
 
+// Talaan's own camera (CameraHost), not the phone's camera app
 export async function takePhoto(): Promise<PickedFile | null> {
-  const allowed = await ImagePicker.requestCameraPermissionsAsync();
-  if (!allowed.granted) {
-    throw new Error(
-      "Talaan can't use the camera. Allow it in the phone's Settings → Talaan (or Expo Go).",
-    );
-  }
-  const result = await ImagePicker.launchCameraAsync({
-    mediaTypes: ["images"],
-    quality: 1,
-  });
-  const asset = result.canceled ? null : result.assets[0];
-  if (!asset) return null;
-  const uri = await shrink(asset.uri, asset.width, asset.height);
+  const shot = await openCamera();
+  if (!shot) return null;
+  const uri = await shrink(shot.uri, shot.width, shot.height);
   return {
     uri,
     name: `photo-${stamp()}.jpg`,
