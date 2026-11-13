@@ -42,6 +42,7 @@ export function AlertScheduler() {
 
   useEffect(() => {
     if (!plan.data) return;
+    const data = plan.data;
     void (async () => {
       if (!(await phoneNotifications.wanted())) return;
       if (
@@ -49,8 +50,11 @@ export function AlertScheduler() {
         !(await phoneNotifications.ask())
       )
         return;
-      await phoneNotifications.schedule(plan.data);
-    })();
+      await phoneNotifications.schedule(data);
+    })().catch(() => {
+      // The phone refused (Expo Go limits, no permission): the emails and the
+      // website's alerts still come; My alerts shows if they're off here
+    });
   }, [plan.data]);
 
   useEffect(
