@@ -12,6 +12,7 @@ vi.mock("../storage/secure", () => ({
 }));
 vi.mock("./deviceName", () => ({ deviceName: () => "Maria's iPhone" }));
 vi.mock("../offline/savedResponses", () => ({ savedFetch: fetch }));
+vi.mock("../files/sendPhoneFile", () => ({ sendPhoneFile: undefined }));
 
 const { connectApi, connection } = await import("./connection");
 

@@ -190,7 +190,9 @@ export function RecordFiles({
               </Button>
             ) : (
               <Txt tone="small" muted>
-                {Math.round(u.progress * 100)}%
+                {u.progress > 0
+                  ? `${Math.round(u.progress * 100)}%`
+                  : "Starting…"}
               </Txt>
             )}
           </View>
